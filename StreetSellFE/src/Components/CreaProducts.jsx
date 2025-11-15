@@ -75,51 +75,63 @@ function CreaProductPage() {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then(async (res) => {
-        // <-- 1. Aggiungi 'async' qui
+      .then((res) => {
+        // --- GESTIONE DELLA RISPOSTA ---
 
-        // Se la chiamata va bene (status 200-299)
+        // CASO 1: Tutto OK (es. 200, 201)
         if (res.ok) {
+          // Restituiamo la promise con i dati di successo.
+          // Andrà al prossimo .then((data) => ...)
           return res.json();
         }
 
-        // --- Se la chiamata fallisce (es. 400) ---
-        // Dobbiamo leggere il messaggio d'errore dal server
+        // --- CASO 2: C'è un errore (es. 400) ---
+        // Dobbiamo leggere il messaggio d'errore.
+        // res.json() restituisce anch'esso una promise.
 
-        let errorMessage = 'Errore sconosciuto';
-        try {
-          // 2. LEGGI IL BIGLIETTO: Tentiamo di leggere il JSON di errore
-          const errorData = await res.json();
+        // Creiamo una nuova catena di promise per gestire l'errore
+        return res.json().then(
+          (errorData) => {
+            // Piano A: Siamo riusciti a leggere il JSON di errore
+            let errorMessage = 'Errore sconosciuto';
+            if (Array.isArray(errorData)) {
+              errorMessage = errorData.join('; ');
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            }
 
-          // 3. Il nostro server (ValidationException) manda un array di stringhe
-          if (Array.isArray(errorData)) {
-            // Uniamo tutti gli errori in un unico messaggio
-            errorMessage = errorData.join('; ');
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
+            // Lanciamo l'errore per farlo "saltare" al .catch() finale
+            throw new Error(errorMessage);
+          },
+          () => {
+            // Piano B: res.json() è fallito (risposta non JSON)
+            // Questo blocco .catch() interno gestisce il fallimento di res.json()
+            const errorMessage = `Errore HTTP ${res.status}: ${res.statusText}`;
+
+            // Lanciamo l'errore per farlo "saltare" al .catch() finale
+            throw new Error(errorMessage);
           }
-        } catch {
-          // Se il server non manda un JSON, usiamo l'errore standard
-          errorMessage = `Errore HTTP ${res.status}: ${res.statusText}`;
-        }
-
-        // 4. Lanciamo il VERO messaggio di errore
-        throw new Error(errorMessage);
+        );
       })
       .then((data) => {
-        // Questo blocco .then() viene eseguito SOLO se la chiamata è andata bene
+        // --- SOLO SE LA CHIAMATA È ANDATA BENE ---
+        // Questo blocco viene eseguito SOLO se res.ok era true.
+        // 'data' contiene il JSON di successo.
         setSuccess('Annuncio creato con successo!');
         setTimeout(() => {
           navigate(`/products/${data.id}`);
         }, 2000);
       })
       .catch((err) => {
-        // 5. ORA QUI 'err.message' CONTIENE IL VERO ERRORE!
-        // (es. "Il titolo non può essere vuoto; Il prezzo deve essere positivo")
+        // --- GESTIONE DI QUALSIASI ERRORE ---
+        // Questo .catch() riceve tutti gli errori lanciati:
+        // 1. Errori di rete (se il fetch fallisce)
+        // 2. L'errore lanciato dal "Piano A" (JSON di errore letto)
+        // 3. L'errore lanciato dal "Piano B" (JSON di errore non letto)
         setError(err.message);
         setIsLoading(false);
       });
-  }; // Chiusura di creaProdotto
+  };
 
   return (
     <Container className='my-5'>
