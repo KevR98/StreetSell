@@ -30,7 +30,7 @@ function MyNavbar() {
             )}
             {token && <Nav.Link onClick={handleLogout}>Logout</Nav.Link>}
             <Nav.Link as={Link} to='/prodotti'>
-              Carica Prodotto
+              Vendi
             </Nav.Link>
           </Nav>
         </Navbar.Collapse>

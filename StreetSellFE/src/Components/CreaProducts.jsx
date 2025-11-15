@@ -24,6 +24,12 @@ function CreaProductPage() {
   const [isLoading, setIsLoading] = useState('');
   const navigate = useNavigate();
 
+  const [immagine, setImmagine] = useState([]);
+
+  const immagini = (e) => {
+    setImmagine(Array.from(e.target.files));
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProdotto({
@@ -51,6 +57,13 @@ function CreaProductPage() {
       setIsLoading(false);
       return;
     }
+
+    const formData = new FormData();
+    Object.entries(prodotto).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+    // Aggiungi immagini
+    immagini.forEach((img) => formData.append('immagini', img));
 
     fetch(endpoint, {
       method: 'POST',
@@ -116,6 +129,12 @@ function CreaProductPage() {
                     required
                   />
                 </Form.Group>
+                <input
+                  type='file'
+                  name='immagine'
+                  accept='image/*'
+                  onChange={immagini}
+                />
 
                 <Row>
                   <Col md={6}>
@@ -154,13 +173,10 @@ function CreaProductPage() {
                   >
                     {/* Assicurati che questi valori corrispondano al tuo Enum in Java */}
                     <option value='NUOVO'>Nuovo</option>
-                    <option value='USATO_COME_NUOVO'>Usato - Come nuovo</option>
-                    <option value='USATO_OTTIME_CONDIZIONI'>
-                      Usato - Ottime condizioni
-                    </option>
-                    <option value='USATO_BUONE_CONDIZIONI'>
-                      Usato - Buone condizioni
-                    </option>
+                    <option value='COME_NUOVO'>Usato - Come nuovo</option>
+                    <option value='BUONO'>Usato - Buone condizioni</option>
+                    <option value='USATO'>Usato</option>
+                    <option value='DANNEGGIATO'>Usato - Ma con usure</option>
                   </Form.Select>
                 </Form.Group>
 
