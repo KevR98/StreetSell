@@ -1,10 +1,10 @@
 package kevinramil.StreetSell.Exceptions;
 
 import kevinramil.StreetSell.Payloads.ErrorDTO;
-import kevinramil.StreetSell.Payloads.ErrorValidationDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
@@ -41,14 +41,12 @@ public class ExceptionsHandler {
 
     // Questo metodo gestisce le eccezioni di validazione
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ErrorValidationDTO> handleValidation(ValidationException ex) {
-        List<String> errors = ex.getErrorsList();
-        ErrorValidationDTO errorsPayload = new ErrorValidationDTO(
-                "Errore di validazione nel payload",
-                LocalDateTime.now(),
-                errors
-        );
-        return new ResponseEntity<>(errorsPayload, HttpStatus.BAD_REQUEST);
+    @ResponseStatus(HttpStatus.BAD_REQUEST) // Imposta lo status 400
+    public List<String> handleValidation(ValidationException ex) {
+
+        // Restituiamo DIRETTAMENTE la lista di stringhe.
+        // Questo è ciò che il tuo frontend React si aspetta.
+        return ex.getErrorsList();
     }
 
     // Un gestore "catch-all" per tutte le altre eccezioni non gestite esplicitamente

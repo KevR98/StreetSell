@@ -13,11 +13,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class ProdottoService {
@@ -27,7 +30,7 @@ public class ProdottoService {
 
     // Il venditore verrà passato dal Controller, dopo averlo recuperato
     // in modo sicuro dal contesto di autenticazione
-    public Prodotto creaProdotto(ProdottoDTO prodottoDTO, Utente venditore) {
+    public Prodotto creaProdotto(ProdottoDTO prodottoDTO, Utente venditore, MultipartFile[] immagini) {
 
         Prodotto nuovoProdotto = new Prodotto();
         nuovoProdotto.setTitolo(prodottoDTO.titolo());
@@ -39,18 +42,31 @@ public class ProdottoService {
 
         nuovoProdotto.setVenditore(venditore);
 
-        if (prodottoDTO.imageUrls() != null && !prodottoDTO.imageUrls().isEmpty()) {
-            List<ImmagineProdotto> immagini = prodottoDTO.imageUrls().stream().map(url -> {
-                ImmagineProdotto img = new ImmagineProdotto();
-                img.setUrl(url);
-                img.setProdotto(nuovoProdotto);
-                return img;
-            }).collect(Collectors.toList());
-            nuovoProdotto.setImmagini(immagini);
-        } else {
-            nuovoProdotto.setImmagini(new ArrayList<>());
+        List<ImmagineProdotto> listaImmagini = new ArrayList<>();
+        if (immagini != null && immagini.length > 0) {
+            for (MultipartFile file : immagini) {
+                try {
+                    // Salva il file su disco: cartella "uploads"
+                    String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
+                    Path uploadDir = Paths.get("uploads");
+                    Files.createDirectories(uploadDir); // Crea la cartella se non c'è
+                    Path filePath = uploadDir.resolve(fileName);
+                    Files.copy(file.getInputStream(), filePath);
+
+                    ImmagineProdotto img = new ImmagineProdotto();
+                    img.setUrl("/uploads/" + fileName); // Salva path relativo per il recupero dall'app
+                    img.setProdotto(nuovoProdotto);
+                    listaImmagini.add(img);
+                } catch (Exception e) {
+                    // puoi decidere se fare fallback, lanciare errore, etc.
+                    throw new RuntimeException("Errore nel salvataggio immagine: " + e.getMessage());
+                }
+            }
         }
 
+        nuovoProdotto.setImmagini(listaImmagini);
+
+        // Salva tutto!
         return prodottoRepository.save(nuovoProdotto);
     }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -11,13 +12,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 function CreaProductPage() {
-  const endpoint = 'http://localhost:8888/auth/prodotti';
+  const endpoint = 'http://localhost:8888/prodotti';
   const [prodotto, setProdotto] = useState({
     titolo: '',
     descrizione: '',
-    prezzo: '',
-    condizione: '',
-    statoProdotto: 'NUOVO',
+    prezzo: 0,
+    condizione: 'NUOVO',
+    categoria: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -59,42 +60,66 @@ function CreaProductPage() {
     }
 
     const formData = new FormData();
-    Object.entries(prodotto).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
+    formData.append('prodotto', JSON.stringify(prodotto));
     // Aggiungi immagini
-    immagini.forEach((img) => formData.append('immagini', img));
+    immagine.forEach((img) => formData.append('immagini', img));
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
 
     fetch(endpoint, {
       method: 'POST',
+      body: formData,
       headers: {
-        'Content-Type': 'application/json',
-
-        Authorization: 'Bearer ${token}',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(prodotto),
     })
-      .then((res) => {
+      .then(async (res) => {
+        // <-- 1. Aggiungi 'async' qui
+
+        // Se la chiamata va bene (status 200-299)
         if (res.ok) {
           return res.json();
-        } else {
-          throw new Error('Errore nella chiamata');
         }
-      })
 
+        // --- Se la chiamata fallisce (es. 400) ---
+        // Dobbiamo leggere il messaggio d'errore dal server
+
+        let errorMessage = 'Errore sconosciuto';
+        try {
+          // 2. LEGGI IL BIGLIETTO: Tentiamo di leggere il JSON di errore
+          const errorData = await res.json();
+
+          // 3. Il nostro server (ValidationException) manda un array di stringhe
+          if (Array.isArray(errorData)) {
+            // Uniamo tutti gli errori in un unico messaggio
+            errorMessage = errorData.join('; ');
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch {
+          // Se il server non manda un JSON, usiamo l'errore standard
+          errorMessage = `Errore HTTP ${res.status}: ${res.statusText}`;
+        }
+
+        // 4. Lanciamo il VERO messaggio di errore
+        throw new Error(errorMessage);
+      })
       .then((data) => {
+        // Questo blocco .then() viene eseguito SOLO se la chiamata è andata bene
         setSuccess('Annuncio creato con successo!');
-        // Se il backend restituisce l'id del nuovo prodotto, puoi fare: navigate(`/products/${data.id}`)
         setTimeout(() => {
           navigate(`/products/${data.id}`);
         }, 2000);
       })
-
       .catch((err) => {
+        // 5. ORA QUI 'err.message' CONTIENE IL VERO ERRORE!
+        // (es. "Il titolo non può essere vuoto; Il prezzo deve essere positivo")
         setError(err.message);
         setIsLoading(false);
       });
-  };
+  }; // Chiusura di creaProdotto
 
   return (
     <Container className='my-5'>
@@ -133,6 +158,7 @@ function CreaProductPage() {
                   type='file'
                   name='immagine'
                   accept='image/*'
+                  multiple
                   onChange={immagini}
                 />
 

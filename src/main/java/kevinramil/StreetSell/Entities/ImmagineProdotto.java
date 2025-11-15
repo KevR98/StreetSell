@@ -1,5 +1,6 @@
 package kevinramil.StreetSell.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,5 +25,6 @@ public class ImmagineProdotto {
     // Relazione: Molte immagini appartengono a un solo prodotto
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prodotto_id", nullable = false)
+    @JsonIgnore
     private Prodotto prodotto;
 }

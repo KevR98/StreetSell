@@ -1,5 +1,8 @@
 package kevinramil.StreetSell.Controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import kevinramil.StreetSell.Entities.Prodotto;
 import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.ValidationException;
@@ -14,7 +17,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,21 +31,40 @@ public class ProdottoController {
     @Autowired
     private ProdottoService prodottoService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private Validator validator;
+
     // Endpoint per creare un nuovo prodotto
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public Prodotto creaProdotto(@RequestBody @Validated ProdottoDTO prodottoDTO,
-                                 BindingResult validation,
+    public Prodotto creaProdotto(@RequestPart("prodotto") String prodottoDtoString,
+                                 @RequestPart(value = "immagini", required = false) MultipartFile[] immagini,
                                  @AuthenticationPrincipal Utente currentUser) { // Otteniamo il venditore in modo sicuro
-        if (validation.hasErrors()) {
+        ProdottoDTO prodottoDTO;
+        try {
+            // --- 2. CONVERTI MANUALMENTE LA STRINGA IN DTO ---
+            prodottoDTO = objectMapper.readValue(prodottoDtoString, ProdottoDTO.class);
+        } catch (Exception e) {
+            // Se il JSON non è valido, lancia un'eccezione
+            throw new ValidationException(Collections.singletonList("Dati prodotto non validi (JSON malformato): " + e.getMessage()));
+        }
+
+        Set<ConstraintViolation<ProdottoDTO>> violations = validator.validate(prodottoDTO);
+        if (!violations.isEmpty()) {
+            // Se ci sono errori, crea una LISTA di messaggi
             throw new ValidationException(
-                    validation.getAllErrors().stream()
-                            .map(err -> err.getDefaultMessage())
+                    violations.stream()
+                            .map(err -> err.getMessage())
                             .collect(Collectors.toList())
             );
         }
+
+
         // Passiamo al service sia i dati del prodotto (body) sia il venditore (currentUser)
-        return prodottoService.creaProdotto(prodottoDTO, currentUser);
+        return prodottoService.creaProdotto(prodottoDTO, currentUser, immagini);
     }
 
     // Endpoint per ottenere la lista di tutti i prodotti disponibili
