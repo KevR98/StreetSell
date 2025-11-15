@@ -90,7 +90,7 @@ function RegisterPage() {
         setPassword('');
 
         setTimeout(() => {
-          navigate('/login');
+          navigate('/login'), 2000;
         });
       })
 

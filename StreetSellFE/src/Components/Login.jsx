@@ -40,6 +40,7 @@ function Login() {
       })
       .then((data) => {
         dispatch(loginSuccess({ user: data.user, token: data.token }));
+        localStorage.setItem('accessToken', data.token);
         navigate('/');
       })
       .catch((err) => {

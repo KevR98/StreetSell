@@ -5,6 +5,7 @@ import MyFooter from './Components/MyFooter';
 import MyNavbar from './Components/MyNavbar';
 import HomePage from './Components/HomePage';
 import RegisterPage from './Components/RegisterPage';
+import CreaProductPage from './Components/CreaProducts';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
               <Route path='/' element={<HomePage />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<RegisterPage />} />
+              <Route path='/prodotti' element={<CreaProductPage />} />
             </Routes>
           </div>
           <MyFooter />
