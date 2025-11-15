@@ -1,0 +1,51 @@
+package kevinramil.StreetSell.Controllers;
+
+import kevinramil.StreetSell.Entities.Utente;
+import kevinramil.StreetSell.Exceptions.ValidationException;
+import kevinramil.StreetSell.Payloads.LoginDTO;
+import kevinramil.StreetSell.Payloads.TokenDTO;
+import kevinramil.StreetSell.Payloads.UtenteDTO;
+import kevinramil.StreetSell.Services.AuthorizationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/auth") // Tutti gli endpoint in questa classe inizieranno con /auth
+public class AuthorizationController {
+
+    @Autowired
+    private AuthorizationService authService;
+
+    // Endpoint per il LOGIN -> POST /auth/login
+    @PostMapping("/login")
+    public TokenDTO login(@RequestBody @Validated LoginDTO body, BindingResult validation) {
+        if (validation.hasErrors()) {
+            throw new ValidationException(
+                    validation.getAllErrors().stream()
+                            .map(err -> err.getDefaultMessage())
+                            .collect(Collectors.toList())
+            );
+        }
+        String accessToken = authService.authenticateAndGenerateToken(body);
+        return new TokenDTO(accessToken);
+    }
+
+    // Endpoint per la REGISTRAZIONE -> POST /auth/register
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Utente register(@RequestBody @Validated UtenteDTO body, BindingResult validation) {
+        if (validation.hasErrors()) {
+            throw new ValidationException(
+                    validation.getAllErrors().stream()
+                            .map(err -> err.getDefaultMessage())
+                            .collect(Collectors.toList())
+            );
+        }
+        return authService.registraUtente(body);
+    }
+}
