@@ -8,8 +8,7 @@ import RegisterPage from './Components/RegisterPage';
 import CreaProductPage from './Components/CreaProducts';
 import Home from './Components/Home';
 import Details from './Components/Details';
-import ProfilePage from './Components/ProfileProducePage';
-import ProfileProducePage from './Components/ProfileProducePage';
+import ProfileProductPage from './Components/ProfileProductPage';
 
 function App() {
   return (
@@ -25,7 +24,7 @@ function App() {
               <Route path='/register' element={<RegisterPage />} />
               <Route path='/crea-prodotto' element={<CreaProductPage />} />
               <Route path='/prodotto/:prodottoId' element={<Details />} />
-              <Route path='/prodotti/me' element={<ProfileProducePage />} />
+              <Route path='/prodotti/me' element={<ProfileProductPage />} />
             </Routes>
           </div>
           <MyFooter />

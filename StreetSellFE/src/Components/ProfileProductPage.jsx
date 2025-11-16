@@ -15,7 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const endpoint = 'http://localhost:8888/prodotti/me';
 
-function ProfileProducePage() {
+function ProfileProductPage() {
   const [prodotti, setProdotti] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -125,4 +125,4 @@ function ProfileProducePage() {
   );
 }
 
-export default ProfileProducePage;
+export default ProfileProductPage;
