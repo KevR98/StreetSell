@@ -1,7 +1,10 @@
-export const loginSuccess = (payload) => {
+export const loginSuccess = (responseData) => {
   return {
     type: 'LOGIN_SUCCESS',
-    payload: payload,
+    payload: {
+      user: responseData.user,
+      token: responseData.token,
+    },
   };
 };
 

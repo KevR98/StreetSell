@@ -121,4 +121,10 @@ public class ProdottoService {
         prodotto.setStatoProdotto(StatoProdotto.ARCHIVIATO);
         prodottoRepository.save(prodotto);
     }
+
+    public Page<Prodotto> findProdottiByVenditore(Utente venditore, Pageable pageable) {
+
+        return prodottoRepository.findByVenditore(venditore, pageable);
+    }
+    
 }

@@ -1,12 +1,6 @@
 package kevinramil.StreetSell.Entities;
 
-// 1. IMPORT NECESSARI (Controlla che ci siano tutti)
-// ===================================================
-
-// Per la conversione in JSON
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import kevinramil.StreetSell.Enums.Ruolo;
 import lombok.Getter;
@@ -29,8 +23,8 @@ import java.util.UUID;
 @ToString
 @Entity
 @Table(name = "utenti")
-@JsonIgnoreProperties({"password", "authorities", "accountNonExpired", "accountNonLocked", "credentialsNonExpired", "enabled"})
-public class Utente implements UserDetails { // <-- Implementiamo l'interfaccia di Spring Security
+// 🚨 RIMOZIONE DELLA CHIAVE DI BLOCCO: NON USIAMO JsonIgnoreProperties QUI 🚨
+public class Utente implements UserDetails {
 
     // 3. CAMPI DELL'ENTITÀ
     // ====================
@@ -38,26 +32,27 @@ public class Utente implements UserDetails { // <-- Implementiamo l'interfaccia 
     @GeneratedValue
     private UUID id;
 
-    private String username;
+    private String username; // ✅ ORA SARÀ VISIBILE
     private String email;
+
+    // 🚨 PROTEZIONE CRITICA: Dobbiamo nascondere la password 🚨
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private Ruolo ruolo; // Assumendo che tu abbia un Enum 'Role' (es. ADMIN, USER)
+    private Ruolo ruolo;
 
     @Column(name = "is_attivo")
     private Boolean attivo = true;
 
-    // 4. RELAZIONI CON LE ALTRE TABELLE (con @JsonIgnore)
+    // 4. RELAZIONI CON LE ALTRE TABELLE (tutte correttamente nascoste)
     // ====================================================
-    // Aggiungiamo @JsonIgnore per evitare la LazyInitializationException e i loop infiniti.
-    // Diciamo a Jackson: "Quando crei il JSON, ignora questi campi".
-
     @OneToMany(mappedBy = "venditore")
-    @ToString.Exclude // Evita loop infiniti anche nel metodo toString() di Lombok
+    @ToString.Exclude
     @JsonIgnore
     private List<Prodotto> prodottodaVendere;
 
+    // ... (tutte le altre relazioni con @JsonIgnore sono corrette)
     @OneToMany(mappedBy = "compratore")
     @ToString.Exclude
     @JsonIgnore
@@ -79,21 +74,15 @@ public class Utente implements UserDetails { // <-- Implementiamo l'interfaccia 
     private List<Indirizzo> indirizzi;
 
 
-    // 5. METODI RICHIESTI DALL'INTERFACCIA UserDetails
+    // 5. METODI RICHIESTI DA UserDetails (rimangono invariati)
     // ===============================================
-    // Questi metodi sono FONDAMENTALI per Spring Security.
 
-    /**
-     * Restituisce i "poteri" (ruoli) dell'utente.
-     * Spring Security usa questo metodo per l'autorizzazione (es. @PreAuthorize).
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.ruolo.name()));
     }
 
-    // Gli altri metodi di UserDetails. Per ora, li facciamo restituire 'true'
-    // per indicare che l'account è sempre attivo e valido.
+    // ... (metodi isAccountNonExpired, isAccountNonLocked, etc. che restituiscono true)
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -112,5 +101,17 @@ public class Utente implements UserDetails { // <-- Implementiamo l'interfaccia 
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    // 🚨 UserDetails richiede questi getter SENZA @JsonIgnore 🚨
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
+    @Override
+    @JsonIgnore // Aggiungiamo JsonIgnore qui per sicurezza se il campo non è già protetto
+    public String getPassword() {
+        return this.password;
     }
 }

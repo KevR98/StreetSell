@@ -39,8 +39,9 @@ function Login() {
         }
       })
       .then((data) => {
-        dispatch(loginSuccess({ user: data.user, token: data.token }));
-        localStorage.setItem('accessToken', data.token);
+        const { token, user } = data; // 🛑 CORREZIONE QUI
+        dispatch(loginSuccess({ user: user, token: token }));
+        localStorage.setItem('accessToken', token);
         navigate('/');
       })
       .catch((err) => {

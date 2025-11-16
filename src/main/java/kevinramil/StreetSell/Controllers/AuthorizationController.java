@@ -3,7 +3,7 @@ package kevinramil.StreetSell.Controllers;
 import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.ValidationException;
 import kevinramil.StreetSell.Payloads.LoginDTO;
-import kevinramil.StreetSell.Payloads.TokenDTO;
+import kevinramil.StreetSell.Payloads.LoginResponseDTO;
 import kevinramil.StreetSell.Payloads.UtenteDTO;
 import kevinramil.StreetSell.Services.AuthorizationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,8 @@ public class AuthorizationController {
 
     // Endpoint per il LOGIN -> POST /auth/login
     @PostMapping("/login")
-    public TokenDTO login(@RequestBody @Validated LoginDTO body, BindingResult validation) {
+    // 🛑 MODIFICA QUI: Il tipo di ritorno è ora LoginResponseDTO
+    public LoginResponseDTO login(@RequestBody @Validated LoginDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
             throw new ValidationException(
                     validation.getAllErrors().stream()
@@ -31,8 +32,9 @@ public class AuthorizationController {
                             .collect(Collectors.toList())
             );
         }
-        String accessToken = authService.authenticateAndGenerateToken(body);
-        return new TokenDTO(accessToken);
+
+        // Chiama il service che ora restituisce LoginResponseDTO
+        return authService.authenticateAndGenerateToken(body);
     }
 
     // Endpoint per la REGISTRAZIONE -> POST /auth/register

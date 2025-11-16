@@ -1,12 +1,13 @@
 package kevinramil.StreetSell.Entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import kevinramil.StreetSell.Enums.Condizione;
 import kevinramil.StreetSell.Enums.StatoProdotto;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,10 +43,13 @@ public class Prodotto {
     @Column(nullable = false)
     private StatoProdotto statoProdotto;
 
+    @Column(updatable = false, nullable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
     // Relazione: Molti prodotti possono appartenere a un solo venditore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venditore_id", nullable = false)
-    @JsonIgnore
     private Utente venditore;
 
     @OneToMany(mappedBy = "prodotto", cascade = CascadeType.ALL, orphanRemoval = true)

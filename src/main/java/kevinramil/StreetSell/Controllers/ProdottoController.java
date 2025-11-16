@@ -5,12 +5,15 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import kevinramil.StreetSell.Entities.Prodotto;
 import kevinramil.StreetSell.Entities.Utente;
+import kevinramil.StreetSell.Exceptions.UnauthorizedException;
 import kevinramil.StreetSell.Exceptions.ValidationException;
 import kevinramil.StreetSell.Payloads.ProdottoDTO;
 import kevinramil.StreetSell.Services.ProdottoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -100,4 +103,26 @@ public class ProdottoController {
                                  @AuthenticationPrincipal Utente currentUser) {
         prodottoService.archiviaProdotto(prodottoId, currentUser);
     }
+
+    @GetMapping("/me") // Rotta per i prodotti del venditore loggato
+    public Page<Prodotto> getMyProdotti(@AuthenticationPrincipal Utente currentUser,
+                                        @RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "10") int size,
+                                        // 🛑 CORREGGI QUI: Ordina per il campo corretto (es. 'createdAt')
+                                        @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        System.out.println("Utente Corrente ID: " + currentUser.getId());
+        System.out.println("Utente Corrente Username: " + currentUser.getUsername());
+
+        if (currentUser == null) {
+            // Usa l'eccezione che hai già per le credenziali non valide
+            throw new UnauthorizedException("Accesso negato. Token JWT mancante o non valido.");
+        }
+
+        // Assumendo che tu costruisca il Pageable con il sortBy
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+
+        return prodottoService.findProdottiByVenditore(currentUser, pageable);
+    }
+
 }

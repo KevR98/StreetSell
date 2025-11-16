@@ -26,6 +26,15 @@ const mainReducer = (state = initialState, action) => {
         token: null,
       };
 
+    case 'SET_USER': // NUOVO CASE
+      return {
+        ...state,
+        isAuthenticated: true,
+        user: action.payload, // Salva l'oggetto utente recuperato
+        isLoading: false,
+        error: null,
+      };
+
     case 'LOGIN_FAILURE':
       return {
         ...state,

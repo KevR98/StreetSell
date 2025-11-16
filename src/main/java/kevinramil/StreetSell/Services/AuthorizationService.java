@@ -5,6 +5,7 @@ import kevinramil.StreetSell.Enums.Ruolo;
 import kevinramil.StreetSell.Exceptions.BadRequestException;
 import kevinramil.StreetSell.Exceptions.UnauthorizedException;
 import kevinramil.StreetSell.Payloads.LoginDTO;
+import kevinramil.StreetSell.Payloads.LoginResponseDTO;
 import kevinramil.StreetSell.Payloads.UtenteDTO;
 import kevinramil.StreetSell.Repositories.UtenteRepository;
 import kevinramil.StreetSell.Securities.JWTTools;
@@ -48,14 +49,20 @@ public class AuthorizationService implements UserDetailsService {
         return utenteRepository.save(nuovoUtente);
     }
 
-    public String authenticateAndGenerateToken(LoginDTO body) {
+    // 🛑 MODIFICA QUI: Il metodo ora restituisce LoginResponseDTO
+    public LoginResponseDTO authenticateAndGenerateToken(LoginDTO body) {
         Utente utente = utenteRepository.findByEmail(body.email())
                 .orElseThrow(() -> new UnauthorizedException("Credenziali non valide."));
 
-        // <-- MODIFICA CRUCIALE: Confrontiamo la password usando il metodo sicuro di BCrypt
+        // <-- Confrontiamo la password usando il metodo sicuro di BCrypt
         if (passwordEncoder.matches(body.password(), utente.getPassword())) {
-            // Se le credenziali sono corrette, generiamo un vero token JWT
-            return jwtTools.createToken(utente);
+
+            // 1. Generiamo il token
+            String token = jwtTools.createToken(utente);
+
+            // 2. ✅ AZIONE CRUCIALE: Restituiamo il DTO completo con token E utente
+            return new LoginResponseDTO(token, utente);
+
         } else {
             throw new UnauthorizedException("Credenziali non valide.");
         }
