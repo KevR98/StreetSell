@@ -3,7 +3,6 @@ package kevinramil.StreetSell.Securities;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,20 +30,7 @@ public class SecurityConfig {
         httpSecurity.formLogin(fl -> fl.disable());
         httpSecurity.csrf(csrf -> csrf.disable());
         httpSecurity.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-        httpSecurity.authorizeHttpRequests(auth -> {
-            // Rotte pubbliche (nessun token richiesto)
-            auth.requestMatchers("/auth/**").permitAll();
-
-            // Solo il METODO GET per prodotti è pubblico
-            auth.requestMatchers(HttpMethod.GET, "/prodotti", "/prodotti/**").permitAll();
-
-            // (Abbiamo già rimosso /uploads/** per Cloudinary, corretto)
-
-            // Rotte private (richiedono il token)
-            auth.anyRequest().authenticated();
-        });
-
+        httpSecurity.authorizeHttpRequests(aut -> aut.requestMatchers("/**").permitAll().anyRequest().authenticated());
         httpSecurity.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         httpSecurity.cors(Customizer.withDefaults());
 

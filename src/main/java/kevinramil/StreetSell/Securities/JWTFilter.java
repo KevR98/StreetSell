@@ -75,17 +75,19 @@ public class JWTFilter extends OncePerRequestFilter {
         }
     }
 
-    // 🚨 MODIFICA DI PULIZIA ESEGUITA QUI 🚨
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        // Usiamo getServletPath() per ottenere il percorso della richiesta
         String path = request.getServletPath();
         AntPathMatcher matcher = new AntPathMatcher();
-        boolean isGetRequest = request.getMethod().equalsIgnoreCase("GET");
 
-        // Ritorna 'true' (non filtrare) per le rotte pubbliche.
-        // La rotta '/uploads/**' è stata rimossa perché ora usiamo Cloudinary.
-        return matcher.match("/auth/**", path) ||
-                matcher.match("/prodotti/**", path); // Permette la lista e il dettaglio
+        // 1. Escludi /auth/** (Login/Registrazione)
+        boolean isAuthRoute = matcher.match("/auth/**", path);
+
+        // 2. Escludi solo i GET per i prodotti (/prodotti, /prodotti/{id}, ecc.)
+        boolean isPublicGet = request.getMethod().equalsIgnoreCase("GET") && matcher.match("/prodotti/**", path);
+
+        // Ritorna TRUE (non filtrare/saltare) se è una rotta di Auth O se è una richiesta GET pubblica.
+        // Tutte le altre (POST, PUT, DELETE) DEVONO essere filtrate.
+        return isAuthRoute || isPublicGet;
     }
 }
