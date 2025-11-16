@@ -6,6 +6,8 @@ import MyNavbar from './Components/MyNavbar';
 import HomePage from './Components/HomePage';
 import RegisterPage from './Components/RegisterPage';
 import CreaProductPage from './Components/CreaProducts';
+import ProductCard from './Components/ProductCard';
+import Home from './Components/Home';
 
 function App() {
   return (
@@ -15,10 +17,15 @@ function App() {
           <MyNavbar />
           <div className='flex-grow-1'>
             <Routes>
+              <Route path='/' element={<Home />} />
               <Route path='/' element={<HomePage />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<RegisterPage />} />
-              <Route path='/prodotti' element={<CreaProductPage />} />
+              <Route path='/crea-prodotto' element={<CreaProductPage />} />
+              {/* <Route
+                path='/prova'
+                element={<ProductCard prodotto={mockProdotto} />}
+              /> */}
             </Routes>
           </div>
           <MyFooter />
