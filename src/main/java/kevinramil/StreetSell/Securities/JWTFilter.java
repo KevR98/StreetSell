@@ -49,16 +49,15 @@ public class JWTFilter extends OncePerRequestFilter {
             Utente found = utenteService.findById(utenteId);
 
             //**************************************************//
-            // AGGIUNGI QUESTO CONTROLLO SUBITO DOPO AVER TROVATO L'UTENTE
+            // CONTROLLO UTENTE ATTIVO (Corretto)
             //**************************************************//
-            if (!found.isEnabled()) { // .isEnabled() userà il campo 'attivo' che abbiamo aggiunto
+            if (!found.isEnabled()) {
                 throw new UnauthorizedException("Il tuo account è stato disattivato. Contatta l'assistenza.");
             }
             //**************************************************//
 
-            // Se la tua entità Utente NON implementa UserDetails, crea le authorities dal ruolo
             List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority(found.getRuolo().name()) // Non serve "ROLE_", @PreAuthorize lo vuole senza
+                    new SimpleGrantedAuthority(found.getRuolo().name())
             );
 
             Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -69,7 +68,6 @@ public class JWTFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } catch (Exception e) {
-            // Se l'eccezione è già UnauthorizedException, rilanciala. Altrimenti, creane una nuova.
             if (e instanceof UnauthorizedException) {
                 throw e;
             }
@@ -77,8 +75,17 @@ public class JWTFilter extends OncePerRequestFilter {
         }
     }
 
+    // 🚨 MODIFICA DI PULIZIA ESEGUITA QUI 🚨
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return new AntPathMatcher().match("/auth/**", request.getServletPath());
+        // Usiamo getServletPath() per ottenere il percorso della richiesta
+        String path = request.getServletPath();
+        AntPathMatcher matcher = new AntPathMatcher();
+        boolean isGetRequest = request.getMethod().equalsIgnoreCase("GET");
+
+        // Ritorna 'true' (non filtrare) per le rotte pubbliche.
+        // La rotta '/uploads/**' è stata rimossa perché ora usiamo Cloudinary.
+        return matcher.match("/auth/**", path) ||
+                matcher.match("/prodotti/**", path); // Permette la lista e il dettaglio
     }
 }

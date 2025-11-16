@@ -1,4 +1,4 @@
-import { Card, Button } from 'react-bootstrap';
+import { Card, Button, Carousel, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 // Il componente riceve un oggetto 'prodotto' come "prop" (proprietà)
@@ -59,7 +59,7 @@ function ProductCard({ prodotto }) {
             <Carousel.Item key={img.id || index}>
               <Card.Img
                 variant='top'
-                src={img.urlImmagine}
+                src={img.url}
                 style={{ height: '200px', objectFit: 'cover' }}
               />
             </Carousel.Item>

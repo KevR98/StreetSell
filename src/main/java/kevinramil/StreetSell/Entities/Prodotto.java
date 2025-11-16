@@ -1,5 +1,6 @@
 package kevinramil.StreetSell.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import kevinramil.StreetSell.Enums.Condizione;
 import kevinramil.StreetSell.Enums.StatoProdotto;
@@ -44,6 +45,7 @@ public class Prodotto {
     // Relazione: Molti prodotti possono appartenere a un solo venditore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venditore_id", nullable = false)
+    @JsonIgnore
     private Utente venditore;
 
     @OneToMany(mappedBy = "prodotto", cascade = CascadeType.ALL, orphanRemoval = true)

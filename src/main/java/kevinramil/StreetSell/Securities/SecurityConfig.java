@@ -3,6 +3,7 @@ package kevinramil.StreetSell.Securities;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -30,7 +31,20 @@ public class SecurityConfig {
         httpSecurity.formLogin(fl -> fl.disable());
         httpSecurity.csrf(csrf -> csrf.disable());
         httpSecurity.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        httpSecurity.authorizeHttpRequests(aut -> aut.requestMatchers("/**").permitAll().anyRequest().authenticated());
+
+        httpSecurity.authorizeHttpRequests(auth -> {
+            // Rotte pubbliche (nessun token richiesto)
+            auth.requestMatchers("/auth/**").permitAll();
+
+            // Solo il METODO GET per prodotti è pubblico
+            auth.requestMatchers(HttpMethod.GET, "/prodotti", "/prodotti/**").permitAll();
+
+            // (Abbiamo già rimosso /uploads/** per Cloudinary, corretto)
+
+            // Rotte private (richiedono il token)
+            auth.anyRequest().authenticated();
+        });
+
         httpSecurity.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         httpSecurity.cors(Customizer.withDefaults());
 
@@ -40,17 +54,13 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Specifica l'URL del tuo frontend. FONDAMENTALE!
+        // L'URL del tuo frontend (Vite)
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-        // Specifica i metodi HTTP permessi
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Specifica gli header permessi
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
-        // Permetti l'invio di credenziali (es. cookie, token di autorizzazione)
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Applica questa configurazione a tutti i percorsi
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

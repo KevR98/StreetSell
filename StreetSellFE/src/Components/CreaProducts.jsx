@@ -11,8 +11,9 @@ import {
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
-function CreaProductPage() {
-  const endpoint = 'http://localhost:8888/prodotti';
+const endpoint = 'http://localhost:8888/prodotti';
+
+function CreaProduct() {
   const [prodotto, setProdotto] = useState({
     titolo: '',
     descrizione: '',
@@ -20,15 +21,19 @@ function CreaProductPage() {
     condizione: 'NUOVO',
     categoria: '',
   });
+
+  // Usiamo 'immagini' per l'array di file
+  const [immagini, setImmagini] = useState([]);
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Default a false
   const navigate = useNavigate();
 
-  const [immagine, setImmagine] = useState([]);
-
-  const immagini = (e) => {
-    setImmagine(Array.from(e.target.files));
+  // Gestore per i file selezionati
+  const handleFileChange = (e) => {
+    // Trasforma FileList in un Array
+    setImmagini(Array.from(e.target.files));
   };
 
   const handleInputChange = (e) => {
@@ -47,6 +52,7 @@ function CreaProductPage() {
 
     const token = localStorage.getItem('accessToken');
 
+    // Controllo Token
     if (!token) {
       setError(
         'Devi essere autenticato per creare un annuncio. Verrai reindirizzato al login'
@@ -59,70 +65,74 @@ function CreaProductPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('prodotto', JSON.stringify(prodotto));
-    // Aggiungi immagini
-    immagine.forEach((img) => formData.append('immagini', img));
+    // Correzione: assicuriamoci che il prezzo sia un numero
+    const prodottoPayload = {
+      ...prodotto,
+      prezzo: parseFloat(prodotto.prezzo),
+    };
 
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
+    const formData = new FormData();
+
+    // 🚨 CORREZIONE CRUCIALE PER MULTIPART/FORM-DATA E JSON 🚨
+    // 1. Convertiamo l'oggetto JSON in un Blob con Content-Type specifico.
+    // Questo aiuta Spring a identificare il payload DTO correttamente e previene
+    // l'interferenza con l'header Authorization.
+    const prodottoBlob = new Blob([JSON.stringify(prodottoPayload)], {
+      type: 'application/json',
+    });
+
+    // Aggiungiamo il Blob a FormData sotto la chiave "prodotto"
+    formData.append('prodotto', prodottoBlob);
+
+    // Aggiungi immagini (la tua logica era corretta)
+    immagini.forEach((img) => formData.append('immagini', img));
 
     fetch(endpoint, {
       method: 'POST',
       body: formData,
       headers: {
+        // 🚨 MANTENIAMO SOLO L'AUTORIZZAZIONE 🚨
         Authorization: `Bearer ${token}`,
+        // NON impostare Content-Type, lo fa il browser per FormData
       },
     })
       .then((res) => {
-        // --- GESTIONE DELLA RISPOSTA ---
-
         // CASO 1: Tutto OK (es. 200, 201)
         if (res.ok) {
-          // Restituiamo la promise con i dati di successo.
-          // Andrà al prossimo .then((data) => ...)
           return res.json();
         }
 
-        // --- CASO 2: C'è un errore (es. 400) ---
-        // Dobbiamo leggere il messaggio d'errore.
-        // res.json() restituisce anch'esso una promise.
-
-        // Creiamo una nuova catena di promise per gestire l'errore
+        // CASO 2: C'è un errore (es. 400, 403, 500)
         return res.json().then(
           (errorData) => {
-            // Piano A: Siamo riusciti a leggere il JSON di errore
+            // Tentativo di leggere il JSON di errore (es. ValidationException)
             let errorMessage = 'Errore sconosciuto';
             if (Array.isArray(errorData)) {
-              errorMessage = errorData.join('; ');
+              errorMessage = errorData.join('; '); // Unisce gli errori di validazione
             } else if (errorData.message) {
               errorMessage = errorData.message;
+            } else {
+              errorMessage = `Errore HTTP ${res.status}: ${res.statusText}`;
             }
 
             // Lanciamo l'errore per farlo "saltare" al .catch() finale
             throw new Error(errorMessage);
           },
           () => {
-            // Piano B: res.json() è fallito (risposta non JSON)
-            // Questo blocco .catch() interno gestisce il fallimento di res.json()
-            const errorMessage = `Errore HTTP ${res.status}: ${res.statusText}`;
-
-            // Lanciamo l'errore per farlo "saltare" al .catch() finale
-            throw new Error(errorMessage);
+            // Piano B: Fallito il tentativo di leggere il JSON (es. 403 o 500 nudo)
+            throw new Error(`Errore HTTP ${res.status}: ${res.statusText}`);
           }
         );
       })
       .then((data) => {
-        // --- SOLO SE LA CHIAMATA È ANDATA BENE ---
-        // Questo blocco viene eseguito SOLO se res.ok era true.
-        // 'data' contiene il JSON di successo.
-        setSuccess('Annuncio creato con successo!');
+        // Successo!
+        setSuccess('Annuncio creato con successo! Reindirizzamento...');
         setTimeout(() => {
           navigate(`/products/${data.id}`);
         }, 2000);
       })
       .catch((err) => {
+        // Cattura qualsiasi errore lanciato (di rete, HTTP, o Validazione)
         setError(err.message);
         setIsLoading(false);
       });
@@ -139,6 +149,7 @@ function CreaProductPage() {
               </Card.Title>
 
               <Form onSubmit={creaProdotto}>
+                {/* Campi Form... */}
                 <Form.Group className='mb-3'>
                   <Form.Label>Titolo dell'annuncio</Form.Label>
                   <Form.Control
@@ -161,13 +172,18 @@ function CreaProductPage() {
                     required
                   />
                 </Form.Group>
-                <input
-                  type='file'
-                  name='immagine'
-                  accept='image/*'
-                  multiple
-                  onChange={immagini}
-                />
+
+                {/* Input File Immagini */}
+                <Form.Group className='mb-3'>
+                  <Form.Label>Carica Immagini</Form.Label>
+                  <Form.Control
+                    type='file'
+                    name='immagini'
+                    accept='image/*'
+                    multiple
+                    onChange={handleFileChange} // Usiamo la nuova funzione
+                  />
+                </Form.Group>
 
                 <Row>
                   <Col md={6}>
@@ -204,7 +220,6 @@ function CreaProductPage() {
                     value={prodotto.condizione}
                     onChange={handleInputChange}
                   >
-                    {/* Assicurati che questi valori corrispondano al tuo Enum in Java */}
                     <option value='NUOVO'>Nuovo</option>
                     <option value='COME_NUOVO'>Usato - Come nuovo</option>
                     <option value='BUONO'>Usato - Buone condizioni</option>
@@ -241,4 +256,4 @@ function CreaProductPage() {
   );
 }
 
-export default CreaProductPage;
+export default CreaProduct;

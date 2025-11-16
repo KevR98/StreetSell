@@ -1,4 +1,4 @@
-package kevinramil.StreetSell.Securities;
+package kevinramil.StreetSell.Configurations;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
