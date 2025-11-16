@@ -86,6 +86,9 @@ function ProductCard({ prodotto }) {
       {/* Corpo della Card */}
       <Card.Body className='d-flex flex-column'>
         <Card.Title>{prodotto.titolo}</Card.Title>
+        <Card.Text className='text-muted small'>
+          Venditore: <strong>{prodotto.venditore?.username}</strong>
+        </Card.Text>
         <Card.Text className='text-secondary' style={{ fontSize: '0.9em' }}>
           **Condizione:** {displayCondizione(prodotto.condizione)}
         </Card.Text>
@@ -98,7 +101,7 @@ function ProductCard({ prodotto }) {
 
         <Button
           as={Link}
-          to={`/products/${prodotto.id}`}
+          to={`/prodotto/${prodotto.id}`}
           variant='primary'
           className='mt-auto'
         >
