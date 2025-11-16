@@ -123,11 +123,6 @@ function CreaProductPage() {
         }, 2000);
       })
       .catch((err) => {
-        // --- GESTIONE DI QUALSIASI ERRORE ---
-        // Questo .catch() riceve tutti gli errori lanciati:
-        // 1. Errori di rete (se il fetch fallisce)
-        // 2. L'errore lanciato dal "Piano A" (JSON di errore letto)
-        // 3. L'errore lanciato dal "Piano B" (JSON di errore non letto)
         setError(err.message);
         setIsLoading(false);
       });
