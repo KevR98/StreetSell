@@ -9,8 +9,30 @@ import CreaProductPage from './Components/CreaProducts';
 import Home from './Components/Home';
 import Details from './Components/Details';
 import ProfileProductPage from './Components/ProfileProductPage';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { logout } from './Redux/Action';
 
 function App() {
+  const dispatch = useDispatch();
+  const token = localStorage.getItem('accessToken');
+  useEffect(() => {
+    // Logica di ricarica dell'utente... (lasciata intatta)
+    if (token) {
+      fetch('http://localhost:8888/utenti/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        // ... logica omessa ...
+        .catch((error) => {
+          console.error('Errore nel recupero utente:', error);
+          localStorage.removeItem('accessToken');
+          dispatch(logout());
+        });
+    }
+  }, [dispatch, token]);
+
   return (
     <>
       <BrowserRouter>
@@ -18,8 +40,8 @@ function App() {
           <MyNavbar />
           <div className='flex-grow-1'>
             <Routes>
-              <Route path='/' element={<Home />} />
-              <Route path='/' element={<HomePage />} />
+              {/* 🛑 DEVI USARE QUI UN REDIRECT COMPONENT PER LA LOGICA CONDIZIONALE */}
+              <Route path='/' element={token ? <HomePage /> : <Home />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<RegisterPage />} />
               <Route path='/crea-prodotto' element={<CreaProductPage />} />

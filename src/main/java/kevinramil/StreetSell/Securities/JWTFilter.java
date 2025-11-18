@@ -80,14 +80,20 @@ public class JWTFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         AntPathMatcher matcher = new AntPathMatcher();
 
-        // 1. Escludi /auth/** (Login/Registrazione)
+        // Rotte da ESCLUDERE dal filtro (rotte pubbliche)
         boolean isAuthRoute = matcher.match("/auth/**", path);
 
-        // 2. Escludi solo i GET per i prodotti (/prodotti, /prodotti/{id}, ecc.)
-        boolean isPublicGet = request.getMethod().equalsIgnoreCase("GET") && matcher.match("/prodotti/**", path);
+        // Rotta del profilo utente (deve essere protetta)
+        boolean isProtectedMeRoute = matcher.match("/prodotti/me", path);
 
-        // Ritorna TRUE (non filtrare/saltare) se è una rotta di Auth O se è una richiesta GET pubblica.
-        // Tutte le altre (POST, PUT, DELETE) DEVONO essere filtrate.
+        // Rotte GET pubbliche generali (es. lista prodotti pubblici, dettagli prodotto)
+        // Tutta la rotta /prodotti/** è pubblica TRANNE /prodotti/me
+        boolean isPublicGet = request.getMethod().equalsIgnoreCase("GET")
+                && matcher.match("/prodotti/**", path)
+                && !isProtectedMeRoute; // 🛑 ASSICURATI DI NON SALTARE LA ROTTA /me
+
+        // Se la rotta è /prodotti/me, isProtectedMeRoute è TRUE, isPublicGet è FALSE
+        // Il filtro sarà eseguito perché la condizione qui sotto sarà FALSE.
         return isAuthRoute || isPublicGet;
     }
 }

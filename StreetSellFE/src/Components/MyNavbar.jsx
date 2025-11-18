@@ -1,4 +1,4 @@
-import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import { Container, Nav, Navbar, NavDropdown, Spinner } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
@@ -6,8 +6,19 @@ import { logout } from '../Redux/Action';
 function MyNavbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Legge il token dal browser
   const token = localStorage.getItem('accessToken');
+
+  // Legge lo username da Redux (potrebbe essere undefined all'avvio)
   const username = useSelector((state) => state.auth.user?.username);
+
+  // STATO 3: Loggato E Dati Utente Caricati
+  const isLoggedInAndLoaded = token && username;
+
+  // STATO 2: Loggato MA Dati Utente in Caricamento (solo token presente)
+  const isLoadingUserData = token && !username;
+
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     dispatch(logout());
@@ -30,34 +41,39 @@ function MyNavbar() {
             </Nav.Link>
           </Nav>
 
-          {/* Menu Utente a Destra (ml-auto spinge a destra) */}
+          {/* Menu Utente a Destra (ms-auto) */}
           <Nav className='ms-auto'>
-            {!token && (
+            {/* STATO 1: OFFLINE (Mostra Login) */}
+            {!token && !isLoadingUserData && (
               <Nav.Link as={Link} to='/login'>
                 Login
               </Nav.Link>
             )}
 
-            {token && (
+            {/* STATO 2: CARICAMENTO (Mostra Spinner) */}
+            {isLoadingUserData && (
+              <Nav.Item className='d-flex align-items-center'>
+                <Spinner animation='border' size='sm' className='me-2' />
+              </Nav.Item>
+            )}
+
+            {/* STATO 3: ONLINE E CARICATO (Mostra Dropdown) */}
+            {isLoggedInAndLoaded && (
               <NavDropdown
-                // Il 'title' del dropdown è il tuo 'Ciao, Username'
-                title={`Ciao, ${username || 'Utente'}`}
+                title={`Ciao, ${username}`}
                 id='basic-nav-dropdown'
-                align='end' // Allinea il menu a tendina a destra per adattarsi alla Navbar
+                align='end'
               >
-                {/* 1. Funzione Profilo */}
-                <NavDropdown.Item as={Link} to='/null'>
+                <NavDropdown.Item as={Link} to='/me'>
                   Il Mio Profilo
                 </NavDropdown.Item>
 
-                {/* 2. Funzione I Miei Prodotti */}
                 <NavDropdown.Item as={Link} to='/prodotti/me'>
                   I Miei Prodotti
                 </NavDropdown.Item>
 
                 <NavDropdown.Divider />
 
-                {/* 3. Funzione Logout */}
                 <NavDropdown.Item onClick={handleLogout}>
                   Logout
                 </NavDropdown.Item>

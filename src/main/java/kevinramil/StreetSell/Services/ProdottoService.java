@@ -122,9 +122,10 @@ public class ProdottoService {
         prodottoRepository.save(prodotto);
     }
 
+    @Transactional
     public Page<Prodotto> findProdottiByVenditore(Utente venditore, Pageable pageable) {
 
         return prodottoRepository.findByVenditore(venditore, pageable);
     }
-    
+
 }
