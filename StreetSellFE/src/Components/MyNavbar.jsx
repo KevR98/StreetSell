@@ -28,7 +28,9 @@ function MyNavbar() {
   return (
     <Navbar expand='lg' className='bg-body-tertiary'>
       <Container>
-        <Navbar.Brand href='/'>StreetSell</Navbar.Brand>
+        <Navbar.Brand as={Link} to='/'>
+          StreetSell
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
         <Navbar.Collapse id='basic-navbar-nav'>
           {/* Menu Principale a Sinistra */}

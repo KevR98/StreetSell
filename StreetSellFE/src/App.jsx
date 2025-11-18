@@ -10,12 +10,15 @@ import Home from './Components/Home';
 import Details from './Components/Details';
 import ProfileProductPage from './Components/ProfileProductPage';
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout } from './Redux/Action';
+import Profile from './Components/ProfilePage';
+import ProfilePage from './Components/ProfilePage';
 
 function App() {
   const dispatch = useDispatch();
   const token = localStorage.getItem('accessToken');
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   useEffect(() => {
     // Logica di ricarica dell'utente... (lasciata intatta)
     if (token) {
@@ -41,12 +44,16 @@ function App() {
           <div className='flex-grow-1'>
             <Routes>
               {/* 🛑 DEVI USARE QUI UN REDIRECT COMPONENT PER LA LOGICA CONDIZIONALE */}
-              <Route path='/' element={token ? <HomePage /> : <Home />} />
+              <Route
+                path='/'
+                element={isAuthenticated ? <Home /> : <HomePage />}
+              />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<RegisterPage />} />
               <Route path='/crea-prodotto' element={<CreaProductPage />} />
               <Route path='/prodotto/:prodottoId' element={<Details />} />
               <Route path='/prodotti/me' element={<ProfileProductPage />} />
+              <Route path='/me' element={<ProfilePage />} />
             </Routes>
           </div>
           <MyFooter />
