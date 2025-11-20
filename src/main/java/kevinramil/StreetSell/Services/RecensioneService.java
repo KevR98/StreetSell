@@ -10,8 +10,12 @@ import kevinramil.StreetSell.Payloads.RecensioneDTO;
 import kevinramil.StreetSell.Repositories.OrdineRepository;
 import kevinramil.StreetSell.Repositories.RecensioneRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 public class RecensioneService {
@@ -20,8 +24,10 @@ public class RecensioneService {
     private RecensioneRepository recensioneRepository;
     @Autowired
     private OrdineRepository ordineRepository;
-    // Non ci serve UtenteRepository qui perché l'utente ci viene passato già "trovato"
+    @Autowired
+    private UtenteService utenteService; // Iniettato per trovare l'utente recensito
 
+    // --- METODO DI CREAZIONE (POST) ---
     @Transactional
     public Recensione creaRecensione(RecensioneDTO body, Utente recensore) {
         // 1. Trovo l'ordine che si vuole recensire
@@ -34,12 +40,11 @@ public class RecensioneService {
         }
 
         // 3. Controllo che l'ordine sia stato completato
-        // Usiamo l'enum StatoOrdine.COMPLETATO che hai definito. Ottimo!
         if (ordine.getStatoOrdine() != StatoOrdine.COMPLETATO) {
             throw new BadRequestException("Puoi recensire un ordine solo dopo che è stato segnato come 'COMPLETATO'.");
         }
 
-        // 4. Controllo che non esista già una recensione per questo ordine
+        // 4. Controllo che non esista già una recensione per questo ordine (dal compratore)
         if (recensioneRepository.existsByOrdineId(ordine.getId())) {
             throw new BadRequestException("Hai già lasciato una recensione per questo ordine.");
         }
@@ -49,16 +54,40 @@ public class RecensioneService {
         nuovaRecensione.setValutazione(body.valutazione());
         nuovaRecensione.setCommento(body.commento());
         nuovaRecensione.setOrdine(ordine);
-        nuovaRecensione.setRecensore(recensore); // L'utente loggato
+        nuovaRecensione.setRecensore(recensore);
 
-        // Il recensito è il venditore del prodotto in quell'ordine
-        Utente recensito = ordine.getProdotto().getVenditore();
+        // Il recensito è il venditore dell'ordine
+        // Nota: Questo funziona perché abbiamo aggiunto Utente venditore all'entità Ordine.
+        Utente recensito = ordine.getVenditore();
         nuovaRecensione.setRecensito(recensito);
-
-        // La data di creazione è gestita automaticamente dalla tua entità con @PrePersist
 
         return recensioneRepository.save(nuovaRecensione);
     }
 
-    // Potremmo aggiungere altri metodi qui in futuro (es. findRecensioniByUtente)
+    // --- METODO DI LETTURA (GET per Pagina Profilo) ---
+    public Page<Recensione> findRecensioniRicevute(UUID recensitoId, Pageable pageable) {
+        // 1. Troviamo l'utente da recensire (lancia NotFoundException se non esiste)
+        Utente utenteRecensito = utenteService.findById(recensitoId);
+
+        // 2. Cerchiamo le recensioni che l'utente ha ricevuto
+        return recensioneRepository.findByRecensito(utenteRecensito, pageable);
+    }
+
+    // --- METODO DI CALCOLO RATING MEDIO ---
+    public Double calcolaRatingMedio(UUID utenteId) {
+        Utente utente = utenteService.findById(utenteId);
+
+        // 1. Chiama il Repository per calcolare la media SQL
+        Double media = recensioneRepository.calcolaMediaRating(utente);
+
+        // 2. 🛑 CORREZIONE APPLICATA: Se AVG() in SQL non trova righe, restituisce NULL.
+        // Lo convertiamo in 0.0 per evitare errori nel frontend.
+        return media != null ? media : 0.0;
+    }
+
+    // --- METODO DI CONTEGGIO RECENSIONI ---
+    public int contaRecensioni(UUID utenteId) {
+        Utente utente = utenteService.findById(utenteId);
+        return recensioneRepository.countByRecensito(utente);
+    }
 }

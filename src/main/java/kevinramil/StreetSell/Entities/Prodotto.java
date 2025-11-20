@@ -28,7 +28,7 @@ public class Prodotto {
     @Column(nullable = false)
     private String titolo;
 
-    @Lob // Per testi lunghi
+    @Column(columnDefinition = "TEXT")
     private String descrizione;
 
     @Column(nullable = false)
