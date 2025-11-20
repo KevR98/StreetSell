@@ -12,7 +12,6 @@ import ProfileProductPage from './Components/ProfileProductPage';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from './Redux/Action';
-import Profile from './Components/ProfilePage';
 import ProfilePage from './Components/ProfilePage';
 
 function App() {
