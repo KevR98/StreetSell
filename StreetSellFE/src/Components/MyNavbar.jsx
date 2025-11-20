@@ -1,4 +1,13 @@
-import { Container, Nav, Navbar, NavDropdown, Spinner } from 'react-bootstrap';
+import {
+  Button,
+  Container,
+  Nav,
+  Navbar,
+  NavDropdown,
+  Spinner,
+  Form,
+  FormControl,
+} from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
@@ -38,10 +47,19 @@ function MyNavbar() {
             <Nav.Link as={Link} to='/'>
               Home
             </Nav.Link>
-            <Nav.Link as={Link} to='/crea-prodotto'>
-              Vendi
-            </Nav.Link>
           </Nav>
+
+          <Form className='d-flex mx-auto' style={{ maxWidth: '400px' }}>
+            <FormControl
+              type='search'
+              placeholder='Cerca prodotti...'
+              className='me-2'
+              aria-label='Search'
+              // NOTA: Qui andrebbero i props value={query} e onChange={handleChange}
+            />
+            <Button variant='outline-success'>Cerca</Button>
+            {/* NOTA: Il Button type="submit" andrebbe gestito con una funzione onSubmit */}
+          </Form>
 
           {/* Menu Utente a Destra (ms-auto) */}
           <Nav className='ms-auto'>
@@ -72,6 +90,10 @@ function MyNavbar() {
 
                 <NavDropdown.Item as={Link} to='/prodotti/me'>
                   I Miei Prodotti
+                </NavDropdown.Item>
+
+                <NavDropdown.Item as={Link} to='/crea-prodotto'>
+                  Vendi
                 </NavDropdown.Item>
 
                 <NavDropdown.Divider />
