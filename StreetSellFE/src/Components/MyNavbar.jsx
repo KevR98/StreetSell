@@ -12,7 +12,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
 import logo from '../assets/streetsell-logo.png';
-import { BsBoxArrowRight } from 'react-icons/bs';
+import {
+  BsBoxArrowRight,
+  BsFillTagFill,
+  BsBoxSeamFill,
+  BsPersonFill,
+} from 'react-icons/bs';
 
 function MyNavbar() {
   const dispatch = useDispatch();
@@ -37,14 +42,14 @@ function MyNavbar() {
   };
 
   return (
-    <Navbar expand='lg' className='bg-body-tertiary'>
+    <Navbar expand='lg' className='bg-dark' data-bs-theme='dark'>
       <Container>
-        <Navbar.Brand as={Link} to='/'>
+        <Navbar.Brand as={Link} to='/' className='d-flex align-items-center'>
           <img
             src={logo} // Usa la variabile importata
             alt='StreetSell Logo'
-            height='50' // Imposta l'altezza per allinearlo alla navbar
-            className='d-inline-block align-top' // Classi Bootstrap per l'allineamento
+            height='70' // Imposta l'altezza per allinearlo alla navbar
+            className='d-inline-block' // Classi Bootstrap per l'allineamento
           />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
@@ -91,15 +96,30 @@ function MyNavbar() {
                 id='basic-nav-dropdown'
                 align='end'
               >
-                <NavDropdown.Item as={Link} to='/me'>
+                <NavDropdown.Item
+                  as={Link}
+                  to='/me'
+                  className='d-flex align-items-center'
+                >
+                  <BsPersonFill style={{ marginRight: '8px' }} />
                   Il Mio Profilo
                 </NavDropdown.Item>
 
-                <NavDropdown.Item as={Link} to='/prodotti/me'>
-                  I Miei Prodotti
+                <NavDropdown.Item
+                  as={Link}
+                  to='/prodotti/me'
+                  className='d-flex align-items-center'
+                >
+                  <BsBoxSeamFill style={{ marginRight: '8px' }} />I Miei
+                  Prodotti
                 </NavDropdown.Item>
 
-                <NavDropdown.Item as={Link} to='/crea-prodotto'>
+                <NavDropdown.Item
+                  as={Link}
+                  to='/crea-prodotto'
+                  className='d-flex align-items-center'
+                >
+                  <BsFillTagFill style={{ marginRight: '8px' }} />
                   Vendi
                 </NavDropdown.Item>
 
@@ -109,7 +129,6 @@ function MyNavbar() {
                   onClick={handleLogout}
                   className='d-flex align-items-center text-danger'
                 >
-                  {/* 🛑 MODIFICA 1: Aggiunto d-flex e align-items-center all'Item */}
                   <BsBoxArrowRight style={{ marginRight: '8px' }} />
                   Logout
                 </NavDropdown.Item>

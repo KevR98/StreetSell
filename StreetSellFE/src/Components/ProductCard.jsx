@@ -46,69 +46,93 @@ function ProductCard({ prodotto }) {
     }
   };
 
+  const TWENTY_MINUTES = 20 * 60 * 1000;
+
+  const getDisplayDate = (createdAt) => {
+    if (!createdAt) {
+      return 'Data non disponibile';
+    }
+
+    const createdDate = new Date(createdAt);
+    const now = Date.now();
+    const diff = now - createdDate.getTime();
+    if (diff <= TWENTY_MINUTES) {
+      // 1. Logica 'Minuti fa'
+      const minutes = Math.floor(diff / (60 * 1000));
+      if (minutes === 0) return 'Pubblicato ora';
+      return `Pubblicato ${minutes} minuti fa`;
+    }
+    const datePart = createdDate.toLocaleDateString('it-IT');
+    const timePart = createdDate.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    return `${datePart} alle ${timePart}`;
+  };
+
+  const formattedDate = getDisplayDate(prodotto.createdAt);
+
   return (
-    <Card className='h-100 shadow-sm'>
-      {/* 2. AREA CAROUSEL: Sostituisce Card.Img */}
-      <div style={{ position: 'relative' }}>
-        <Carousel
-          interval={null} // Non scorre automaticamente
-          controls={immaginiCarousel.length > 1} // Mostra frecce solo se ci sono più di 1 foto
-          indicators={false} // Rimuove i puntini sotto l'immagine per essere più compatti
-        >
-          {immaginiCarousel.map((img, index) => (
-            <Carousel.Item key={img.id || index}>
-              <Card.Img
-                variant='top'
-                src={img.url}
-                style={{ height: '200px', objectFit: 'cover' }}
-              />
-            </Carousel.Item>
-          ))}
-        </Carousel>
-
-        {/* Badge del Conteggio Foto (opzionale, ma utile) */}
-        {numeroImmagini > 1 && (
-          <Badge
-            pill
-            bg='dark'
-            style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              zIndex: 10,
-            }}
+    <Link
+      as={Link}
+      to={`/prodotto/${prodotto.id}`}
+      style={{ textDecoration: 'none', color: 'inherit' }}
+    >
+      <Card className='h- border-0 shadow-sm'>
+        {/* 2. AREA CAROUSEL: Sostituisce Card.Img */}
+        <div style={{ position: 'relative' }}>
+          <Carousel
+            interval={null} // Non scorre automaticamente
+            controls={immaginiCarousel.length > 1} // Mostra frecce solo se ci sono più di 1 foto
+            indicators={false} // Rimuove i puntini sotto l'immagine per essere più compatti
           >
-            {numeroImmagini} Foto
-          </Badge>
-        )}
-      </div>
+            {immaginiCarousel.map((img, index) => (
+              <Carousel.Item key={img.id || index}>
+                <Card.Img
+                  variant='top'
+                  src={img.url}
+                  style={{ height: '200px', objectFit: 'cover' }}
+                />
+              </Carousel.Item>
+            ))}
+          </Carousel>
 
-      {/* Corpo della Card */}
-      <Card.Body className='d-flex flex-column'>
-        <Card.Title>{prodotto.titolo}</Card.Title>
-        <Card.Text className='text-muted small'>
-          Venditore: <strong>{prodotto.venditore?.username}</strong>
-        </Card.Text>
-        <Card.Text className='text-secondary' style={{ fontSize: '0.9em' }}>
-          **Condizione:** {displayCondizione(prodotto.condizione)}
-        </Card.Text>
-        <Card.Text className='text-success' style={{ fontSize: '1.2em' }}>
-          <strong>
-            € {prodotto.prezzo ? prodotto.prezzo.toFixed(2) : 'N/D'}
-          </strong>
-        </Card.Text>
-        <Card.Text>{shortDescription}</Card.Text>
+          {/* Badge del Conteggio Foto (opzionale, ma utile) */}
+          {numeroImmagini > 1 && (
+            <Badge
+              pill
+              bg='dark'
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                zIndex: 10,
+              }}
+            >
+              {numeroImmagini} Foto
+            </Badge>
+          )}
+        </div>
 
-        <Button
-          as={Link}
-          to={`/prodotto/${prodotto.id}`}
-          variant='primary'
-          className='mt-auto'
-        >
-          Vedi Dettagli
-        </Button>
-      </Card.Body>
-    </Card>
+        {/* Corpo della Card */}
+        <Card.Body className='d-flex flex-column'>
+          <Card.Title>{prodotto.titolo}</Card.Title>
+          <Card.Text>Descrizione: {shortDescription}</Card.Text>
+          <Card.Text style={{ fontSize: '0.9em' }}>
+            {displayCondizione(prodotto.condizione)}
+          </Card.Text>
+          <Card.Text style={{ fontSize: '0.9em' }}>
+            <strong>
+              {prodotto.prezzo ? prodotto.prezzo.toFixed(2) : 'N/D'} €
+            </strong>
+          </Card.Text>
+          <Card.Text className='text-secondary small mb-2'>
+            Pubblicato il: <strong>{formattedDate}</strong>
+          </Card.Text>
+        </Card.Body>
+      </Card>
+    </Link>
   );
 }
 
