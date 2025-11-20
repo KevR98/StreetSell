@@ -11,6 +11,8 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
+import logo from '../assets/streetsell-logo.png';
+import { BsBoxArrowRight } from 'react-icons/bs';
 
 function MyNavbar() {
   const dispatch = useDispatch();
@@ -38,7 +40,12 @@ function MyNavbar() {
     <Navbar expand='lg' className='bg-body-tertiary'>
       <Container>
         <Navbar.Brand as={Link} to='/'>
-          StreetSell
+          <img
+            src={logo} // Usa la variabile importata
+            alt='StreetSell Logo'
+            height='50' // Imposta l'altezza per allinearlo alla navbar
+            className='d-inline-block align-top' // Classi Bootstrap per l'allineamento
+          />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
         <Navbar.Collapse id='basic-navbar-nav'>
@@ -98,7 +105,12 @@ function MyNavbar() {
 
                 <NavDropdown.Divider />
 
-                <NavDropdown.Item onClick={handleLogout}>
+                <NavDropdown.Item
+                  onClick={handleLogout}
+                  className='d-flex align-items-center text-danger'
+                >
+                  {/* 🛑 MODIFICA 1: Aggiunto d-flex e align-items-center all'Item */}
+                  <BsBoxArrowRight style={{ marginRight: '8px' }} />
                   Logout
                 </NavDropdown.Item>
               </NavDropdown>

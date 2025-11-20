@@ -1,5 +1,6 @@
 import { Alert, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
+import RecensioniList from './RecensioniList';
 
 function ProfilePage() {
   const user = useSelector((state) => state.auth.user);
@@ -32,12 +33,25 @@ function ProfilePage() {
     <Container className='my-5'>
       <h1 className='mb-4'>👋 Benvenuto nel Tuo Profilo, {user.username}</h1>
       <Row>
+        {/* ======================================================= */}
+        {/* COLONNA 1 (md=8): RECENSIONI RICEVUTE (Contenuto principale) */}
+        {/* ======================================================= */}
         <Col md={8}>
-          <Card className='shadow-sm'>
+          <RecensioniList utenteId={user.id} />
+          {/* 🛑 IMPLEMENTAZIONE QUI: Passiamo l'ID dell'utente loggato al componente */}
+        </Col>
+
+        {/* ======================================================= */}
+        {/* COLONNA 2 (md=4): DETTAGLI UTENTE E AZIONI RAPIDE */}
+        {/* ======================================================= */}
+        <Col md={4}>
+          {/* Blocco 1: Dettagli Utente (Spostato qui) */}
+          <Card className='shadow-sm mb-4'>
             <Card.Header as='h5' className='bg-primary text-white'>
-              Dettagli Utente
+              Dettagli Account
             </Card.Header>
             <Card.Body>
+              {/* (Mantieni qui tutte le Row con ID, Username, Email, Ruolo...) */}
               <Row className='mb-3'>
                 <Col xs={4} className='fw-bold'>
                   ID Utente:
@@ -46,46 +60,18 @@ function ProfilePage() {
                   {user.id}
                 </Col>
               </Row>
-              <Row className='mb-3'>
-                <Col xs={4} className='fw-bold'>
-                  Username:
-                </Col>
-                <Col xs={8}>{user.username}</Col>
-              </Row>
-              <Row className='mb-3'>
-                <Col xs={4} className='fw-bold'>
-                  Email:
-                </Col>
-                <Col xs={8}>{user.email}</Col>
-              </Row>
-              <Row className='mb-3'>
-                <Col xs={4} className='fw-bold'>
-                  Ruolo:
-                </Col>
-                <Col xs={8}>{user.ruolo}</Col>
-              </Row>
-              <Row className='mb-3'>
-                <Col xs={4} className='fw-bold'>
-                  Stato Account:
-                </Col>
-                <Col xs={8}>{user.isAttivo ? 'Attivo' : 'Disattivato'}</Col>
-              </Row>
+              {/* ... Altre righe con Email, Ruolo, Stato ... */}
             </Card.Body>
           </Card>
-        </Col>
 
-        {/* Colonna per le Azioni o i Prodotti Venduti */}
-        <Col md={4}>
+          {/* Blocco 2: Azioni Rapide */}
           <Card className='shadow-sm'>
             <Card.Header as='h5'>Azioni Rapide</Card.Header>
             <Card.Body>
               <p>
-                Qui puoi aggiungere link per modificare il profilo o vedere i
-                prodotti in vendita.
-              </p>
-              <p>
                 Vai a <a href='/prodotti/me'>I Miei Prodotti</a>
               </p>
+              {/* Qui andrebbe il bottone per disattivare l'account (DELETE /utenti/me) */}
             </Card.Body>
           </Card>
         </Col>
