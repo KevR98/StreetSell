@@ -22,10 +22,11 @@ public class Recensione {
     @Column(nullable = false)
     private int valutazione; // Es. un valore da 1 a 5
 
-    @Lob // Per commenti potenzialmente lunghi
+    @Column(columnDefinition = "TEXT")
     private String commento;
 
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false, nullable = false)
+    @org.hibernate.annotations.CreationTimestamp
     private LocalDateTime dataCreazione;
 
     // --- RELAZIONI FONDAMENTALI ---
@@ -44,12 +45,5 @@ public class Recensione {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recensito_id", nullable = false)
     private Utente recensito;
-
-    // Metodo per impostare la data di creazione automaticamente
-    @PrePersist
-    public void prePersist() {
-        if (dataCreazione == null) {
-            dataCreazione = LocalDateTime.now();
-        }
-    }
+    
 }

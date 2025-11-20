@@ -26,6 +26,10 @@ public class Ordine {
     @JoinColumn(name = "compratore_id", nullable = false)
     private Utente compratore;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venditore_id", nullable = false)
+    private Utente venditore;
+
     // Relazione: Un ordine è per un solo prodotto
     @OneToOne
     @JoinColumn(name = "prodotto_id", referencedColumnName = "id")
