@@ -8,25 +8,34 @@ import RegisterPage from './Components/RegisterPage';
 import CreaProductPage from './Components/CreaProducts';
 import Home from './Components/Home';
 import Details from './Components/Details';
-import ProfileProductPage from './Components/ProfileProductPage';
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from './Redux/Action';
 import ProfilePage from './Components/ProfilePage';
+import ProfileProductPage from './Components/ProfileProductPage';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { setUser, logout } from './Redux/Action';
 
 function App() {
   const dispatch = useDispatch();
   const token = localStorage.getItem('accessToken');
+
+  // Leggiamo se l'utente è autenticato da Redux
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+
+  // Logica per mantenere il login al ricaricamento della pagina
   useEffect(() => {
-    // Logica di ricarica dell'utente... (lasciata intatta)
     if (token) {
       fetch('http://localhost:8888/utenti/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
-        // ... logica omessa ...
+        .then((res) => {
+          if (!res.ok) throw new Error('Token non valido');
+          return res.json();
+        })
+        .then((userResponse) => {
+          dispatch(setUser(userResponse));
+        })
         .catch((error) => {
           console.error('Errore nel recupero utente:', error);
           localStorage.removeItem('accessToken');
@@ -34,31 +43,40 @@ function App() {
         });
     }
   }, [dispatch, token]);
-
   return (
-    <>
-      <BrowserRouter>
-        <div className='d-flex flex-column min-vh-100'>
-          <MyNavbar />
-          <div className='flex-grow-1'>
-            <Routes>
-              {/* 🛑 DEVI USARE QUI UN REDIRECT COMPONENT PER LA LOGICA CONDIZIONALE */}
-              <Route
-                path='/'
-                element={isAuthenticated ? <Home /> : <HomePage />}
-              />
-              <Route path='/login' element={<Login />} />
-              <Route path='/register' element={<RegisterPage />} />
-              <Route path='/crea-prodotto' element={<CreaProductPage />} />
-              <Route path='/prodotto/:prodottoId' element={<Details />} />
-              <Route path='/prodotti/me' element={<ProfileProductPage />} />
-              <Route path='/me' element={<ProfilePage />} />
-            </Routes>
-          </div>
-          <MyFooter />
+    <BrowserRouter>
+      <div className='d-flex flex-column min-vh-100'>
+        <MyNavbar />
+        <div className='flex-grow-1'>
+          <Routes>
+            {/* 1. LOGICA HOME CONDIZIONALE: Mostra Home se loggato, HomePage se logout */}
+            <Route
+              path='/'
+              element={isAuthenticated ? <Home /> : <HomePage />}
+            />
+
+            {/* 2. AUTH */}
+            <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<RegisterPage />} />
+
+            {/* 3. PRODOTTI (Creazione e Modifica) */}
+            <Route path='/crea-prodotto' element={<CreaProductPage />} />
+            <Route
+              path='/modifica-prodotto/:id'
+              element={<CreaProductPage />}
+            />
+
+            {/* 4. DETTAGLIO (Corretto al PLURALE per matchare i link) */}
+            <Route path='/prodotto/:prodottoId' element={<Details />} />
+
+            {/* 5. PROFILO UTENTE */}
+            <Route path='/prodotti/me' element={<ProfileProductPage />} />
+            <Route path='/me' element={<ProfilePage />} />
+          </Routes>
         </div>
-      </BrowserRouter>
-    </>
+        <MyFooter />
+      </div>
+    </BrowserRouter>
   );
 }
 

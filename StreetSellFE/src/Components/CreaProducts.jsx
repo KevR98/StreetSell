@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -8,12 +8,18 @@ import {
   Form,
   Row,
   Spinner,
+  Image,
 } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
-function CreaProduct() {
+function CreaProductPage() {
+  const { id } = useParams();
+  const isEditing = !!id;
+  const navigate = useNavigate();
+  const token = localStorage.getItem('accessToken');
+
   const [prodotto, setProdotto] = useState({
     titolo: '',
     descrizione: '',
@@ -22,136 +28,176 @@ function CreaProduct() {
     categoria: '',
   });
 
-  // Usiamo 'immagini' per l'array di file
-  const [immagini, setImmagini] = useState([]);
+  // Immagini nuove da caricare
+  const [nuoveImmagini, setNuoveImmagini] = useState([]);
+  // Immagini esistenti (solo in modifica)
+  const [immaginiEsistenti, setImmaginiEsistenti] = useState([]);
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Default a false
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingData, setIsFetchingData] = useState(false);
 
-  // Gestore per i file selezionati
+  // Caricamento dati iniziali per modifica
+  useEffect(() => {
+    if (isEditing) {
+      setIsFetchingData(true);
+      fetch(`${endpoint}/${id}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Errore nel recupero del prodotto');
+        })
+        .then((data) => {
+          setProdotto({
+            titolo: data.titolo,
+            descrizione: data.descrizione,
+            prezzo: data.prezzo,
+            condizione: data.condizione,
+            categoria: data.categoria,
+          });
+          setImmaginiEsistenti(data.immagini || []);
+          setIsFetchingData(false);
+        })
+        .catch((err) => {
+          setError(err.message);
+          setIsFetchingData(false);
+        });
+    }
+  }, [id, isEditing]);
+
+  // Gestione input file
   const handleFileChange = (e) => {
-    // Trasforma FileList in un Array
-    setImmagini(Array.from(e.target.files));
+    setNuoveImmagini(Array.from(e.target.files));
   };
 
+  // Gestione input testo
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProdotto({
-      ...prodotto,
-      [name]: value,
-    });
+    setProdotto({ ...prodotto, [name]: value });
   };
 
-  const creaProdotto = (event) => {
+  // Gestione eliminazione singola immagine esistente
+  const handleDeleteExistingImage = (imgId) => {
+    if (!window.confirm('Vuoi davvero eliminare questa immagine?')) return;
+
+    fetch(`${endpoint}/${id}/immagini/${imgId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (res.ok) {
+          // Rimuovi l'immagine dallo stato locale per aggiornare la UI
+          setImmaginiEsistenti((prev) =>
+            prev.filter((img) => img.id !== imgId)
+          );
+        } else {
+          alert("Errore durante l'eliminazione dell'immagine");
+        }
+      })
+      .catch((err) => console.error(err));
+  };
+
+  const handleSubmit = (event) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
     setSuccess('');
 
-    const token = localStorage.getItem('accessToken');
-
-    // Controllo Token
     if (!token) {
-      setError(
-        'Devi essere autenticato per creare un annuncio. Verrai reindirizzato al login'
-      );
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-
+      setError('Devi essere autenticato.');
       setIsLoading(false);
       return;
     }
 
-    // Correzione: assicuriamoci che il prezzo sia un numero
     const prodottoPayload = {
       ...prodotto,
       prezzo: parseFloat(prodotto.prezzo),
     };
 
+    // PREPARAZIONE DATI
+    // Ora usiamo SEMPRE FormData perché sia POST che PUT nel backend accettano Multipart
     const formData = new FormData();
-
-    // 🚨 CORREZIONE CRUCIALE PER MULTIPART/FORM-DATA E JSON 🚨
-    // 1. Convertiamo l'oggetto JSON in un Blob con Content-Type specifico.
-    // Questo aiuta Spring a identificare il payload DTO correttamente e previene
-    // l'interferenza con l'header Authorization.
     const prodottoBlob = new Blob([JSON.stringify(prodottoPayload)], {
       type: 'application/json',
     });
-
-    // Aggiungiamo il Blob a FormData sotto la chiave "prodotto"
     formData.append('prodotto', prodottoBlob);
 
-    // Aggiungi immagini (la tua logica era corretta)
-    immagini.forEach((img) => formData.append('immagini', img));
+    // Aggiungi le NUOVE immagini se presenti
+    nuoveImmagini.forEach((img) => formData.append('immagini', img));
 
-    fetch(endpoint, {
-      method: 'POST',
-      body: formData,
+    let url = endpoint;
+    let method = 'POST';
+
+    if (isEditing) {
+      url = `${endpoint}/${id}`;
+      method = 'PUT';
+    }
+
+    fetch(url, {
+      method: method,
       headers: {
-        // 🚨 MANTENIAMO SOLO L'AUTORIZZAZIONE 🚨
         Authorization: `Bearer ${token}`,
-        // NON impostare Content-Type, lo fa il browser per FormData
+        // NO Content-Type (lo gestisce il browser per FormData)
       },
+      body: formData,
     })
       .then((res) => {
-        // CASO 1: Tutto OK (es. 200, 201)
-        if (res.ok) {
-          return res.json();
-        }
-
-        // CASO 2: C'è un errore (es. 400, 403, 500)
-        return res.json().then(
-          (errorData) => {
-            // Tentativo di leggere il JSON di errore (es. ValidationException)
-            let errorMessage = 'Errore sconosciuto';
-            if (Array.isArray(errorData)) {
-              errorMessage = errorData.join('; '); // Unisce gli errori di validazione
-            } else if (errorData.message) {
-              errorMessage = errorData.message;
-            } else {
-              errorMessage = `Errore HTTP ${res.status}: ${res.statusText}`;
-            }
-
-            // Lanciamo l'errore per farlo "saltare" al .catch() finale
-            throw new Error(errorMessage);
-          },
-          () => {
-            // Piano B: Fallito il tentativo di leggere il JSON (es. 403 o 500 nudo)
-            throw new Error(`Errore HTTP ${res.status}: ${res.statusText}`);
+        if (res.ok) return res.json();
+        return res.json().then((errorData) => {
+          let errorMessage = 'Errore sconosciuto';
+          if (Array.isArray(errorData)) {
+            errorMessage = errorData.join('; ');
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else {
+            errorMessage = `Errore HTTP ${res.status}`;
           }
-        );
+          throw new Error(errorMessage);
+        });
       })
-      .then((data) => {
-        // Successo!
-        setSuccess('Annuncio creato con successo! Reindirizzamento...');
+      .then(() => {
+        setSuccess(isEditing ? 'Prodotto aggiornato!' : 'Annuncio creato!');
         setTimeout(() => {
-          navigate(`/products/${data.id}`);
-        }, 2000);
+          navigate('/');
+        }, 1500);
       })
       .catch((err) => {
-        // Cattura qualsiasi errore lanciato (di rete, HTTP, o Validazione)
         setError(err.message);
         setIsLoading(false);
       });
   };
 
+  if (isFetchingData) {
+    return (
+      <Container className='text-center my-5'>
+        <Spinner animation='border' />
+      </Container>
+    );
+  }
+
   return (
     <Container className='my-5'>
+      {isEditing ? (
+        <Link to='/' className='btn btn-secondary mb-4'>
+          ← Torna indietro
+        </Link>
+      ) : null}
       <Row className='justify-content-center'>
-        <Col md={8} lg={6}>
-          <Card>
+        <Col md={8} lg={8}>
+          <Card className='shadow-sm'>
             <Card.Body>
               <Card.Title className='text-center mb-4'>
-                Metti in Vendita un Articolo
+                {isEditing
+                  ? 'Modifica Annuncio'
+                  : 'Metti in Vendita un Articolo'}
               </Card.Title>
 
-              <Form onSubmit={creaProdotto}>
-                {/* Campi Form... */}
+              <Form onSubmit={handleSubmit}>
+                {/* TITOLO */}
                 <Form.Group className='mb-3'>
-                  <Form.Label>Titolo dell'annuncio</Form.Label>
+                  <Form.Label>Titolo</Form.Label>
                   <Form.Control
                     type='text'
                     name='titolo'
@@ -161,6 +207,7 @@ function CreaProduct() {
                   />
                 </Form.Group>
 
+                {/* DESCRIZIONE */}
                 <Form.Group className='mb-3'>
                   <Form.Label>Descrizione</Form.Label>
                   <Form.Control
@@ -173,15 +220,52 @@ function CreaProduct() {
                   />
                 </Form.Group>
 
-                {/* Input File Immagini */}
+                {/* GESTIONE IMMAGINI ESISTENTI (SOLO IN MODIFICA) */}
+                {isEditing && immaginiEsistenti.length > 0 && (
+                  <div className='mb-3'>
+                    <Form.Label>Immagini Attuali:</Form.Label>
+                    <div className='d-flex flex-wrap gap-2'>
+                      {immaginiEsistenti.map((img) => (
+                        <div key={img.id} style={{ position: 'relative' }}>
+                          <Image
+                            src={img.url}
+                            thumbnail
+                            style={{
+                              width: '100px',
+                              height: '100px',
+                              objectFit: 'cover',
+                            }}
+                          />
+                          <Button
+                            variant='danger'
+                            size='sm'
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              right: 0,
+                              padding: '0 5px',
+                            }}
+                            onClick={() => handleDeleteExistingImage(img.id)}
+                          >
+                            X
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* INPUT FILE (NUOVE IMMAGINI) */}
                 <Form.Group className='mb-3'>
-                  <Form.Label>Carica Immagini</Form.Label>
+                  <Form.Label>
+                    {isEditing ? 'Aggiungi Nuove Immagini' : 'Carica Immagini'}
+                  </Form.Label>
                   <Form.Control
                     type='file'
                     name='immagini'
                     accept='image/*'
                     multiple
-                    onChange={handleFileChange} // Usiamo la nuova funzione
+                    onChange={handleFileChange}
                   />
                 </Form.Group>
 
@@ -234,14 +318,17 @@ function CreaProduct() {
                 <div className='d-grid'>
                   <Button
                     type='submit'
-                    variant='primary'
+                    variant={isEditing ? 'warning' : 'primary'}
                     size='lg'
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <>
-                        <Spinner as='span' size='sm' /> Inserimento...
+                        <Spinner as='span' size='sm' />{' '}
+                        {isEditing ? 'Salvataggio...' : 'Inserimento...'}
                       </>
+                    ) : isEditing ? (
+                      'Salva Modifiche'
                     ) : (
                       'Crea annuncio'
                     )}
@@ -256,4 +343,4 @@ function CreaProduct() {
   );
 }
 
-export default CreaProduct;
+export default CreaProductPage;

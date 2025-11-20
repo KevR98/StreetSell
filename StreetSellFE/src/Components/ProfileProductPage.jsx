@@ -109,12 +109,14 @@ function ProfileProductPage() {
                     Stato: {prodotto.statoProdotto}
                   </Card.Text>
                   {/* Link per la modifica/visualizzazione dettagliata (da implementare) */}
-                  <Link
-                    to={`/prodotti/${prodotto.id}`}
-                    className='btn btn-primary'
+                  <Button
+                    as={Link}
+                    to={`/prodotto/${prodotto.id}`}
+                    variant='primary'
+                    className='mt-auto'
                   >
-                    Dettagli
-                  </Link>
+                    Vedi Dettagli
+                  </Button>
                 </Card.Body>
               </Card>
             </Col>

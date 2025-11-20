@@ -16,9 +16,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,7 +34,7 @@ public class ProdottoController {
     private ProdottoService prodottoService;
 
     @Autowired
-    private UtenteService utenteService; // 🛑 AGGIUNGI IL SERVICE UTENTE
+    private UtenteService utenteService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -43,41 +42,25 @@ public class ProdottoController {
     @Autowired
     private Validator validator;
 
-    // Endpoint per creare un nuovo prodotto
-    @PostMapping("")
+    // --- CREAZIONE (POST) ---
+    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public Prodotto creaProdotto(@RequestPart("prodotto") String prodottoDtoString,
                                  @RequestPart(value = "immagini", required = false) MultipartFile[] immagini,
                                  @AuthenticationPrincipal Utente currentUser) {
 
-        // Protezione iniziale, anche se il filtro JWT dovrebbe gestire questo
-        if (currentUser == null) {
-            throw new UnauthorizedException("Autenticazione richiesta.");
-        }
+        if (currentUser == null) throw new UnauthorizedException("Autenticazione richiesta.");
 
-        ProdottoDTO prodottoDTO;
-        try {
-            prodottoDTO = objectMapper.readValue(prodottoDtoString, ProdottoDTO.class);
-        } catch (Exception e) {
-            throw new ValidationException(Collections.singletonList("Dati prodotto non validi (JSON malformato): " + e.getMessage()));
-        }
+        // 1. Parsing del JSON
+        ProdottoDTO prodottoDTO = parseAndValidate(prodottoDtoString);
 
-        Set<ConstraintViolation<ProdottoDTO>> violations = validator.validate(prodottoDTO);
-        if (!violations.isEmpty()) {
-            throw new ValidationException(
-                    violations.stream()
-                            .map(err -> err.getMessage())
-                            .collect(Collectors.toList())
-            );
-        }
-
-        // 🛑 L'utente è già completo qui se usi @AuthenticationPrincipal, ma per sicurezza...
+        // 2. Ricarica Utente Completo
         Utente venditoreCompleto = utenteService.findById(currentUser.getId());
 
         return prodottoService.creaProdotto(prodottoDTO, venditoreCompleto, immagini);
     }
 
-    // Endpoint per ottenere la lista di tutti i prodotti disponibili
+    // --- LISTA (GET) ---
     @GetMapping("")
     public Page<Prodotto> getAllProdottiDisponibili(@RequestParam(defaultValue = "10") int size,
                                                     @RequestParam(defaultValue = "0") int page,
@@ -86,61 +69,92 @@ public class ProdottoController {
         return prodottoService.findProdottiDisponibili(pageable);
     }
 
+    // --- DETTAGLIO (GET) ---
     @GetMapping("/{prodottoId}")
     public Prodotto getSingoloProdotto(@PathVariable UUID prodottoId) {
         return prodottoService.findById(prodottoId);
     }
 
-    @PutMapping("/{prodottoId}")
+    // --- MODIFICA (PUT) ---
+    // 🛑 FIX: Ora accetta Multipart per le immagini e ricarica l'utente
+    @PutMapping(value = "/{prodottoId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Prodotto updateProdotto(@PathVariable UUID prodottoId,
-                                   @RequestBody @Validated ProdottoDTO prodottoDTO,
-                                   BindingResult validation,
+                                   @RequestPart("prodotto") String prodottoDtoString,
+                                   @RequestPart(value = "immagini", required = false) MultipartFile[] nuoveImmagini,
                                    @AuthenticationPrincipal Utente currentUser) {
-        if (validation.hasErrors()) {
-            throw new ValidationException(validation.getAllErrors().stream().map(e -> e.getDefaultMessage()).collect(Collectors.toList()));
-        }
-        // Sicurezza: Usiamo l'ID del current user per l'autorizzazione
-        if (currentUser == null) {
-            throw new UnauthorizedException("Autenticazione richiesta.");
-        }
 
-        return prodottoService.updateProdotto(prodottoId, prodottoDTO, currentUser);
+        if (currentUser == null) throw new UnauthorizedException("Autenticazione richiesta.");
+
+        ProdottoDTO prodottoDTO = parseAndValidate(prodottoDtoString);
+
+        // 🛑 FIX: Ricarica Utente Completo
+        Utente utenteCompleto = utenteService.findById(currentUser.getId());
+
+        // Nota: Assicurati che il tuo ProdottoService.updateProdotto accetti 'nuoveImmagini'
+        return prodottoService.updateProdotto(prodottoId, prodottoDTO, utenteCompleto, nuoveImmagini);
     }
 
+    // --- ELIMINA PRODOTTO (ARCHIVIAZIONE) ---
     @DeleteMapping("/{prodottoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void archiviaProdotto(@PathVariable UUID prodottoId,
                                  @AuthenticationPrincipal Utente currentUser) {
-        if (currentUser == null) {
-            throw new UnauthorizedException("Autenticazione richiesta.");
-        }
-        prodottoService.archiviaProdotto(prodottoId, currentUser);
+        if (currentUser == null) throw new UnauthorizedException("Autenticazione richiesta.");
+
+        // 🛑 FIX 500: Ricarica Utente Completo PRIMA di chiamare il service
+        Utente utenteCompleto = utenteService.findById(currentUser.getId());
+
+        prodottoService.archiviaProdotto(prodottoId, utenteCompleto);
     }
 
-    // 🛑 ENDPOINT PRODOTTI DEL VENDITORE (FIX NPE)
+    // --- ELIMINA SINGOLA IMMAGINE ---
+    @DeleteMapping("/{prodottoId}/immagini/{immagineId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminaImmagine(@PathVariable UUID prodottoId,
+                                @PathVariable UUID immagineId,
+                                @AuthenticationPrincipal Utente currentUser) {
+
+        if (currentUser == null) throw new UnauthorizedException("Autenticazione richiesta.");
+
+        // 🛑 FIX 500: Ricarica Utente Completo
+        Utente utenteCompleto = utenteService.findById(currentUser.getId());
+
+        prodottoService.removeImmagine(prodottoId, immagineId, utenteCompleto);
+    }
+
+    // --- I MIEI PRODOTTI (GET) ---
     @GetMapping("/me")
     public Page<Prodotto> getMyProdotti(@AuthenticationPrincipal Utente currentUser,
                                         @RequestParam(defaultValue = "0") int page,
                                         @RequestParam(defaultValue = "10") int size,
                                         @RequestParam(defaultValue = "createdAt") String sortBy) {
 
-        // 1. PREVENZIONE 401
-        if (currentUser == null) {
-            throw new UnauthorizedException("Devi effettuare il login per vedere i tuoi prodotti.");
-        }
+        if (currentUser == null) throw new UnauthorizedException("Devi effettuare il login.");
 
-        // 2. 🛑 FIX NPE: Ricarica l'utente completo dal DB
-        // Questo risolve i problemi di Lazy Loading e Utente incompleto
+        // 🛑 Ricarica Utente Completo
         Utente venditoreCompleto = utenteService.findById(currentUser.getId());
 
-        // Log di verifica (ora sicuri)
-        System.out.println("Utente Corrente ID: " + venditoreCompleto.getId());
-        System.out.println("Utente Corrente Username: " + venditoreCompleto.getUsername());
-
-        // 3. Esegui la query
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
-
         return prodottoService.findProdottiByVenditore(venditoreCompleto, pageable);
     }
 
+    // --- METODO HELPER PRIVATO ---
+    private ProdottoDTO parseAndValidate(String json) {
+        ProdottoDTO dto;
+        try {
+            dto = objectMapper.readValue(json, ProdottoDTO.class);
+        } catch (Exception e) {
+            throw new ValidationException(Collections.singletonList("Dati prodotto non validi (JSON malformato): " + e.getMessage()));
+        }
+
+        Set<ConstraintViolation<ProdottoDTO>> violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            throw new ValidationException(
+                    violations.stream()
+                            .map(ConstraintViolation::getMessage)
+                            .collect(Collectors.toList())
+            );
+        }
+        return dto;
+    }
 }

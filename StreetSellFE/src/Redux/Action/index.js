@@ -20,3 +20,13 @@ export const loginFailure = (payload) => {
     payload: payload,
   };
 };
+
+export const setUser = (user) => {
+  return {
+    type: 'LOGIN_SUCCESS', // Usiamo lo stesso tipo del reducer per impostare isAuthenticated: true
+    payload: {
+      user: user,
+      token: localStorage.getItem('accessToken'),
+    },
+  };
+};

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Button, Carousel, Col, Container, Row } from 'react-bootstrap';
-import { Link, useParams } from 'react-router-dom';
+import { Alert, Button, Carousel, Col, Container, Row } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
@@ -9,6 +10,9 @@ function Details() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { prodottoId } = useParams();
+  const currentUser = useSelector((state) => state.auth.user);
+  const token = localStorage.getItem('accessToken');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(endpoint + '/' + prodottoId)
@@ -34,6 +38,32 @@ function Details() {
       });
   }, [prodottoId]);
 
+  const handleDelete = () => {
+    // Semplice conferma browser (puoi usare un Modal Bootstrap per farlo più bello)
+    if (
+      window.confirm(
+        'Sei sicuro di voler eliminare definitivamente questo annuncio?'
+      )
+    ) {
+      fetch(endpoint + '/' + prodottoId, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`, // Fondamentale: Token per autorizzare
+          'Content-Type': 'application/json',
+        },
+      })
+        .then((res) => {
+          if (res.ok) {
+            alert('Prodotto eliminato con successo!');
+            navigate('/prodotti/me'); // Reindirizza ai miei prodotti
+          } else {
+            alert("C'è stato un errore durante l'eliminazione.");
+          }
+        })
+        .catch((err) => console.error('Errore:', err));
+    }
+  };
+
   if (isLoading) {
     return (
       <Container className='text-center my-5'>
@@ -55,6 +85,11 @@ function Details() {
       </Container>
     );
   }
+
+  const isOwner =
+    currentUser &&
+    prodotto.venditore &&
+    currentUser.id === prodotto.venditore.id;
 
   // Logica per le immagini
   const immaginiCarousel =
@@ -90,7 +125,6 @@ function Details() {
           </Carousel>
         </Col>
 
-        {/* COLONNA INFORMAZIONI */}
         <Col md={6} className='pt-4 pt-md-0'>
           <h1 className='display-4'>{prodotto.titolo}</h1>
           <p className='lead text-primary fw-bold'>
@@ -110,10 +144,31 @@ function Details() {
             <li>**Condizione:** {prodotto.condizione}</li>
             <li>**Categoria:** {prodotto.categoria}</li>
           </ul>
+          {isOwner ? (
+            <div className='d-flex gap-3'>
+              {/* Bottone Modifica: Porta a una nuova rotta (che creeremo) */}
+              <Link
+                to={`/modifica-prodotto/${prodotto.id}`}
+                className='btn btn-warning btn-lg flex-grow-1'
+              >
+                ✏️ Modifica
+              </Link>
 
-          <Button variant='success' size='lg'>
-            Acquista Ora
-          </Button>
+              {/* Bottone Elimina: Scatena la funzione */}
+              <Button
+                variant='danger'
+                size='lg'
+                className='flex-grow-1'
+                onClick={handleDelete}
+              >
+                🗑️ Elimina
+              </Button>
+            </div>
+          ) : (
+            <Button variant='success' size='lg' className='w-100'>
+              Acquista Ora
+            </Button>
+          )}
         </Col>
       </Row>
     </Container>
