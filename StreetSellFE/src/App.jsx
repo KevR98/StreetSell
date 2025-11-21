@@ -64,7 +64,7 @@ function App() {
             <Route
               path='/admin/dashboard'
               // Usiamo AdminRoute per applicare il controllo del ruolo
-              element={<AdminRoute element={AdminDashboard} />}
+              element={<AdminRoute AdminComp={AdminDashboard} />}
             />
 
             {/* 3. PRODOTTI (Creazione e Modifica) */}

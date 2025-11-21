@@ -7,10 +7,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +46,10 @@ public class Utente implements UserDetails {
 
     @Column(name = "is_attivo")
     private Boolean attivo = true;
+
+    @Column(updatable = false, nullable = false)
+    @CreationTimestamp // Lombok genera il getter/setter, Hibernate la data
+    private LocalDateTime createdAt;
 
     // 4. RELAZIONI CON LE ALTRE TABELLE (tutte correttamente nascoste)
     // ====================================================

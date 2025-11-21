@@ -1,7 +1,10 @@
 package kevinramil.StreetSell.Services;
 
 import kevinramil.StreetSell.Entities.Utente;
+import kevinramil.StreetSell.Exceptions.BadRequestException;
 import kevinramil.StreetSell.Exceptions.NotFoundException;
+import kevinramil.StreetSell.Payloads.UtenteAdminDTO;
+import kevinramil.StreetSell.Repositories.ProdottoRepository;
 import kevinramil.StreetSell.Repositories.UtenteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,9 @@ public class UtenteService {
 
     @Autowired
     private UtenteRepository utenteRepository;
+
+    @Autowired
+    private ProdottoRepository prodottoRepository;
 
     public List<Utente> findAllActive() {
         // MODIFICA: Filtra la lista per restituire solo gli utenti attivi.
@@ -55,8 +61,33 @@ public class UtenteService {
     }
 
 
-    public List<Utente> findAllAdmin() {
-        return utenteRepository.findAll();
+    public List<UtenteAdminDTO> findAllAdmin() {
+        List<Utente> utenti = utenteRepository.findAll();
+
+        return utenti.stream()
+                .map(u -> {
+                    // 🛑 CHIAMATA ORA FUNZIONANTE: Il Repository Prodotto è iniettato
+                    long count = prodottoRepository.countByVenditoreAndStatoProdotto(u);
+                    return UtenteAdminDTO.fromUtente(u, count);
+                })
+                .collect(Collectors.toList());
     }
 
+
+    public Utente riattivaUtente(UUID utenteId) {
+        // Cerchiamo l'utente usando il repository direttamente,
+        // in modo da poter trovare anche gli account inattivi (soft-deleted).
+        Utente utenteDaRiattivare = utenteRepository.findById(utenteId)
+                .orElseThrow(() -> new NotFoundException("Utente con ID " + utenteId + " non trovato."));
+
+        // Controlla se l'utente è già attivo (opzionale)
+        if (utenteDaRiattivare.getAttivo()) {
+            throw new BadRequestException("L'utente è già attivo.");
+        }
+
+        // Imposta lo stato su attivo
+        utenteDaRiattivare.setAttivo(true);
+
+        return utenteRepository.save(utenteDaRiattivare); // Salva la modifica
+    }
 }

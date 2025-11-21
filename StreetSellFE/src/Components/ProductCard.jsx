@@ -84,14 +84,14 @@ function ProductCard({ prodotto }) {
         <div style={{ position: 'relative' }}>
           <Carousel
             interval={null} // Non scorre automaticamente
-            controls={immaginiCarousel.length > 1} // Mostra frecce solo se ci sono più di 1 foto
+            controls={false} // Mostra frecce solo se ci sono più di 1 foto
             indicators={false} // Rimuove i puntini sotto l'immagine per essere più compatti
           >
             {immaginiCarousel.map((img, index) => (
               <Carousel.Item key={img.id || index}>
                 <Card.Img
                   variant='top'
-                  src={img.url}
+                  src={img.urlImmagine || img.url}
                   style={{ height: '200px', objectFit: 'cover' }}
                 />
               </Carousel.Item>
@@ -124,7 +124,8 @@ function ProductCard({ prodotto }) {
           </Card.Text>
           <Card.Text style={{ fontSize: '0.9em' }}>
             <strong>
-              {prodotto.prezzo ? prodotto.prezzo.toFixed(2) : 'N/D'} €
+              {prodotto.prezzo ? parseFloat(prodotto.prezzo).toFixed(2) : 'N/D'}{' '}
+              €
             </strong>
           </Card.Text>
           <Card.Text className='text-secondary small mb-2'>

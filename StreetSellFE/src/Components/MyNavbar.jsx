@@ -31,6 +31,9 @@ function MyNavbar() {
 
   const ruolo = useSelector((state) => state.auth.user?.ruolo);
 
+  console.log('Ruolo letto da Redux:', ruolo);
+  console.log('Variabile isAdmin:', ruolo === 'ADMIN');
+
   // STATO 3: Loggato E Dati Utente Caricati
   const isLoggedInAndLoaded = token && username;
 

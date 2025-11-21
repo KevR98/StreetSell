@@ -2,6 +2,7 @@ package kevinramil.StreetSell.Controllers;
 
 import kevinramil.StreetSell.Entities.Recensione;
 import kevinramil.StreetSell.Entities.Utente;
+import kevinramil.StreetSell.Payloads.UtenteAdminDTO;
 import kevinramil.StreetSell.Services.RecensioneService;
 import kevinramil.StreetSell.Services.UtenteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,7 +90,7 @@ public class UtenteController {
     // GET /utenti/all -> Ritorna la lista di tutti gli utenti
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public List<Utente> getAllUtenti() {
+    public List<UtenteAdminDTO> getAllUtenti() {
         return utenteService.findAllAdmin();
     }
 
@@ -99,5 +100,11 @@ public class UtenteController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public void disattivaUtenteAdmin(@PathVariable UUID utenteId) {
         utenteService.disattivaUtente(utenteId);
+    }
+
+    @PatchMapping("/{utenteId}/reactivate")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Utente riattivaUtenteAdmin(@PathVariable UUID utenteId) {
+        return utenteService.riattivaUtente(utenteId);
     }
 }
