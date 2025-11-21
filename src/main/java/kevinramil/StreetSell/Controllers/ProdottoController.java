@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -156,5 +157,22 @@ public class ProdottoController {
             );
         }
         return dto;
+    }
+
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    public Page<Prodotto> getAllProdottiAdmin(@RequestParam(defaultValue = "10") int size,
+                                              @RequestParam(defaultValue = "0") int page,
+                                              @RequestParam(defaultValue = "createdAt") String sortBy) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+        return prodottoService.findTuttiIProdotti(pageable); // <-- ASSICURATI CHE QUESTA CHIAMATA ESISTA NEL TUO SERVICE
+    }
+
+    @PatchMapping("/{prodottoId}/suspend")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Prodotto sospendiProdottoAdmin(@PathVariable UUID prodottoId) {
+        // Non è necessario passare currentUser se la logica di controllo è stata spostata nell'endpoint
+        return prodottoService.sospendiProdottoAdmin(prodottoId);
     }
 }

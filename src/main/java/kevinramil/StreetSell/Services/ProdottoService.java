@@ -154,4 +154,14 @@ public class ProdottoService {
         // Chiama il metodo findAll() paginato nel Repository.
         return prodottoRepository.findAll(pageable);
     }
+
+    @Transactional
+    public Prodotto sospendiProdottoAdmin(UUID prodottoId) {
+        Prodotto prodotto = this.findById(prodottoId);
+
+        // Non è necessario verificare l'ownership qui, poiché l'endpoint è protetto da @PreAuthorize('ADMIN')
+
+        prodotto.setStatoProdotto(StatoProdotto.ARCHIVIATO); // Imposta lo stato su Archiviato/Sospeso
+        return prodottoRepository.save(prodotto);
+    }
 }

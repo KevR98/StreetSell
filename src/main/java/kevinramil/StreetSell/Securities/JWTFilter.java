@@ -85,12 +85,14 @@ public class JWTFilter extends OncePerRequestFilter {
 
         // Rotta del profilo utente (deve essere protetta)
         boolean isProtectedMeRoute = matcher.match("/prodotti/me", path);
+        boolean isAdminRoute = matcher.match("/prodotti/admin/**", path);
 
         // Rotte GET pubbliche generali (es. lista prodotti pubblici, dettagli prodotto)
         // Tutta la rotta /prodotti/** è pubblica TRANNE /prodotti/me
         boolean isPublicGet = request.getMethod().equalsIgnoreCase("GET")
                 && matcher.match("/prodotti/**", path)
-                && !isProtectedMeRoute; // 🛑 ASSICURATI DI NON SALTARE LA ROTTA /me
+                && !isProtectedMeRoute // 🛑 ASSICURATI DI NON SALTARE LA ROTTA /me
+                && !isAdminRoute;
 
         // Se la rotta è /prodotti/me, isProtectedMeRoute è TRUE, isPublicGet è FALSE
         // Il filtro sarà eseguito perché la condizione qui sotto sarà FALSE.

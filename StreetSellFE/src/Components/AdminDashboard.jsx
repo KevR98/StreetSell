@@ -20,7 +20,8 @@ import {
   FaTimesCircle,
 } from 'react-icons/fa';
 
-const endpoint = 'http://localhost:8888/utenti';
+const endpointUtenti = 'http://localhost:8888/utenti';
+const endpointProdotti = 'http://localhost:8888/prodotti';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/D';
@@ -30,6 +31,7 @@ const formatDate = (dateString) => {
 
 function AdminDashboard() {
   const [utenti, setUtenti] = useState([]);
+  const [prodotti, setProdotti] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const token = localStorage.getItem('accessToken');
@@ -44,61 +46,80 @@ function AdminDashboard() {
     }
 
     // Avvia il fetch se l'utente è potenzialmente Admin o i dati sono null
-    fetchUtenti();
+    fetchAdminData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, token]);
 
-  const fetchUtenti = () => {
+  const fetchAdminData = () => {
     if (!token) {
       setLoading(false);
       setError('Token non trovato. Effettua il login come Admin.');
       return;
     }
 
-    // Resetting state before fetch
     setError(null);
     setLoading(true);
+    const headers = { Authorization: `Bearer ${token}` };
 
-    fetch(`${endpoint}/all`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    // 1. Fetch Utenti
+    fetch(`${endpointUtenti}/all`, { headers })
       .then((response) => {
         if (!response.ok) {
-          // Se c'è un errore HTTP (es. 403 Forbidden o 401 Unauthorized)
           return response.text().then((text) => {
-            // Tira un errore con il messaggio del backend
             throw new Error(
-              `Errore fetch: ${response.status} - ${text.substring(0, 100)}...`
+              `Errore fetch utenti: ${response.status} - ${text.substring(
+                0,
+                100
+              )}...`
             );
           });
         }
-        // Successo: procedi con la lettura del JSON
         return response.json();
       })
-      .then((data) => {
-        // Successo: aggiorna lo stato degli utenti
-        setUtenti(data);
+      .then((utentiData) => {
+        setUtenti(utentiData);
+
+        // 2. CHAINING: Inizia la fetch Prodotti
+        return fetch(`${endpointProdotti}/admin/all?page=0&size=100`, {
+          headers,
+        });
+      })
+      .then((response) => {
+        if (!response.ok) {
+          return response.text().then((text) => {
+            throw new Error(
+              `Errore fetch prodotti: ${response.status} - ${text.substring(
+                0,
+                100
+              )}...`
+            );
+          });
+        }
+        return response.json();
+      })
+      .then((prodottiData) => {
+        // 3. Aggiorna stato prodotti
+        setProdotti(prodottiData.content);
       })
       .catch((err) => {
-        // Cattura errori di rete, errori HTTP thrown, e errori di parsing JSON
+        // Cattura errori di entrambe le chiamate
         console.error('Errore fetch Admin:', err);
         setError(err.message || 'Si è verificato un errore sconosciuto.');
       })
       .finally(() => {
-        // 🛑 Finalizza il caricamento in ogni caso
         setLoading(false);
       });
   };
 
+  // ------------------------------------------
+  // AZIONI DI MODERAZIONE (Ora usano fetchAdminData per refresh)
+  // ------------------------------------------
   const handleToggleAccount = (userId, isCurrentlyActive) => {
     const action = isCurrentlyActive ? 'disattiva' : 'riattiva';
     const endpoint = isCurrentlyActive
-      ? `${endpoint}/${userId}/admin-disattiva` // DELETE/Soft-delete
-      : `${endpoint}/${userId}/reactivate`; // PATCH
+      ? `${endpointUtenti}/${userId}/admin-disattiva`
+      : `${endpointUtenti}/${userId}/reactivate`;
 
-    // 1. Conferma utente
     if (
       !window.confirm(
         `Sei sicuro di voler ${action} l'account di questo utente?`
@@ -107,7 +128,6 @@ function AdminDashboard() {
       return;
     }
 
-    // 2. Esecuzione della Fetch con Promise Chain
     fetch(endpoint, {
       method: isCurrentlyActive ? 'DELETE' : 'PATCH',
       headers: {
@@ -116,11 +136,8 @@ function AdminDashboard() {
       },
     })
       .then((response) => {
-        // 3. Controllo risposta HTTP
         if (!response.ok) {
-          // Se c'è stato un errore (es. 403 Forbidden, 400 BadRequest)
           return response.text().then((text) => {
-            // Tira un errore per catturarlo nel blocco .catch
             throw new Error(
               `Errore durante l'azione di ${action}. Dettagli: ${text.substring(
                 0,
@@ -129,17 +146,43 @@ function AdminDashboard() {
             );
           });
         }
-        // Per DELETE e PATCH, la risposta non ha body, quindi procediamo direttamente.
       })
       .then(() => {
-        // 4. Successo: Aggiorna il frontend
         alert(`Account ${action}to con successo!`);
-        // Ricarica la lista completa degli utenti per aggiornare la tabella
-        fetchUtenti();
+        fetchAdminData(); // 🛑 Refresh completo
       })
       .catch((err) => {
-        // 5. Gestione Errori
         console.error(`Errore nell'azione di ${action}:`, err);
+        alert(`Errore: ${err.message}`);
+      });
+  };
+
+  const handleSuspendProduct = (prodottoId) => {
+    if (
+      !window.confirm(
+        'Sei sicuro di voler sospendere/archiviare questo annuncio?'
+      )
+    ) {
+      return;
+    }
+
+    fetch(`${endpointProdotti}/${prodottoId}/suspend`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Errore durante la sospensione: ${response.status}`);
+        }
+      })
+      .then(() => {
+        alert('Prodotto sospeso con successo!');
+        fetchAdminData(); // 🛑 Refresh completo
+      })
+      .catch((err) => {
+        console.error('Errore sospensione:', err);
         alert(`Errore: ${err.message}`);
       });
   };
@@ -240,10 +283,64 @@ function AdminDashboard() {
 
       {/* SEZIONE 2: GESTIONE PRODOTTI (Placeholder per il futuro) */}
       <h2 className='mt-5 mb-3'>Gestione Prodotti (Placeholder)</h2>
-      <Alert variant='warning'>
-        Questa sezione mostrerà tutti gli annunci (Disponibili, Venduti,
-        Archiviati) e i pulsanti di moderazione.
-      </Alert>
+      <Table striped bordered hover responsive className='shadow-sm'>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Titolo</th>
+            <th>Venditore</th>
+            <th>Stato</th>
+            <th className='text-center'>Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          {prodotti.map((p) => (
+            <tr key={p.id}>
+              <td className='align-middle'>{p.id.substring(0, 8)}...</td>
+              <td className='align-middle'>
+                <Link to={`/prodotto/${p.id}`} target='_blank'>
+                  {p.titolo}
+                </Link>
+              </td>
+              <td className='align-middle'>
+                <Link to={`/utenti/${p.venditore.id}`}>
+                  {p.venditore.username}
+                </Link>
+              </td>
+              <td className='align-middle'>
+                <Badge
+                  bg={
+                    p.statoProdotto === 'DISPONIBILE'
+                      ? 'success'
+                      : p.statoProdotto === 'VENDUTO'
+                      ? 'primary'
+                      : 'warning'
+                  }
+                >
+                  {p.statoProdotto}
+                </Badge>
+              </td>
+              <td className='align-middle text-center'>
+                <Button
+                  variant='warning'
+                  size='sm'
+                  className='me-2'
+                  onClick={() => handleSuspendProduct(p.id)}
+                  disabled={
+                    p.statoProdotto === 'ARCHIVIATO' ||
+                    p.statoProdotto === 'VENDUTO'
+                  }
+                >
+                  Sospendi
+                </Button>
+                <Button variant='danger' size='sm' disabled>
+                  Elimina (Forza)
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
     </Container>
   );
 }

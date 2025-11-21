@@ -66,8 +66,9 @@ public class UtenteService {
 
         return utenti.stream()
                 .map(u -> {
-                    // 🛑 CHIAMATA ORA FUNZIONANTE: Il Repository Prodotto è iniettato
-                    long count = prodottoRepository.countByVenditoreAndStatoProdotto(u);
+                    // 🛑 CORREZIONE: Passa l'ID dell'utente (u.getId()) al Repository.
+                    long count = prodottoRepository.countByVenditoreAndStatoProdotto(u.getId());
+
                     return UtenteAdminDTO.fromUtente(u, count);
                 })
                 .collect(Collectors.toList());
