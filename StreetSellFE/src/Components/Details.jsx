@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Carousel, Col, Container, Row } from 'react-bootstrap';
+import { Button, Carousel, Col, Container, Row } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import BackButton from './BackButton';
+import ErrorAlert from './ErrorAlert';
+import LoadingSpinner from './LoadingSpinner';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
@@ -33,7 +36,7 @@ function Details() {
 
       .catch((err) => {
         console.log('Errore nel caricamento', err);
-        setIsLoading(true);
+        setIsLoading(false);
         setError(true);
       });
   }, [prodottoId]);
@@ -69,17 +72,11 @@ function Details() {
   };
 
   if (isLoading) {
-    return (
-      <Container className='text-center my-5'>
-        Caricamento in corso...
-      </Container>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
-    return (
-      <Container className='alert alert-danger my-5'>Errore: {error}</Container>
-    );
+    return <ErrorAlert message='Impossibile caricare il prodotto.' />;
   }
 
   if (!prodotto) {
@@ -115,9 +112,7 @@ function Details() {
 
   return (
     <Container className='my-5'>
-      <Button variant='secondary' className='mb-4' onClick={() => navigate(-1)}>
-        ← Torna Indietro
-      </Button>
+      <BackButton />
 
       <Row>
         {/* COLONNA IMMAGINI */}

@@ -11,6 +11,8 @@ import {
   Image,
 } from 'react-bootstrap';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import LoadingSpinner from './LoadingSpinner';
+import BackButton from './BackButton';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
@@ -170,20 +172,12 @@ function CreaProductPage() {
   };
 
   if (isFetchingData) {
-    return (
-      <Container className='text-center my-5'>
-        <Spinner animation='border' />
-      </Container>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
     <Container className='my-5'>
-      {isEditing ? (
-        <Link to='/' className='btn btn-secondary mb-4'>
-          ← Torna indietro
-        </Link>
-      ) : null}
+      <BackButton />
       <Row className='justify-content-center'>
         <Col md={8} lg={8}>
           <Card className='shadow-sm'>

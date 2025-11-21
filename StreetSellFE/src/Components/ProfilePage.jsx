@@ -1,6 +1,8 @@
 import { Alert, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import RecensioniList from './RecensioniList';
+import LoadingSpinner from './LoadingSpinner';
+import BackButton from './BackButton';
 
 function ProfilePage() {
   const user = useSelector((state) => state.auth.user);
@@ -22,15 +24,12 @@ function ProfilePage() {
 
   // 3. Controllo se i dati sono ancora in transizione (dopo il fetch in App.js)
   if (!user) {
-    return (
-      <Container className='mt-5 text-center'>
-        <Spinner animation='border' role='status' />
-        <p>Caricamento dati utente...</p>
-      </Container>
-    );
+    return <LoadingSpinner />;
   }
+
   return (
     <Container className='my-5'>
+      <BackButton />
       <h1 className='mb-4'>👋 Benvenuto nel Tuo Profilo, {user.username}</h1>
       <Row>
         {/* ======================================================= */}

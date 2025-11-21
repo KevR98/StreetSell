@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Spinner, Alert, ListGroup, Pagination } from 'react-bootstrap';
+import LoadingSpinner from './LoadingSpinner';
+import ErrorAlert from './ErrorAlert';
 // Importa l'icona a stella (potrebbe servire un'icona library come react-icons)
 // Per semplicità, useremo emoji o il carattere Unicode (⭐)
 
@@ -102,8 +104,8 @@ const RecensioniList = ({ utenteId }) => {
       </Card>
 
       {/* Blocco 2: Contenuto Principale */}
-      {loading && <Spinner animation='border' className='d-block mx-auto' />}
-      {error && <Alert variant='danger'>{error}</Alert>}
+      {loading && <LoadingSpinner />}
+      {error && <ErrorAlert />}
 
       {!loading && !error && (
         <>

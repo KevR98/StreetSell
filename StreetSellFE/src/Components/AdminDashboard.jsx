@@ -19,6 +19,9 @@ import {
   FaCheckCircle,
   FaTimesCircle,
 } from 'react-icons/fa';
+import LoadingSpinner from './LoadingSpinner';
+import ErrorAlert from './ErrorAlert';
+import BackButton from './BackButton';
 
 const endpointUtenti = 'http://localhost:8888/utenti';
 const endpointProdotti = 'http://localhost:8888/prodotti';
@@ -187,21 +190,14 @@ function AdminDashboard() {
       });
   };
 
-  if (loading)
-    return (
-      <Container className='mt-5 text-center'>
-        <Spinner animation='border' />
-      </Container>
-    );
-  if (error)
-    return (
-      <Container className='mt-5'>
-        <Alert variant='danger'>Errore di Caricamento: {error}</Alert>
-      </Container>
-    );
+  if (loading) return <LoadingSpinner />;
+
+  if (error) return <ErrorAlert message='Impossibile caricare la Dashboard' />;
 
   return (
     <Container className='my-5'>
+      <BackButton />
+
       <h1 className='mb-4 text-primary'>Pannello di Amministrazione 👑</h1>
 
       <hr />

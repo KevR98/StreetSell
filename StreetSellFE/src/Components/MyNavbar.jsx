@@ -17,6 +17,7 @@ import {
   BsFillTagFill,
   BsBoxSeamFill,
   BsPersonFill,
+  BsController,
 } from 'react-icons/bs';
 
 function MyNavbar() {
@@ -107,6 +108,7 @@ function MyNavbar() {
               >
                 {isAdmin && (
                   <NavDropdown.Item as={Link} to='/admin/dashboard'>
+                    <BsController style={{ marginRight: '8px' }} />
                     Pannello Admin
                   </NavDropdown.Item>
                 )}
