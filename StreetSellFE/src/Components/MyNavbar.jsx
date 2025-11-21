@@ -29,8 +29,14 @@ function MyNavbar() {
   // Legge lo username da Redux (potrebbe essere undefined all'avvio)
   const username = useSelector((state) => state.auth.user?.username);
 
+  const ruolo = useSelector((state) => state.auth.user?.ruolo);
+
   // STATO 3: Loggato E Dati Utente Caricati
   const isLoggedInAndLoaded = token && username;
+
+  const isAdmin = ruolo === 'ADMIN';
+
+  const dropdownTitle = isAdmin ? 'Ciao, ADMIN' : `Ciao, ${username}`;
 
   // STATO 2: Loggato MA Dati Utente in Caricamento (solo token presente)
   const isLoadingUserData = token && !username;
@@ -92,10 +98,15 @@ function MyNavbar() {
             {/* STATO 3: ONLINE E CARICATO (Mostra Dropdown) */}
             {isLoggedInAndLoaded && (
               <NavDropdown
-                title={`Ciao, ${username}`}
+                title={dropdownTitle}
                 id='basic-nav-dropdown'
                 align='end'
               >
+                {isAdmin && (
+                  <NavDropdown.Item as={Link} to='/admin/dashboard'>
+                    Pannello Admin
+                  </NavDropdown.Item>
+                )}
                 <NavDropdown.Item
                   as={Link}
                   to='/me'

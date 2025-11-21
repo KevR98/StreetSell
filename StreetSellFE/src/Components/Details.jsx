@@ -60,7 +60,11 @@ function Details() {
             alert("C'è stato un errore durante l'eliminazione.");
           }
         })
-        .catch((err) => console.error('Errore:', err));
+        .catch((err) => {
+          console.error('Errore:', err);
+          setIsLoading(false);
+          setError(true);
+        });
     }
   };
 
@@ -90,6 +94,15 @@ function Details() {
     currentUser &&
     prodotto.venditore &&
     currentUser.id === prodotto.venditore.id;
+
+  const isAdmin = currentUser && currentUser.ruolo === 'ADMIN';
+
+  const canModerate = isOwner || isAdmin;
+
+  const canBuy =
+    !isOwner && !isAdmin && prodotto.statoProdotto === 'DISPONIBILE';
+
+  const isNotAvailable = prodotto.statoProdotto !== 'DISPONIBILE';
 
   // Logica per le immagini
   const immaginiCarousel =
@@ -144,29 +157,31 @@ function Details() {
             <li>**Condizione:** {prodotto.condizione}</li>
             <li>**Categoria:** {prodotto.categoria}</li>
           </ul>
-          {isOwner ? (
+          {canModerate ? (
+            // 1. Se è PROPRIETARIO o ADMIN: Mostra SEMPRE i bottoni Modifica/Elimina
             <div className='d-flex gap-3'>
-              {/* Bottone Modifica: Porta a una nuova rotta (che creeremo) */}
-              <Link
-                to={`/modifica-prodotto/${prodotto.id}`}
-                className='btn btn-warning btn-lg flex-grow-1'
-              >
-                ✏️ Modifica
-              </Link>
-
-              {/* Bottone Elimina: Scatena la funzione */}
-              <Button
-                variant='danger'
-                size='lg'
-                className='flex-grow-1'
-                onClick={handleDelete}
-              >
-                🗑️ Elimina
+              <Link /* ... Modifica Button ... */> ✏️ Modifica </Link>
+              <Button /* ... Elimina Button ... */ onClick={handleDelete}>
+                {' '}
+                🗑️ Elimina{' '}
               </Button>
+              {/* Opzionale: Mostra lo stato corrente in un badge */}
+              <Alert
+                variant={isNotAvailable ? 'danger' : 'success'}
+                className='mt-3 p-2'
+              >
+                Stato Attuale: {prodotto.statoProdotto}
+              </Alert>
             </div>
-          ) : (
+          ) : canBuy ? (
+            // 2. Se NON è proprietario/admin E DISPONIBILE: Mostra Acquista
             <Button variant='success' size='lg' className='w-100'>
               Acquista Ora
+            </Button>
+          ) : (
+            // 3. Altrimenti (NON proprietario/admin E NON disponibile): Mostra non disponibile
+            <Button variant='secondary' size='lg' className='w-100' disabled>
+              Non Disponibile
             </Button>
           )}
         </Col>
