@@ -149,4 +149,9 @@ public class ProdottoService {
     public Page<Prodotto> findProdottiByVenditore(Utente venditore, Pageable pageable) {
         return prodottoRepository.findByVenditore(venditore, pageable);
     }
+
+    public Page<Prodotto> findTuttiIProdotti(Pageable pageable) {
+        // Chiama il metodo findAll() paginato nel Repository.
+        return prodottoRepository.findAll(pageable);
+    }
 }

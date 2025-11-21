@@ -13,6 +13,8 @@ import ProfileProductPage from './Components/ProfileProductPage';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { setUser, logout } from './Redux/Action';
+import AdminDashboard from './Components/AdminDashboard';
+import AdminRoute from './Components/AdminRoute';
 
 function App() {
   const dispatch = useDispatch();
@@ -58,6 +60,12 @@ function App() {
             {/* 2. AUTH */}
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<RegisterPage />} />
+
+            <Route
+              path='/admin/dashboard'
+              // Usiamo AdminRoute per applicare il controllo del ruolo
+              element={<AdminRoute element={AdminDashboard} />}
+            />
 
             {/* 3. PRODOTTI (Creazione e Modifica) */}
             <Route path='/crea-prodotto' element={<CreaProductPage />} />

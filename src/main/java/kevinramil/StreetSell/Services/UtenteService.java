@@ -16,7 +16,7 @@ public class UtenteService {
     @Autowired
     private UtenteRepository utenteRepository;
 
-    public List<Utente> findAll() {
+    public List<Utente> findAllActive() {
         // MODIFICA: Filtra la lista per restituire solo gli utenti attivi.
         return utenteRepository.findAll().stream()
                 .filter(Utente::getAttivo)
@@ -53,4 +53,10 @@ public class UtenteService {
         utente.setAttivo(false);
         utenteRepository.save(utente);
     }
+
+
+    public List<Utente> findAllAdmin() {
+        return utenteRepository.findAll();
+    }
+
 }

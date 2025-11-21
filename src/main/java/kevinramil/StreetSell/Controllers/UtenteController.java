@@ -90,7 +90,7 @@ public class UtenteController {
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ADMIN')")
     public List<Utente> getAllUtenti() {
-        return utenteService.findAll();
+        return utenteService.findAllAdmin();
     }
 
     // DELETE /utenti/{id} -> Disattiva l'account di un utente

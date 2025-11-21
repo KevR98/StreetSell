@@ -19,4 +19,7 @@ public interface ProdottoRepository extends JpaRepository<Prodotto, UUID> {
     @EntityGraph(attributePaths = {"venditore"})
     Page<Prodotto> findByVenditore(Utente venditore, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"venditore"})
+    Page<Prodotto> findAll(Pageable pageable);
+
 }
