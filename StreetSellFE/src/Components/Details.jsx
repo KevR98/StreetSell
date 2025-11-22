@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import BackButton from './BackButton';
 import ErrorAlert from './ErrorAlert';
 import LoadingSpinner from './LoadingSpinner';
+import Order from './Order';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
@@ -172,12 +173,12 @@ function Details() {
               </Button>
             </div>
           ) : canBuy ? (
-            // 2. Se NON è proprietario/admin E DISPONIBILE: Mostra Acquista
-            <Button variant='success' size='lg' className='w-100'>
-              Acquista Ora
-            </Button>
+            // 🛑 2. Se NON è proprietario/admin E DISPONIBILE: Mostra il Widget
+            <Order
+              prodottoId={prodotto.id} // Passa l'ID al widget
+            />
           ) : (
-            // 3. Altrimenti (NON proprietario/admin E NON disponibile): Mostra non disponibile
+            // 3. Altrimenti (NON disponibile): Mostra non disponibile
             <Button variant='secondary' size='lg' className='w-100' disabled>
               Non Disponibile
             </Button>
