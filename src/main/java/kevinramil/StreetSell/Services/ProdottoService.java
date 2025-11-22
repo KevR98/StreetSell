@@ -16,6 +16,7 @@ import kevinramil.StreetSell.Repositories.ProdottoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -163,5 +164,9 @@ public class ProdottoService {
 
         prodotto.setStatoProdotto(StatoProdotto.ARCHIVIATO); // Imposta lo stato su Archiviato/Sospeso
         return prodottoRepository.save(prodotto);
+    }
+
+    public List<Prodotto> findAll() {
+        return prodottoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 }

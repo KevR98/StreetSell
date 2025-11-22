@@ -294,9 +294,7 @@ function AdminDashboard() {
             <tr key={p.id}>
               <td className='align-middle'>{p.id.substring(0, 8)}...</td>
               <td className='align-middle'>
-                <Link to={`/prodotto/${p.id}`} target='_blank'>
-                  {p.titolo}
-                </Link>
+                <Link to={`/prodotto/${p.id}`}>{p.titolo}</Link>
               </td>
               <td className='align-middle'>
                 <Link to={`/utenti/${p.venditore.id}`}>
