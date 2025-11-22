@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import RecensioniList from './RecensioniList';
 import LoadingSpinner from './LoadingSpinner';
 import BackButton from './BackButton';
+import { Link } from 'react-router-dom';
 
 function ProfilePage() {
   const user = useSelector((state) => state.auth.user);
@@ -68,9 +69,16 @@ function ProfilePage() {
             <Card.Header as='h5'>Azioni Rapide</Card.Header>
             <Card.Body>
               <p>
-                Vai a <a href='/prodotti/me'>I Miei Prodotti</a>
+                <Link to={`/prodotti/me`}>I Miei Prodotti in Vendita</Link>
               </p>
-              {/* Qui andrebbe il bottone per disattivare l'account (DELETE /utenti/me) */}
+
+              {/* 🛑 AGGIUNGI QUESTO LINK */}
+              <p>
+                <Link to={`/profilo/gestione`}>
+                  ⚙️ Gestisci Dati e Indirizzi
+                </Link>
+              </p>
+              {/* ... Altre azioni ... */}
             </Card.Body>
           </Card>
         </Col>

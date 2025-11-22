@@ -2,6 +2,8 @@ package kevinramil.StreetSell.Controllers;
 
 import kevinramil.StreetSell.Entities.Recensione;
 import kevinramil.StreetSell.Entities.Utente;
+import kevinramil.StreetSell.Exceptions.ValidationException;
+import kevinramil.StreetSell.Payloads.UpdateUtenteDTO;
 import kevinramil.StreetSell.Payloads.UtenteAdminDTO;
 import kevinramil.StreetSell.Services.RecensioneService;
 import kevinramil.StreetSell.Services.UtenteService;
@@ -14,12 +16,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/utenti")
@@ -74,6 +79,21 @@ public class UtenteController {
     @GetMapping("/me")
     public Utente getMioProfilo(@AuthenticationPrincipal Utente currentUser) {
         return currentUser;
+    }
+
+    @PutMapping("/me")
+    public Utente updateMioProfilo(
+            @RequestBody @Validated UpdateUtenteDTO body, // Utilizza il DTO di aggiornamento
+            BindingResult validation,
+            @AuthenticationPrincipal Utente currentUser) {
+
+        // 1. Gestione della validazione
+        if (validation.hasErrors()) {
+            throw new ValidationException(validation.getAllErrors().stream().map(e -> e.getDefaultMessage()).collect(Collectors.toList()));
+        }
+
+        // 2. Chiama il Service per aggiornare i dati
+        return utenteService.updateProfileDetails(body, currentUser);
     }
 
     // DELETE /utenti/me -> L'utente disattiva il proprio account

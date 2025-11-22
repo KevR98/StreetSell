@@ -15,6 +15,7 @@ import { useEffect } from 'react';
 import { setUser, logout } from './Redux/Action';
 import AdminDashboard from './Components/AdminDashboard';
 import AdminRoute from './Components/AdminRoute';
+import DetailsProfile from './Components/DetailsProfile';
 
 function App() {
   const dispatch = useDispatch();
@@ -80,6 +81,7 @@ function App() {
             {/* 5. PROFILO UTENTE */}
             <Route path='/prodotti/me' element={<ProfileProductPage />} />
             <Route path='/me' element={<ProfilePage />} />
+            <Route path='/profilo/gestione' element={<DetailsProfile />} />
           </Routes>
         </div>
         <MyFooter />

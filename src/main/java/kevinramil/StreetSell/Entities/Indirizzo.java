@@ -1,5 +1,6 @@
 package kevinramil.StreetSell.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,5 +37,6 @@ public class Indirizzo {
     // Relazione: Molti indirizzi possono appartenere a un solo utente
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utente_id", nullable = false)
+    @JsonIgnore
     private Utente utente;
 }

@@ -34,6 +34,12 @@ public class Utente implements UserDetails {
     @GeneratedValue
     private UUID id;
 
+    @Column(nullable = true)
+    private String nome;
+
+    @Column(nullable = true)
+    private String cognome;
+
     private String username; // ✅ ORA SARÀ VISIBILE
     private String email;
 

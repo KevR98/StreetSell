@@ -3,11 +3,13 @@ package kevinramil.StreetSell.Services;
 import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.BadRequestException;
 import kevinramil.StreetSell.Exceptions.NotFoundException;
+import kevinramil.StreetSell.Payloads.UpdateUtenteDTO;
 import kevinramil.StreetSell.Payloads.UtenteAdminDTO;
 import kevinramil.StreetSell.Repositories.ProdottoRepository;
 import kevinramil.StreetSell.Repositories.UtenteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -90,5 +92,20 @@ public class UtenteService {
         utenteDaRiattivare.setAttivo(true);
 
         return utenteRepository.save(utenteDaRiattivare); // Salva la modifica
+    }
+
+    @Transactional
+    public Utente updateProfileDetails(UpdateUtenteDTO payload, Utente utenteCorrente) {
+
+        // Applica le modifiche. Dato che i campi sono nullable nel DB,
+        // possiamo accettare i valori dal DTO. Se il DTO è @Validated e @NotEmpty,
+        // questi valori non saranno mai null qui, ma saranno gestiti dalla Validation.
+        utenteCorrente.setNome(payload.nome());
+        utenteCorrente.setCognome(payload.cognome());
+
+        // Nota: se volessi aggiornare altri campi (es. email), lo faresti qui.
+
+        // Salva l'oggetto aggiornato.
+        return utenteRepository.save(utenteCorrente);
     }
 }
