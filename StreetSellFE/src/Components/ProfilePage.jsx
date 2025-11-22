@@ -1,76 +1,146 @@
-import { Alert, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
+import { useEffect, useState } from 'react'; // 🛑 Aggiunto useState e useEffect
+import { Alert, Button, Card, Col, Container, Row } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom'; // 🛑 NUOVO IMPORT
 import RecensioniList from './RecensioniList';
 import LoadingSpinner from './LoadingSpinner';
 import BackButton from './BackButton';
 
-function ProfilePage() {
-  const user = useSelector((state) => state.auth.user);
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+// 🛑 Definizione dell'endpoint
+const endpointUtenti = 'http://localhost:8888/utenti';
 
-  // 2. Stato di Caricamento (Lo username è già stato caricato in App.js,
-  // ma usiamo un controllo di base)
-  if (!isAuthenticated) {
-    // Se non autenticato, reindirizziamo o mostriamo un messaggio
+function ProfilePage() {
+  // Dati dell'utente loggato (usati per l'ID e l'autorizzazione)
+  const currentUser = useSelector((state) => state.auth.user);
+  const token = localStorage.getItem('accessToken');
+
+  // 🛑 Estrae l'ID dall'URL. Se siamo su /utenti/XYZ, userId sarà XYZ.
+  const { userId } = useParams();
+
+  // 🛑 Stati per l'utente da visualizzare
+  const [fetchedUser, setFetchedUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Determina quale ID usare per il fetch:
+  // 1. Se l'URL ha un ID (es. /utenti/XYZ), usa quello.
+  // 2. Altrimenti (siamo su /profilo o rotta generica), usa l'ID dell'utente loggato.
+  const idToFetch = userId || (currentUser ? currentUser.id : null);
+
+  useEffect(() => {
+    // Esci se non c'è un ID valido da caricare
+    if (!idToFetch || !token) {
+      setIsLoading(false);
+      // Se non siamo autenticati E non c'è ID nell'URL, mostriamo errore
+      if (!currentUser)
+        setError('Autenticazione richiesta o ID utente non specificato.');
+      return;
+    }
+
+    // Se l'ID da caricare è l'ID dell'utente loggato, possiamo usare i dati di Redux
+    // per evitare un fetch non necessario (se i dati di Redux sono completi e freschi).
+    // Tuttavia, per garantire che i dati siano freschi e completi (es. se l'admin ha modificato l'utente),
+    // è più sicuro eseguire sempre il fetch.
+
+    setIsLoading(true);
+    setError(null);
+
+    // 🛑 Esegue il fetch per l'utente con l'ID dinamico
+    fetch(`${endpointUtenti}/${idToFetch}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Impossibile caricare il profilo utente.');
+        return res.json();
+      })
+      .then((data) => {
+        setFetchedUser(data); // Imposta l'utente che verrà visualizzato
+      })
+      .catch((err) => {
+        console.error('Errore fetch utente:', err);
+        setError('Errore nel caricamento dei dati utente.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [idToFetch, token, currentUser]); // Dipendenze aggiornate
+
+  // 🛑 L'oggetto da usare per il rendering è quello scaricato
+  const userToDisplay = fetchedUser;
+
+  if (isLoading) return <LoadingSpinner />;
+
+  if (error || !userToDisplay) {
     return (
       <Container className='mt-5'>
-        <Alert variant='warning'>
-          Accesso negato. Effettua il <a href='/login'>login</a> per
-          visualizzare il tuo profilo.
-        </Alert>
+        <Alert variant='danger'>{error || 'Utente non trovato.'}</Alert>
       </Container>
     );
   }
 
-  // 3. Controllo se i dati sono ancora in transizione (dopo il fetch in App.js)
-  if (!user) {
-    return <LoadingSpinner />;
-  }
-
+  // --- RENDERING ---
   return (
     <Container className='my-5'>
       <BackButton />
-      <h1 className='mb-4'>👋 Benvenuto nel Tuo Profilo, {user.username}</h1>
+
+      {/* 🛑 Usa userToDisplay per il nome */}
+      <h1 className='mb-4'>
+        {userId
+          ? `Profilo Venditore: ${userToDisplay.username}`
+          : `👋 Benvenuto nel Tuo Profilo, ${userToDisplay.username}`}
+      </h1>
+
       <Row>
-        {/* ======================================================= */}
-        {/* COLONNA 1 (md=8): RECENSIONI RICEVUTE (Contenuto principale) */}
-        {/* ======================================================= */}
         <Col md={8}>
-          <RecensioniList utenteId={user.id} />
-          {/* 🛑 IMPLEMENTAZIONE QUI: Passiamo l'ID dell'utente loggato al componente */}
+          {/* Passa l'ID dell'utente visualizzato per le recensioni */}
+          <RecensioniList utenteId={userToDisplay.id} />
         </Col>
 
-        {/* ======================================================= */}
-        {/* COLONNA 2 (md=4): DETTAGLI UTENTE E AZIONI RAPIDE */}
-        {/* ======================================================= */}
         <Col md={4}>
-          {/* Blocco 1: Dettagli Utente (Spostato qui) */}
           <Card className='shadow-sm mb-4'>
             <Card.Header as='h5' className='bg-primary text-white'>
               Dettagli Account
             </Card.Header>
             <Card.Body>
-              {/* (Mantieni qui tutte le Row con ID, Username, Email, Ruolo...) */}
               <Row className='mb-3'>
                 <Col xs={4} className='fw-bold'>
                   ID Utente:
                 </Col>
                 <Col xs={8} className='text-break'>
-                  {user.id}
+                  {userToDisplay.id} {/* 🛑 Usa userToDisplay */}
                 </Col>
               </Row>
-              {/* ... Altre righe con Email, Ruolo, Stato ... */}
+              <Row className='mb-3'>
+                <Col xs={4} className='fw-bold'>
+                  Email:
+                </Col>
+                <Col xs={8} className='text-break'>
+                  {userToDisplay.email} {/* 🛑 Usa userToDisplay */}
+                </Col>
+              </Row>
+              {/* Continua ad usare userToDisplay per tutti i campi */}
             </Card.Body>
           </Card>
 
-          {/* Blocco 2: Azioni Rapide */}
+          {/* Azioni Rapide (Le modifichi in base a chi è loggato e chi è visualizzato) */}
           <Card className='shadow-sm'>
             <Card.Header as='h5'>Azioni Rapide</Card.Header>
             <Card.Body>
-              <p>
-                Vai a <a href='/prodotti/me'>I Miei Prodotti</a>
-              </p>
-              {/* Qui andrebbe il bottone per disattivare l'account (DELETE /utenti/me) */}
+              {/* Mostra questo solo se l'utente loggato sta guardando il PROPRIO profilo */}
+              {userToDisplay.id === currentUser?.id && (
+                <p>
+                  Vai a <a href='/prodotti/me'>I Miei Prodotti</a>
+                </p>
+              )}
+
+              {/* Aggiungi qui la logica per "Contatta Venditore" se è un profilo esterno */}
+              {userToDisplay.id !== currentUser?.id && (
+                <Button variant='success'>
+                  Contatta {userToDisplay.username}
+                </Button>
+              )}
             </Card.Body>
           </Card>
         </Col>

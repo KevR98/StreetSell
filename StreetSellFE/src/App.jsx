@@ -56,30 +56,26 @@ function App() {
               path='/'
               element={isAuthenticated ? <Home /> : <HomePage />}
             />
-
             {/* 2. AUTH */}
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<RegisterPage />} />
-
             <Route
               path='/admin/dashboard'
               // Usiamo AdminRoute per applicare il controllo del ruolo
               element={<AdminRoute AdminComp={AdminDashboard} />}
             />
-
             {/* 3. PRODOTTI (Creazione e Modifica) */}
             <Route path='/crea-prodotto' element={<CreaProductPage />} />
             <Route
               path='/modifica-prodotto/:id'
               element={<CreaProductPage />}
             />
-
             {/* 4. DETTAGLIO (Corretto al PLURALE per matchare i link) */}
             <Route path='/prodotto/:prodottoId' element={<Details />} />
-
             {/* 5. PROFILO UTENTE */}
             <Route path='/prodotti/me' element={<ProfileProductPage />} />
-            <Route path='/me' element={<ProfilePage />} />
+            <Route path='/profilo' element={<ProfilePage />} />{' '}
+            <Route path='/utenti/:userId' element={<ProfilePage />} />
           </Routes>
         </div>
         <MyFooter />

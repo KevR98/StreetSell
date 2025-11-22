@@ -114,7 +114,7 @@ function MyNavbar() {
                 )}
                 <NavDropdown.Item
                   as={Link}
-                  to='/me'
+                  to='/profilo'
                   className='d-flex align-items-center'
                 >
                   <BsPersonFill style={{ marginRight: '8px' }} />
