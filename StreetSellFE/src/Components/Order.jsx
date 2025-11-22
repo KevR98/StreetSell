@@ -169,8 +169,9 @@ function Order({ prodottoId }) {
         selectedAddressId={selectedAddressId}
         onSelectAddress={setSelectedAddressId}
         onConfirmPurchase={handlePurchase}
-        // 🛑 Passiamo lo stato di elaborazione al Modal
         isProcessing={isProcessingOrder}
+        onFetchAddresses={fetchUserAddresses} // Permette al modal di ricaricare la lista
+        token={token} // Passa il token per l'API POST del form
       />
     </>
   );
