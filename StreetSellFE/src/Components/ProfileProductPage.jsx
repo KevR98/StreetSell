@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react';
 // Importa i componenti Bootstrap qui sotto
-import {
-  Card,
-  Container,
-  Row,
-  Col,
-  Spinner,
-  Alert,
-  Button,
-} from 'react-bootstrap';
+import { Card, Container, Row, Col, Alert, Button } from 'react-bootstrap';
 
 // 🚨 CORREZIONE: Link DEVE venire da react-router-dom 🚨
 import { Link, useNavigate } from 'react-router-dom';
+import LoadingSpinner from './LoadingSpinner';
+import ErrorAlert from './ErrorAlert';
+import BackButton from './BackButton';
 
 const endpoint = 'http://localhost:8888/prodotti/me';
 
@@ -69,20 +64,12 @@ function ProfileProductPage() {
     getDetail();
   }, [token, navigate]);
 
-  if (loading)
-    return (
-      <Container className='mt-5 text-center'>
-        <Spinner animation='border' />
-      </Container>
-    );
-  if (error)
-    return (
-      <Container className='mt-5'>
-        <Alert variant='danger'>{error}</Alert>
-      </Container>
-    );
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorAlert />;
   return (
     <Container className='mt-5'>
+      <BackButton />
+
       <h2>I Tuoi Prodotti in Vendita</h2>
       <hr />
 
