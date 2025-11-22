@@ -53,11 +53,10 @@ public class OrdineService {
 
         Ordine nuovoOrdine = new Ordine();
         nuovoOrdine.setCompratore(compratore);
+        nuovoOrdine.setVenditore(prodotto.getVenditore());
         nuovoOrdine.setProdotto(prodotto);
         nuovoOrdine.setIndirizzoSpedizione(indirizzo);
         nuovoOrdine.setStatoOrdine(StatoOrdine.CONFERMATO);
-
-        // <-- AGGIUNGI QUESTA RIGA
         nuovoOrdine.setDataOrdine(LocalDateTime.now());
 
         return ordineRepository.save(nuovoOrdine);

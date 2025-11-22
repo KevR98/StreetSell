@@ -24,7 +24,6 @@ public interface ProdottoRepository extends JpaRepository<Prodotto, UUID> {
     @EntityGraph(attributePaths = {"venditore"})
     Page<Prodotto> findAll(Pageable pageable);
 
-
     @Query("SELECT COUNT(p) FROM Prodotto p WHERE p.venditore.id = :venditoreId AND p.statoProdotto = 'DISPONIBILE'")
     long countByVenditoreAndStatoProdotto(@Param("venditoreId") UUID venditoreId);
 

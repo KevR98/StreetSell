@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -64,8 +63,11 @@ public class ProdottoController {
 
     // --- LISTA (GET) ---
     @GetMapping("")
-    public List<Prodotto> getAllProdottiDisponibili() {
-        return prodottoService.findAll();
+    public Page<Prodotto> getAllProdottiDisponibili(@RequestParam(defaultValue = "10") int size,
+                                                    @RequestParam(defaultValue = "0") int page,
+                                                    @RequestParam(defaultValue = "createdAt") String sortBy) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+        return prodottoService.findProdottiDisponibili(pageable);
     }
 
     // --- DETTAGLIO (GET) ---

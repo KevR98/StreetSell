@@ -59,12 +59,16 @@ function ProductCard({ prodotto }) {
     if (diff <= TWENTY_MINUTES) {
       // 1. Logica 'Minuti fa'
       const minutes = Math.floor(diff / (60 * 1000));
-      if (minutes === 0) return ' ora';
-      return `${minutes} minuti fa`;
+      if (minutes === 0) return 'Pubblicato ora';
+      return `Pubblicato ${minutes} minuti fa`;
     }
     const datePart = createdDate.toLocaleDateString('it-IT');
+    const timePart = createdDate.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
-    return `${datePart}`;
+    return `${datePart} alle ${timePart}`;
   };
 
   const formattedDate = getDisplayDate(prodotto.createdAt);
@@ -125,7 +129,7 @@ function ProductCard({ prodotto }) {
             </strong>
           </Card.Text>
           <Card.Text className='text-secondary small mb-2'>
-            Annuncio pubblicato: <strong>{formattedDate}</strong>
+            Pubblicato il: <strong>{formattedDate}</strong>
           </Card.Text>
         </Card.Body>
       </Card>
