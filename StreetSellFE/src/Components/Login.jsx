@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginSuccess, loginFailure } from '../Redux/Action/index';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { Button, Card, Container, Form, InputGroup } from 'react-bootstrap';
+import ErrorAlert from './ErrorAlert';
 
 const endpoint = 'http://localhost:8888/auth/login';
 
@@ -9,9 +12,14 @@ function Login() {
   // 1. State locali solo per i valori degli input
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   // 2. Funzione che gestisce l'invio del form
   const handleSubmit = (event) => {
@@ -53,57 +61,69 @@ function Login() {
   };
 
   return (
-    <div className='container my-5' style={{ maxWidth: '400px' }}>
-      <div className='card shadow-sm border-0'>
-        <div className='card-body p-4'>
+    <Container className='my-5' style={{ maxWidth: '400px' }}>
+      <Card className='shadow-sm border-0'>
+        <Card.Body className='p-4'>
           <h2 className='card-title text-center mb-4'>Accedi</h2>
-          {error && <div className='alert alert-danger'>{error}</div>}
+          {error && <ErrorAlert message={error} />}
 
           {/* Il form chiama la funzione handleSubmit quando viene inviato */}
-          <form onSubmit={handleSubmit}>
-            <div className='mb-3'>
-              <label htmlFor='emailInput' className='form-label'>
-                Indirizzo Email
-              </label>
-              <input
+          <Form onSubmit={handleSubmit}>
+            {/* Campo Email */}
+            <Form.Group className='mb-3' controlId='emailInput'>
+              <Form.Label>Indirizzo Email</Form.Label>
+              <Form.Control
                 type='email'
-                className='form-control' // Classe Bootstrap per lo stile
-                id='emailInput'
-                value={email} // Il valore dell'input è legato allo stato 'email'
-                onChange={(e) => setEmail(e.target.value)} // Aggiorna lo stato quando l'utente scrive
-                required // Campo obbligatorio
-              />
-            </div>
-
-            <div className='mb-3'>
-              <label htmlFor='passwordInput' className='form-label'>
-                Password
-              </label>
-              <input
-                type='password'
-                className='form-control'
-                id='passwordInput'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
-            </div>
+            </Form.Group>
+
+            {/* Campo Password (Pronto per l'InputGroup e il bottone occhio) */}
+            <Form.Group className='mb-3' controlId='passwordInput'>
+              <Form.Label>Password</Form.Label>
+
+              <InputGroup>
+                {/* 🛑 CAMPO DI INPUT */}
+                <Form.Control
+                  // 🛑 La chiave: Cambia il tipo in base allo stato 'showPassword'
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder='Inserisci la password'
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+
+                {/* 🛑 BOTTONE OCULARIO */}
+                <Button
+                  variant='outline-secondary'
+                  onClick={togglePasswordVisibility}
+                  aria-label={
+                    showPassword ? 'Nascondi password' : 'Mostra password'
+                  }
+                >
+                  {/* L'icona cambia in base allo stato */}
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </Button>
+              </InputGroup>
+            </Form.Group>
 
             <div className='d-grid mt-4'>
-              <button type='submit' className='btn btn-primary btn-lg'>
+              <Button type='submit' variant='primary' size='lg'>
                 Accedi
-              </button>
+              </Button>
             </div>
-          </form>
+          </Form>
 
           {/* Link alla pagina di registrazione */}
           <div className='text-center mt-4'>
             <p className='mb-0'>Non hai ancora un account?</p>
             <Link to='/register'>Registrati ora</Link>
           </div>
-        </div>
-      </div>
-    </div>
+        </Card.Body>
+      </Card>
+    </Container>
   );
 }
 
