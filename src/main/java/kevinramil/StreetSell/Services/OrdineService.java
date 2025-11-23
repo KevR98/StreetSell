@@ -140,4 +140,13 @@ public class OrdineService {
                 Sort.by(Sort.Direction.ASC, "dataOrdine") // Ordina per data, ASC per vedere prima il più vecchio
         );
     }
+
+    public List<Ordine> findOrdiniCompratoreRecenti(Utente compratore) {
+        // Recupera solo gli ordini SPEDITI, ordinati per data decrescente (più recenti)
+        return ordineRepository.findByCompratoreAndStatoOrdine(
+                compratore,
+                StatoOrdine.SPEDITO, // Filtro: Solo ordini che ti stanno arrivando
+                Sort.by(Sort.Direction.DESC, "dataOrdine")
+        );
+    }
 }

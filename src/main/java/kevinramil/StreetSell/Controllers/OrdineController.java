@@ -54,4 +54,10 @@ public class OrdineController {
         // Questo endpoint recupera solo gli ordini nello stato CONFERMATO (in attesa di spedizione)
         return ordineService.findOrdiniByVenditore(currentUser);
     }
+
+    @GetMapping("/compratore/notifiche")
+    public List<Ordine> getNotificheCompratore(@AuthenticationPrincipal Utente currentUser) {
+        // Questo restituirà la lista di ordini SPEDITI
+        return ordineService.findOrdiniCompratoreRecenti(currentUser);
+    }
 }

@@ -20,6 +20,7 @@ import {
   BsController,
 } from 'react-icons/bs';
 import Notification from './Notification';
+import { FaBoxOpen } from 'react-icons/fa';
 
 function MyNavbar() {
   const dispatch = useDispatch();
@@ -86,13 +87,14 @@ function MyNavbar() {
 
           {/* Menu Utente a Destra (ms-auto) */}
           <Nav className='ms-auto'>
-            <Notification />
             {/* STATO 1: OFFLINE (Mostra Login) */}
             {!token && !isLoadingUserData && (
               <Nav.Link as={Link} to='/login'>
                 Login
               </Nav.Link>
             )}
+
+            <Notification />
 
             {/* STATO 2: CARICAMENTO (Mostra Spinner) */}
             {isLoadingUserData && (
@@ -107,6 +109,7 @@ function MyNavbar() {
                 title={dropdownTitle}
                 id='basic-nav-dropdown'
                 align='end'
+                className='no-caret'
               >
                 {isAdmin && (
                   <NavDropdown.Item as={Link} to='/admin/dashboard'>
@@ -130,6 +133,15 @@ function MyNavbar() {
                 >
                   <BsBoxSeamFill style={{ marginRight: '8px' }} />I Miei
                   Prodotti
+                </NavDropdown.Item>
+
+                <NavDropdown.Item
+                  as={Link}
+                  to='/ordini/venditore'
+                  className='d-flex align-items-center'
+                >
+                  <FaBoxOpen style={{ marginRight: '8px' }} />
+                  Ordini
                 </NavDropdown.Item>
 
                 <NavDropdown.Item
