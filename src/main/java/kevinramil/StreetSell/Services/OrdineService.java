@@ -124,4 +124,9 @@ public class OrdineService {
 
         return ordineRepository.save(ordine);
     }
+
+    public long contaOrdiniInAttesaDiSpedizione(Utente venditore) {
+        // 🛑 Questo richiede il metodo nel Repository
+        return ordineRepository.countByVenditoreAndStatoOrdine(venditore, StatoOrdine.CONFERMATO);
+    }
 }

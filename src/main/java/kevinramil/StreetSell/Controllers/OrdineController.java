@@ -12,6 +12,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,5 +37,14 @@ public class OrdineController {
         }
         // Passiamo al service i dati dell'ordine e il compratore
         return ordineService.creaOrdine(body, currentUser);
+    }
+
+    @GetMapping("/notifiche/in-spedizione")
+    public Map<String, Long> getCountOrdiniInSpedizione(@AuthenticationPrincipal Utente currentUser) {
+
+        long count = ordineService.contaOrdiniInAttesaDiSpedizione(currentUser);
+
+        // Restituisce un oggetto JSON semplice: {"count": 3}
+        return Map.of("count", count);
     }
 }
