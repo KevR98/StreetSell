@@ -127,26 +127,38 @@ public class OrdineService {
         return ordineRepository.save(ordine);
     }
 
-    public long contaOrdiniInAttesaDiSpedizione(Utente venditore) {
-        // 🛑 Questo richiede il metodo nel Repository
-        return ordineRepository.countByVenditoreAndStatoOrdine(venditore, StatoOrdine.CONFERMATO);
-    }
 
-    public List<Ordine> findOrdiniByVenditore(Utente venditore) {
-        // Recupera solo gli ordini CONFERMATI, ordinati dal più vecchio al più recente
-        return ordineRepository.findByVenditoreAndStatoOrdine(
-                venditore,
+    public List<Ordine> findOrdiniUtenteCompleto(Utente utenteCorrente) {
+
+        // 1. Ordini che devo spedire (sono il VENDITORE, Stato: CONFERMATO)
+        List<Ordine> ordiniVenditore = ordineRepository.findByVenditoreAndStatoOrdine(
+                utenteCorrente,
                 StatoOrdine.CONFERMATO,
-                Sort.by(Sort.Direction.ASC, "dataOrdine") // Ordina per data, ASC per vedere prima il più vecchio
-        );
-    }
-
-    public List<Ordine> findOrdiniCompratoreRecenti(Utente compratore) {
-        // Recupera solo gli ordini SPEDITI, ordinati per data decrescente (più recenti)
-        return ordineRepository.findByCompratoreAndStatoOrdine(
-                compratore,
-                StatoOrdine.SPEDITO, // Filtro: Solo ordini che ti stanno arrivando
                 Sort.by(Sort.Direction.DESC, "dataOrdine")
         );
+
+        // 2. Ordini che ho comprato e devo confermare (sono il COMPRATORE, Stato: SPEDITO)
+        List<Ordine> ordiniCompratore = ordineRepository.findByCompratoreAndStatoOrdine(
+                utenteCorrente,
+                StatoOrdine.SPEDITO,
+                Sort.by(Sort.Direction.DESC, "dataOrdine")
+        );
+
+        List<Ordine> ordiniVenditoreNotifica = ordineRepository.findByVenditoreAndStatoOrdine(
+                utenteCorrente,
+                StatoOrdine.COMPLETATO,
+                Sort.by(Sort.Direction.DESC, "dataOrdine")
+        );
+
+        // 3. Uniamo le due liste
+        List<Ordine> tutteLeTask = new java.util.ArrayList<>();
+        tutteLeTask.addAll(ordiniVenditore);
+        tutteLeTask.addAll(ordiniCompratore);
+        tutteLeTask.addAll(ordiniVenditoreNotifica);
+
+        // 4. Ordiniamo la lista finale (opzionale, ma utile per la visualizzazione)
+        tutteLeTask.sort((o1, o2) -> o2.getDataOrdine().compareTo(o1.getDataOrdine()));
+
+        return tutteLeTask;
     }
 }

@@ -4,8 +4,7 @@ import { FaBoxOpen, FaTruck, FaShoppingCart, FaBell } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
-const VENDITORE_ENDPOINT = 'http://localhost:8888/ordini/venditore'; // Endpoint lista venditore
-const COMPRATORE_ENDPOINT = 'http://localhost:8888/ordini/compratore/notifiche'; // Nuovo endpoint acquirente
+const MANAGEMENT_ENDPOINT = 'http://localhost:8888/ordini/gestione';
 const POLLING_INTERVAL = 30000;
 
 function Notification() {
@@ -21,47 +20,68 @@ function Notification() {
     let allNotifications = [];
 
     const headers = { Authorization: `Bearer ${token}` };
+    const currentUserId = currentUser?.id; // Ottieni l'ID dell'utente loggato
 
     try {
-      // 1. Fetch Notifiche Venditore (Ordini CONFERMATI = da spedire)
-      const resVenditore = await fetch(VENDITORE_ENDPOINT, { headers });
-      if (resVenditore.ok) {
-        const ordiniVenditore = await resVenditore.json();
-        ordiniVenditore.forEach((order) => {
-          allNotifications.push({
-            id: order.id,
-            type: 'VENDITORE',
-            message: `Qualcuno ha comprato: ${
-              order.prodotto?.titolo || 'Prodotto N/D'
-            }`,
-            date: new Date(order.dataOrdine),
-            prodottoId: order.prodotto?.id,
-          });
+      // 1. Fetch della LISTA UNIFICATA (Ordini CONFERMATO + SPEDITO)
+      const resManagement = await fetch(MANAGEMENT_ENDPOINT, { headers });
+
+      if (!resManagement.ok) {
+        // Se il BE risponde 404/500, lanciamo un errore
+        throw new Error('Errore nel caricamento delle task unificate.');
+      }
+
+      // 🛑 ordiniGestione è ora la LISTA, pronta per forEach()
+      const ordiniGestione = await resManagement.json();
+
+      // 🛑 Assicurati che sia un array prima di iterare (prevenzione)
+      if (Array.isArray(ordiniGestione)) {
+        ordiniGestione.forEach((order) => {
+          const isUserVendor = order.venditore?.id === currentUserId;
+          const isUserBuyer = order.compratore?.id === currentUserId;
+
+          // Logica della Notifica (Creiamo la notifica solo per la task attiva)
+          if (isUserVendor && order.statoOrdine === 'CONFERMATO') {
+            // Task Venditore: Spedisci
+            allNotifications.push({
+              id: order.id,
+              type: 'VENDITORE',
+              message: `Qualcuno ha comprato: ${
+                order.prodotto?.titolo || 'Prodotto N/D'
+              }`,
+              date: new Date(order.dataOrdine),
+              prodottoId: order.prodotto?.id,
+            });
+          } else if (isUserBuyer && order.statoOrdine === 'SPEDITO') {
+            // Task Compratore: Conferma Arrivo
+            allNotifications.push({
+              id: order.id + '-comp',
+              type: 'COMPRATORE',
+              message: `Il tuo ordine di ${
+                order.prodotto?.titolo || 'Prodotto N/D'
+              } è stato spedito!`,
+              date: new Date(order.dataOrdine),
+              prodottoId: order.prodotto?.id,
+            });
+          } else if (isUserVendor && order.statoOrdine === 'COMPLETATO') {
+            allNotifications.push({
+              id: order.id + '-vend-comp', // ID univoco per questa notifica
+              type: 'VENDITORE_COMPLETATO',
+              message: `🎉 Il tuo ordine: ${
+                order.prodotto?.titolo || 'Prodotto N/D'
+              } è stato COMPLETATO dal compratore.`,
+              date: new Date(order.dataOrdine),
+              prodottoId: order.prodotto?.id,
+            });
+          }
         });
       }
 
-      // 2. Fetch Notifiche Compratore (Ordini SPEDITI = in arrivo)
-      const resCompratore = await fetch(COMPRATORE_ENDPOINT, { headers });
-      if (resCompratore.ok) {
-        const ordiniCompratore = await resCompratore.json();
-        ordiniCompratore.forEach((order) => {
-          allNotifications.push({
-            id: order.id + '-comp', // Chiave univoca
-            type: 'COMPRATORE',
-            message: `Il tuo ordine di ${
-              order.prodotto?.titolo || 'Prodotto N/D'
-            } è stato spedito!`,
-            date: new Date(order.dataOrdine),
-            prodottoId: order.prodotto?.id,
-          });
-        });
-      }
-
-      // 3. Ordina le notifiche per data (più recenti per prime)
+      // 2. Ordina e imposta il conteggio totale dalla lista
       allNotifications.sort((a, b) => b.date.getTime() - a.date.getTime());
 
-      setNotifications(allNotifications.slice(0, 5)); // Mostra solo le ultime 5
-      setTotalCount(allNotifications.length);
+      setTotalCount(allNotifications.length); // 🛑 Conteggio totale corretto
+      setNotifications(allNotifications.slice(0, 5));
     } catch (error) {
       console.error('Errore fetch notifiche:', error);
       setNotifications([]);
@@ -72,6 +92,9 @@ function Notification() {
   };
 
   useEffect(() => {
+    // Esci subito se non c'è token, ma l'hook è stato chiamato incondizionatamente
+    if (!token) return;
+
     fetchNotifications();
     const intervalId = setInterval(fetchNotifications, POLLING_INTERVAL);
     return () => clearInterval(intervalId);
@@ -120,15 +143,20 @@ function Notification() {
           // VENDITORE va alla pagina di gestione, COMPRATORE va ai dettagli prodotto
           to={
             notif.type === 'VENDITORE'
-              ? '/ordini/venditore'
+              ? '/ordini/gestione'
               : `/prodotto/${notif.prodottoId}`
           }
           className='small'
         >
           {notif.type === 'VENDITORE' ? (
-            <FaShoppingCart className='text-success me-2' />
+            <FaShoppingCart className='text-success me-2' /> // Task da Spedire
+          ) : notif.type === 'COMPRATORE' ? (
+            <FaTruck className='text-primary me-2' /> // Task da Confermare
           ) : (
-            <FaTruck className='text-primary me-2' />
+            // 🛑 Icona per la notifica COMPLETATO
+            <span className='me-2' style={{ fontSize: '1.2rem' }}>
+              🎉
+            </span>
           )}
           {notif.message}
           <span className='d-block text-muted' style={{ fontSize: '0.75rem' }}>
@@ -143,7 +171,7 @@ function Notification() {
       {totalCount > 0 && (
         <NavDropdown.Item
           as={Link}
-          to='/ordini/venditore'
+          to='/ordini/gestione'
           className='text-primary text-center'
         >
           Vedi tutti gli ordini da gestire ({totalCount})

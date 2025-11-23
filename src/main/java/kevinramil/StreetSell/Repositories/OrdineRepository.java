@@ -25,7 +25,6 @@ public interface OrdineRepository extends JpaRepository<Ordine, UUID> {
     @EntityGraph(attributePaths = {"prodotto"})
     List<Ordine> findByCompratoreAndStatoOrdine(Utente compratore, StatoOrdine statoOrdine, Sort sort);
 
-    long countByVenditoreAndStatoOrdine(Utente venditore, StatoOrdine statoOrdine);
 
     @Query("SELECT o FROM Ordine o " +
             "LEFT JOIN FETCH o.prodotto p " +

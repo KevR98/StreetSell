@@ -14,7 +14,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,25 +41,11 @@ public class OrdineController {
         return ordineService.creaOrdine(body, currentUser);
     }
 
-    @GetMapping("/notifiche/in-spedizione")
-    public Map<String, Long> getCountOrdiniInSpedizione(@AuthenticationPrincipal Utente currentUser) {
-
-        long count = ordineService.contaOrdiniInAttesaDiSpedizione(currentUser);
-
-        // Restituisce un oggetto JSON semplice: {"count": 3}
-        return Map.of("count", count);
-    }
-
-    @GetMapping("/venditore")
-    public List<Ordine> getOrdiniVenditore(@AuthenticationPrincipal Utente currentUser) {
-        // Questo endpoint recupera solo gli ordini nello stato CONFERMATO (in attesa di spedizione)
-        return ordineService.findOrdiniByVenditore(currentUser);
-    }
-
-    @GetMapping("/compratore/notifiche")
-    public List<Ordine> getNotificheCompratore(@AuthenticationPrincipal Utente currentUser) {
-        // Questo restituirà la lista di ordini SPEDITI
-        return ordineService.findOrdiniCompratoreRecenti(currentUser);
+    @GetMapping("/gestione") // 🛑 NUOVO ENDPOINT UNIFICATO
+    public List<Ordine> getOrdiniUtenteCompleto(@AuthenticationPrincipal Utente currentUser) {
+        // Questo endpoint restituisce tutte le task da fare (Vendita CONFERMATA e Acquisto SPEDITO)
+        // Dobbiamo assicuraci che il service abbia questo metodo.
+        return ordineService.findOrdiniUtenteCompleto(currentUser);
     }
 
     @PutMapping("/{ordineId}/stato")

@@ -137,7 +137,7 @@ function MyNavbar() {
 
                 <NavDropdown.Item
                   as={Link}
-                  to='/ordini/venditore'
+                  to='/ordini/gestione'
                   className='d-flex align-items-center'
                 >
                   <FaBoxOpen style={{ marginRight: '8px' }} />

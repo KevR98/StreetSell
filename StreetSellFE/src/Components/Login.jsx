@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { loginSuccess, loginFailure } from '../Redux/Action/index';
 import { Container, Card, Form, Button, InputGroup } from 'react-bootstrap';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import ErrorAlert from './ErrorAlert';
 
 const endpoint = 'http://localhost:8888/auth/login';
 
