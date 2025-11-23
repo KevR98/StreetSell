@@ -167,6 +167,9 @@ public class ProdottoService {
     }
 
     public List<Prodotto> findAll() {
-        return prodottoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+        return prodottoRepository.findByStatoProdotto(
+                StatoProdotto.DISPONIBILE,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 }
