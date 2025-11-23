@@ -1,6 +1,5 @@
 package kevinramil.StreetSell.Entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import kevinramil.StreetSell.Enums.StatoOrdine;
 import lombok.*;
@@ -26,12 +25,10 @@ public class Ordine {
     // Relazione: Un ordine ha un solo compratore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "compratore_id", nullable = false)
-    @JsonIgnore
     private Utente compratore;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venditore_id", nullable = false)
-    @JsonIgnore
     private Utente venditore;
 
     // Relazione: Un ordine è per un solo prodotto

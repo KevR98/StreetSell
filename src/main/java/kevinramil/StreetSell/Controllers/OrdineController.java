@@ -4,6 +4,7 @@ import kevinramil.StreetSell.Entities.Ordine;
 import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.ValidationException;
 import kevinramil.StreetSell.Payloads.OrdineDTO;
+import kevinramil.StreetSell.Payloads.OrdineStatoDTO;
 import kevinramil.StreetSell.Services.OrdineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -59,5 +61,22 @@ public class OrdineController {
     public List<Ordine> getNotificheCompratore(@AuthenticationPrincipal Utente currentUser) {
         // Questo restituirà la lista di ordini SPEDITI
         return ordineService.findOrdiniCompratoreRecenti(currentUser);
+    }
+
+    @PutMapping("/{ordineId}/stato")
+    public Ordine aggiornaStatoOrdine(@PathVariable UUID ordineId,
+                                      @RequestBody @Validated OrdineStatoDTO body,
+                                      BindingResult validation,
+                                      @AuthenticationPrincipal Utente currentUser) {
+
+        if (validation.hasErrors()) {
+            throw new ValidationException(
+                    validation.getAllErrors().stream()
+                            .map(err -> err.getDefaultMessage())
+                            .collect(Collectors.toList())
+            );
+        }
+
+        return ordineService.aggiornaStatoOrdine(ordineId, body, currentUser);
     }
 }

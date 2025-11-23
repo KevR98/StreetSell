@@ -68,7 +68,7 @@ public class OrdineService {
     @Transactional
     public Ordine aggiornaStatoOrdine(UUID ordineId, OrdineStatoDTO ordineStatoDTO, Utente utenteCorrente) {
 
-        Ordine ordine = ordineRepository.findById(ordineId)
+        Ordine ordine = ordineRepository.findByIdForUpdate(ordineId)
                 .orElseThrow(() -> new NotFoundException("Ordine con ID " + ordineId + " non trovato"));
 
         StatoOrdine nuovoStato = ordineStatoDTO.nuovoStato();
