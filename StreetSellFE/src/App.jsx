@@ -16,6 +16,8 @@ import { setUser, logout } from './Redux/Action';
 import AdminDashboard from './Components/AdminDashboard';
 import AdminRoute from './Components/AdminRoute';
 import DetailsProfile from './Components/DetailsProfile';
+import Notification from './Components/Notification';
+import VendorOrdersPage from './Components/VendorOrderPage';
 
 function App() {
   const dispatch = useDispatch();
@@ -82,6 +84,7 @@ function App() {
             <Route path='/prodotti/me' element={<ProfileProductPage />} />
             <Route path='/me' element={<ProfilePage />} />
             <Route path='/profilo/gestione' element={<DetailsProfile />} />
+            <Route path='/ordini/venditore' element={<VendorOrdersPage />} />
           </Routes>
         </div>
         <MyFooter />

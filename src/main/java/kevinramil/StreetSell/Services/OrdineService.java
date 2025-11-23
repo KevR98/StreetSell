@@ -14,10 +14,12 @@ import kevinramil.StreetSell.Repositories.IndirizzoRepository;
 import kevinramil.StreetSell.Repositories.OrdineRepository;
 import kevinramil.StreetSell.Repositories.ProdottoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -128,5 +130,14 @@ public class OrdineService {
     public long contaOrdiniInAttesaDiSpedizione(Utente venditore) {
         // 🛑 Questo richiede il metodo nel Repository
         return ordineRepository.countByVenditoreAndStatoOrdine(venditore, StatoOrdine.CONFERMATO);
+    }
+
+    public List<Ordine> findOrdiniByVenditore(Utente venditore) {
+        // Recupera solo gli ordini CONFERMATI, ordinati dal più vecchio al più recente
+        return ordineRepository.findByVenditoreAndStatoOrdine(
+                venditore,
+                StatoOrdine.CONFERMATO,
+                Sort.by(Sort.Direction.ASC, "dataOrdine") // Ordina per data, ASC per vedere prima il più vecchio
+        );
     }
 }

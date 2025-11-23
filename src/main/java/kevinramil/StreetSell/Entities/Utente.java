@@ -1,6 +1,7 @@
 package kevinramil.StreetSell.Entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import kevinramil.StreetSell.Enums.Ruolo;
 import lombok.Getter;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 // 2. ANNOTAZIONI DELLA CLASSE
 // ============================
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor

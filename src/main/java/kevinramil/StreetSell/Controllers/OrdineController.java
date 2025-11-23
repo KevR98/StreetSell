@@ -12,6 +12,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -46,5 +47,11 @@ public class OrdineController {
 
         // Restituisce un oggetto JSON semplice: {"count": 3}
         return Map.of("count", count);
+    }
+
+    @GetMapping("/venditore")
+    public List<Ordine> getOrdiniVenditore(@AuthenticationPrincipal Utente currentUser) {
+        // Questo endpoint recupera solo gli ordini nello stato CONFERMATO (in attesa di spedizione)
+        return ordineService.findOrdiniByVenditore(currentUser);
     }
 }

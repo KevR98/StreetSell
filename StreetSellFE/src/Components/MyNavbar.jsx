@@ -19,6 +19,7 @@ import {
   BsPersonFill,
   BsController,
 } from 'react-icons/bs';
+import Notification from './Notification';
 
 function MyNavbar() {
   const dispatch = useDispatch();
@@ -85,6 +86,7 @@ function MyNavbar() {
 
           {/* Menu Utente a Destra (ms-auto) */}
           <Nav className='ms-auto'>
+            <Notification />
             {/* STATO 1: OFFLINE (Mostra Login) */}
             {!token && !isLoadingUserData && (
               <Nav.Link as={Link} to='/login'>

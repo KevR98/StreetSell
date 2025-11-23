@@ -1,6 +1,6 @@
 package kevinramil.StreetSell.Entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,6 +12,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Table(name = "indirizzi")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Indirizzo {
 
     @Id
@@ -37,6 +38,5 @@ public class Indirizzo {
     // Relazione: Molti indirizzi possono appartenere a un solo utente
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "utente_id", nullable = false)
-    @JsonIgnore
     private Utente utente;
 }
