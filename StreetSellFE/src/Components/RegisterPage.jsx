@@ -7,8 +7,10 @@ import {
   Row,
   Form,
   Alert,
+  InputGroup,
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const endpoint = 'http://localhost:8888/auth/register';
 
@@ -16,10 +18,16 @@ function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   // Funzione per validare i campi
   const validateField = (name, value) => {
@@ -57,6 +65,11 @@ function RegisterPage() {
   const handleSubmit = (event) => {
     setError(null);
     event.preventDefault();
+
+    if (password !== confirmPassword) {
+      setError('Le password non corrispondono. Riprova.');
+      return; // Blocca l'invio
+    }
 
     const registration = {
       username: username,
@@ -128,7 +141,7 @@ function RegisterPage() {
                     isValid={username.length > 0 && !errors.username}
                   />
                   <Form.Text className='text-muted'>
-                    Deve avere tra 3 e 10 caratteri.
+                    Deve avere tra 3 e 20 caratteri.
                   </Form.Text>
                   <Form.Control.Feedback type='invalid'>
                     {errors.username}
@@ -157,28 +170,71 @@ function RegisterPage() {
                     {errors.email}
                   </Form.Control.Feedback>
                 </Form.Group>
-
                 <Form.Group className='mb-4' controlId='formBasicPassword'>
                   <Form.Label>Password</Form.Label>
-                  <Form.Control
-                    type='password'
-                    placeholder='Password*'
-                    value={password}
-                    onChange={(e) => {
-                      const { value } = e.target;
-                      setPassword(value);
-                      validateField('password', value);
-                    }}
-                    required
-                    isInvalid={!!errors.password}
-                    isValid={password.length > 0 && !errors.password}
-                  />
-                  <Form.Text className='text-muted'>
-                    Deve avere almeno 8 caratteri.
-                  </Form.Text>
-                  <Form.Control.Feedback type='invalid'>
-                    {errors.password}
-                  </Form.Control.Feedback>
+                  <InputGroup>
+                    <Form.Control
+                      type={showPassword ? 'text' : 'password'} // 🛑 Toggle per l'occhio
+                      placeholder='Password*'
+                      value={password}
+                      onChange={(e) => {
+                        const { value } = e.target;
+                        setPassword(value);
+                        validateField('password', value);
+                      }}
+                      required
+                      isInvalid={!!errors.password}
+                      isValid={password.length > 7 && !errors.password} // Lunghezza minima per mostrare 'Valido'
+                    />
+                    <Button
+                      variant='outline-secondary'
+                      onClick={toggleShowPassword}
+                      aria-label={
+                        showPassword ? 'Nascondi password' : 'Mostra password'
+                      }
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </Button>
+                    <Form.Control.Feedback type='invalid'>
+                      {errors.password}
+                    </Form.Control.Feedback>
+                  </InputGroup>
+                </Form.Group>
+
+                <Form.Group className='mb-4' controlId='formConfirmPassword'>
+                  <Form.Label>Conferma Password</Form.Label>
+                  <InputGroup>
+                    <Form.Control
+                      type={showPassword ? 'text' : 'password'} // 🛑 Usa lo stesso toggle showPassword
+                      placeholder='Conferma Password*'
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        const { value } = e.target;
+                        setConfirmPassword(value);
+                        validateField('confirmPassword', value);
+                      }}
+                      required
+                      // 🛑 La validazione si basa sull'errore specifico (password non corrispondente)
+                      isInvalid={!!errors.confirmPassword}
+                      isValid={
+                        confirmPassword.length > 0 &&
+                        !errors.confirmPassword &&
+                        !errors.password
+                      }
+                    />
+                    <Button
+                      variant='outline-secondary'
+                      onClick={toggleShowPassword}
+                      aria-label={
+                        showPassword ? 'Nascondi password' : 'Mostra password'
+                      }
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </Button>
+                    <Form.Control.Feedback type='invalid'>
+                      {errors.confirmPassword}
+                    </Form.Control.Feedback>
+                  </InputGroup>
                 </Form.Group>
 
                 {error && <Alert variant='danger'>{error}</Alert>}
