@@ -161,15 +161,6 @@ function MyNavbar() {
 
                 <NavDropdown.Item
                   as={Link}
-                  to='/prodotti/me'
-                  className='d-flex align-items-center'
-                >
-                  <BsBoxSeamFill style={{ marginRight: '8px' }} />I Miei
-                  Prodotti
-                </NavDropdown.Item>
-
-                <NavDropdown.Item
-                  as={Link}
                   to='/ordini/gestione'
                   className='d-flex align-items-center'
                 >

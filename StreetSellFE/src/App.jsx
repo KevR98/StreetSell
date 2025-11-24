@@ -9,7 +9,6 @@ import CreaProductPage from './Components/CreaProducts';
 import Home from './Components/Home';
 import Details from './Components/Details';
 import ProfilePage from './Components/ProfilePage';
-import ProfileProductPage from './Components/ProfileProductPage';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { setUser, logout } from './Redux/Action';
@@ -81,7 +80,6 @@ function App() {
             <Route path='/prodotto/:prodottoId' element={<Details />} />
 
             {/* 5. PROFILO UTENTE */}
-            <Route path='/prodotti/me' element={<ProfileProductPage />} />
             <Route path='/me' element={<ProfilePage />} />
             <Route path='/utenti/:userId' element={<ProfilePage />} />
             <Route path='/profilo/gestione' element={<DetailsProfile />} />

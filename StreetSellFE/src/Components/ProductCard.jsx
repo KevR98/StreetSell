@@ -1,4 +1,4 @@
-import { Card, Button, Carousel, Badge } from 'react-bootstrap';
+import { Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 // Il componente riceve un oggetto 'prodotto' come "prop" (proprietà)
