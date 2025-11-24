@@ -5,6 +5,7 @@ import { FaTruck, FaBoxOpen, FaCheckCircle } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
+import BackButton from './BackButton';
 
 // 🛑 ENDPOINT UNIFICATO per recuperare tutte le task da fare
 const ENDPOINT_FETCH_TASK = 'http://localhost:8888/ordini/gestione';
@@ -112,6 +113,7 @@ function OrderManagementPage() {
   // 🛑 RENDERING UNIFICATO
   return (
     <Container className='my-5'>
+      <BackButton />
       <h1 className='mb-4'>
         <FaBoxOpen className='me-2' /> Le Tue Task su Ordini ({orders.length})
       </h1>
