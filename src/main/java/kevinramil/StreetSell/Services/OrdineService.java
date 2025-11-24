@@ -156,11 +156,21 @@ public class OrdineService {
                 Sort.by(Sort.Direction.DESC, "dataOrdine")
         );
 
+        // 🛑 NUOVO AGGIUNTO: Ordini ANNULLATI (sono il VENDITORE, per notifica)
+        // Se non filtri per data qui, tutti gli ordini ANNULLATI passati appariranno.
+        // Per una notifica temporanea, dovresti aggiungere un filtro di data nel service o repository.
+        List<Ordine> ordiniVenditoreAnnullati = ordineRepository.findByVenditoreAndStatoOrdine(
+                utenteCorrente,
+                StatoOrdine.ANNULLATO,
+                Sort.by(Sort.Direction.DESC, "dataOrdine")
+        );
+
         // 3. Uniamo le due liste
         List<Ordine> tutteLeTask = new java.util.ArrayList<>();
         tutteLeTask.addAll(ordiniVenditore);
         tutteLeTask.addAll(ordiniCompratore);
         tutteLeTask.addAll(ordiniCompratoreAnnullabili);
+        tutteLeTask.addAll(ordiniVenditoreAnnullati);
         tutteLeTask.addAll(ordiniVenditoreNotifica);
 
         // 4. Ordiniamo la lista finale (opzionale, ma utile per la visualizzazione)
