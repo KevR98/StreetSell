@@ -277,13 +277,6 @@ function Details() {
             € {prodotto.prezzo.toFixed(2)}
           </p>
 
-          {canBuy && (
-            <p className='text-success small'>
-              € {(prodotto.prezzo * 1.05).toFixed(2)} include la Protezione
-              acquisti
-            </p>
-          )}
-
           <hr className='my-3' />
 
           {/* 2. TABELLA DETTAGLI CHIAVE */}

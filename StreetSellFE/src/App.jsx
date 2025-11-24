@@ -17,6 +17,7 @@ import AdminDashboard from './Components/AdminDashboard';
 import AdminRoute from './Components/AdminRoute';
 import DetailsProfile from './Components/DetailsProfile';
 import OrderManagement from './Components/OrderManagement';
+import SearchResults from './Components/SearchResult';
 
 function App() {
   const dispatch = useDispatch();
@@ -84,6 +85,7 @@ function App() {
             <Route path='/me' element={<ProfilePage />} />
             <Route path='/profilo/gestione' element={<DetailsProfile />} />
             <Route path='/ordini/gestione' element={<OrderManagement />} />
+            <Route path='/cerca' element={<SearchResults />} />
           </Routes>
         </div>
         <MyFooter />
