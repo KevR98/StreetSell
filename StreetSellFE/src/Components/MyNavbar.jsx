@@ -59,7 +59,7 @@ function MyNavbar() {
   };
 
   return (
-    <Navbar expand='lg' className='bg-dark' data-bs-theme='dark'>
+    <Navbar expand='lg' className='bg-dark' data-bs-theme='dark' sticky='top'>
       <Container>
         <Link
           to='/'

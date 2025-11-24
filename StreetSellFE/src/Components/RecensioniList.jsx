@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, Spinner, Alert, ListGroup, Pagination } from 'react-bootstrap';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
-// Importa l'icona a stella (potrebbe servire un'icona library come react-icons)
-// Per semplicità, useremo emoji o il carattere Unicode (⭐)
+// 🛑 Importa l'icona a stella per una visualizzazione pulita
+import { FaStar } from 'react-icons/fa';
 
 const endpoint = 'http://localhost:8888/utenti';
 
@@ -19,7 +19,7 @@ const RecensioniList = ({ utenteId }) => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0); // Pagina corrente (inizia da 0)
 
-  const size = 5; // Elementi per pagina, come impostato nel Controller Java
+  const size = 5; // Elementi per pagina
 
   useEffect(() => {
     if (!utenteId) return;
@@ -86,22 +86,52 @@ const RecensioniList = ({ utenteId }) => {
 
   const { averageRating, reviewCount } = ratingData;
   const recensioni = recensioniPage?.content || [];
+  const roundedRating = Math.round(averageRating); // Rating arrotondato per le stelle
 
   return (
     <div className='recensioni-list'>
       <h3 className='mb-3'>Valutazione e Recensioni Ricevute</h3>
 
-      {/* Blocco 1: Riepilogo del Rating */}
-      <Card className='shadow-sm mb-4 text-center'>
-        <Card.Body>
-          <h4 className='mb-2'>Rating Medio</h4>
-          <div className='display-4 fw-bold text-warning'>
-            {/* Mostra il rating solo se ci sono recensioni, altrimenti 0.0 */}
-            {reviewCount > 0 ? averageRating.toFixed(1) : 'N/A'} / 5.0
+      <hr />
+
+      {/* 🛑 Blocco 1: Riepilogo del Rating (MODIFICATO) */}
+      <Card
+        className='border-0 mb-4 p-3'
+        style={{ backgroundColor: 'transparent' }}
+      >
+        <Card.Body className='d-flex align-items-center justify-content-between'>
+          {/* 1. Rating Numerico e Stelle Medie */}
+          <div className='text-center flex-grow-1'>
+            <p className='mb-0 fw-bold' style={{ fontSize: '1.2rem' }}>
+              Rating Medio:
+            </p>
+            <div className='d-flex align-items-center justify-content-center'>
+              <span className='display-4 me-3'>
+                {reviewCount > 0 ? averageRating.toFixed(1) : 'N/A'}
+              </span>
+              {/* Visualizzazione delle stelle medie */}
+              <div className='d-flex'>
+                {[...Array(5)].map((_, i) => (
+                  <FaStar
+                    key={i}
+                    size={28}
+                    color={i < roundedRating ? '#ffc107' : '#e4e5e9'}
+                    className='mx-1'
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-          <p className='text-muted'>Basato su {reviewCount} recensioni</p>
+
+          {/* 2. Conteggio Recensioni (MODIFICATO in p con font più grande) */}
+          <div className='text-center ps-4 border-start'>
+            <p className='mb-0 text-muted'>Totale Recensioni:</p>
+            <p style={{ fontSize: '2rem' }}>{reviewCount}</p>
+          </div>
         </Card.Body>
       </Card>
+
+      <hr />
 
       {/* Blocco 2: Contenuto Principale */}
       {loading && <LoadingSpinner />}
@@ -112,12 +142,26 @@ const RecensioniList = ({ utenteId }) => {
           {/* Lista delle Recensioni */}
           {recensioni.length > 0 ? (
             <ListGroup variant='flush'>
+              <h3 className='mb-3'>Commenti</h3>
               {recensioni.map((r) => (
-                <ListGroup.Item key={r.id}>
+                <ListGroup.Item
+                  key={r.id}
+                  style={{ backgroundColor: 'transparent' }}
+                >
                   <div className='d-flex justify-content-between align-items-start'>
                     <h6 className='mb-1 text-warning'>
-                      {/* Visualizzazione delle stelle (semplificata con emoji) */}
-                      {'⭐'.repeat(r.valutazione)} {r.valutazione} / 5
+                      {/* 🛑 Utilizzo di FaStar per la valutazione */}
+                      {[...Array(r.valutazione)].map((_, i) => (
+                        <FaStar
+                          key={i}
+                          size={16}
+                          color='#ffc107'
+                          className='me-1'
+                        />
+                      ))}
+                      <span className='ms-1 text-dark'>
+                        {r.valutazione} / 5
+                      </span>
                     </h6>
                     <small className='text-muted'>
                       {new Date(r.dataCreazione).toLocaleDateString()}
