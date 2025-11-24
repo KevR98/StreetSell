@@ -12,21 +12,29 @@ import RecensioniList from './RecensioniList';
 import LoadingSpinner from './LoadingSpinner';
 import BackButton from './BackButton';
 import { Link, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   FaMapMarkerAlt,
   FaEnvelopeOpenText,
   FaPen,
   FaCheckCircle,
-} from 'react-icons/fa'; // Icone
-import { BsBoxSeamFill, BsStarHalf } from 'react-icons/bs'; // Icone
+  FaStar,
+} from 'react-icons/fa';
+import { BsBoxSeamFill, BsStarHalf } from 'react-icons/bs';
 import ProductCard from './ProductCard';
 
 // Endpoint pubblico per recuperare i dati utente
 const PUBLIC_USER_ENDPOINT = 'http://localhost:8888/utenti';
 
-// 🛑 ENDPOINT PRODOTTI MIEI (usato precedentemente in ProfileProductPage.jsx)
+// Endpoint per i prodotti
+const PUBLIC_PRODUCTS_ENDPOINT = 'http://localhost:8888/prodotti/utente';
 const MY_PRODUCTS_ENDPOINT = 'http://localhost:8888/prodotti/me';
+
+// Endpoint per il rating
+const RATING_ENDPOINT = 'http://localhost:8888/utenti';
+
+// 🛑 NUOVO ENDPOINT INDIRIZZI
+const ADDRESSES_ENDPOINT = 'http://localhost:8888/indirizzi';
 
 function ProfilePage() {
   const currentUser = useSelector((state) => state.auth.user);
@@ -35,30 +43,102 @@ function ProfilePage() {
 
   const { userId } = useParams();
 
-  // 🛑 STATI PRINCIPALI PER L'UTENTE
+  // Stati Utente
   const [userToDisplay, setUserToDisplay] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🛑 STATI PER IL CONTENUTO DINAMICO
-  // 🛑 MODIFICATO QUI: Imposta 'annunci' come vista predefinita
+  // Stati Contenuto
   const [activeView, setActiveView] = useState('annunci');
-  const [myProducts, setMyProducts] = useState([]);
+  const [productsToDisplay, setProductsToDisplay] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+
+  // Stati Rating
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [isLoadingRating, setIsLoadingRating] = useState(false);
+
+  // 🛑 NUOVO STATO PER GLI INDIRIZZI (Specifico per il profilo privato)
+  const [myAddresses, setMyAddresses] = useState([]);
 
   const isViewingOwnProfile =
     !userId || (currentUser && currentUser.id === userId);
 
-  // 🛑 LOGICA FETCH PROFILO (Pubblico/Privato)
+  // 1. FETCH RATING
+  const fetchRating = useCallback(async (targetUserId) => {
+    setIsLoadingRating(true);
+    try {
+      const res = await fetch(`${RATING_ENDPOINT}/${targetUserId}/rating`);
+      if (!res.ok) throw new Error('Errore rating');
+      const data = await res.json();
+      setAverageRating(data.averageRating || 0);
+      setReviewCount(data.reviewCount || 0);
+    } catch (error) {
+      console.error('Errore rating:', error);
+    } finally {
+      setIsLoadingRating(false);
+    }
+  }, []);
+
+  // 2. FETCH PRODOTTI
+  const fetchProducts = useCallback(
+    async (targetUserId) => {
+      setIsLoadingProducts(true);
+      let endpoint;
+      let headers = {};
+
+      if (isViewingOwnProfile) {
+        endpoint = MY_PRODUCTS_ENDPOINT;
+        headers = { Authorization: `Bearer ${token}` };
+      } else if (targetUserId) {
+        endpoint = `${PUBLIC_PRODUCTS_ENDPOINT}/${targetUserId}`;
+      } else {
+        setIsLoadingProducts(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(endpoint, { method: 'GET', headers: headers });
+        if (!res.ok) throw new Error('Errore prodotti');
+        const data = await res.json();
+        setProductsToDisplay(data.content || data);
+      } catch (err) {
+        console.error('Errore prodotti:', err);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    },
+    [isViewingOwnProfile, token]
+  );
+
+  // 🛑 3. FETCH INDIRIZZI (SOLO PER PROFILO PRIVATO)
+  // Serve perché currentUser di Redux spesso non ha la lista indirizzi
   useEffect(() => {
-    // 1. Caso Privato: Usa i dati da Redux
+    if (isViewingOwnProfile && token) {
+      fetch(ADDRESSES_ENDPOINT, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Errore fetch indirizzi');
+        })
+        .then((data) => {
+          setMyAddresses(data);
+        })
+        .catch((err) => console.error('Impossibile caricare indirizzi:', err));
+    }
+  }, [isViewingOwnProfile, token]);
+
+  // 4. LOGICA FETCH PROFILO GENERALE
+  useEffect(() => {
+    // Caso Privato: Usa i dati da Redux
     if (isViewingOwnProfile && currentUser) {
       setUserToDisplay(currentUser);
       setIsLoading(false);
       return;
     }
 
-    // 2. Caso Pubblico: Fetch da API
+    // Caso Pubblico: Fetch da API
     if (userId) {
       setIsLoading(true);
       setError(null);
@@ -68,9 +148,7 @@ function ProfilePage() {
         },
       })
         .then((res) => {
-          if (res.status === 404) throw new Error('Utente non trovato.');
-          if (!res.ok)
-            throw new Error('Errore nel caricamento del profilo utente.');
+          if (!res.ok) throw new Error('Errore profilo');
           return res.json();
         })
         .then((data) => {
@@ -78,7 +156,6 @@ function ProfilePage() {
           setIsLoading(false);
         })
         .catch((err) => {
-          console.error('Errore fetch utente pubblico:', err);
           setError(err.message);
           setIsLoading(false);
         });
@@ -87,96 +164,103 @@ function ProfilePage() {
     }
   }, [userId, currentUser, isViewingOwnProfile, token]);
 
-  // 🛑 FUNZIONE FETCH PRODOTTI PERSONALI
-  const fetchMyProducts = () => {
-    if (!token) return;
-
-    setIsLoadingProducts(true);
-    fetch(MY_PRODUCTS_ENDPOINT, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Errore nel caricamento dei prodotti.');
-      })
-      .then((data) => {
-        // Assumo che il BE restituisca un oggetto Page con campo 'content' o l'array diretto
-        setMyProducts(data.content || data);
-      })
-      .catch((err) => {
-        console.error(err);
-        // In un contesto reale, dovresti gestire l'errore qui
-      })
-      .finally(() => setIsLoadingProducts(false));
-  };
-
-  // 🛑 EFFETTO PER PRE-CARICARE I PRODOTTI AL CAMBIO DI VISTA O AL CARICAMENTO INIZIALE
+  // 5. CARICAMENTO DATI DIPENDENTI (Rating e Prodotti)
   useEffect(() => {
-    // Carica i prodotti solo quando l'utente è sul proprio profilo e ha selezionato 'annunci'
-    if (isViewingOwnProfile && activeView === 'annunci' && !myProducts.length) {
-      fetchMyProducts();
+    if (userToDisplay) {
+      fetchRating(userToDisplay.id);
+      if (activeView === 'annunci') {
+        const isDataStale =
+          productsToDisplay.length === 0 ||
+          productsToDisplay[0]?.venditore?.id !== userToDisplay.id;
+        if (isDataStale) fetchProducts(userToDisplay.id);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isViewingOwnProfile, activeView]);
+  }, [userToDisplay, activeView, fetchProducts, fetchRating]);
 
   // Controlli di stato
   if (!isAuthenticated && !userId) {
     return (
       <Container className='mt-5'>
-        <Alert variant='warning'>
-          Accesso negato. Effettua il <a href='/login'>login</a> per
-          visualizzare il tuo profilo.
-        </Alert>
+        <Alert variant='warning'>Accesso negato.</Alert>
       </Container>
     );
   }
 
-  if (isLoading || (isViewingOwnProfile && !userToDisplay && isAuthenticated)) {
+  if (isLoading || (isViewingOwnProfile && !userToDisplay)) {
     return <LoadingSpinner />;
   }
 
   if (error || !userToDisplay) {
     return (
       <Container className='mt-5'>
-        <Alert variant='danger'>
-          {error || 'Impossibile caricare il profilo richiesto.'}
-        </Alert>
+        <Alert variant='danger'>{error || 'Errore profilo.'}</Alert>
       </Container>
     );
   }
 
   const user = userToDisplay;
+  const profileTitle = isViewingOwnProfile ? user.username : user.username;
 
-  // LOGICA DATI INDIRIZZO (Solo per il profilo privato)
+  // =========================================================================
+  // 🛑 LOGICA CALCOLO INDIRIZZO CORRETTA
+  // =========================================================================
+
+  // Se è il mio profilo, uso 'myAddresses' caricato appositamente.
+  // Se è pubblico, uso 'user.indirizzi' (se il backend pubblico li fornisce).
+  const addressList = isViewingOwnProfile ? myAddresses : user.indirizzi || [];
+
   const mainAddress =
-    user.indirizzi?.find((addr) => addr.principale === true) ||
-    user.indirizzi?.[0];
+    addressList.find((addr) => addr.principale === true) || addressList[0];
+
+  let locationFallback;
+  if (isViewingOwnProfile) {
+    locationFallback = 'Nessun indirizzo impostato. Vai a Modifica Profilo.';
+  } else {
+    locationFallback = 'Posizione non specificata pubblicamente.';
+  }
+
   const cityAndCountry = mainAddress
     ? `${mainAddress.citta}, ${mainAddress.nazione}`
-    : 'Nessun indirizzo principale';
+    : locationFallback;
 
-  const profileTitle = isViewingOwnProfile
-    ? user.username
-    : `Profilo Pubblico di ${user.username}`;
+  // =========================================================================
 
   return (
     <Container className='my-5'>
       <BackButton />
 
-      {/* ======================================================= */}
-      {/* SEZIONE SUPERIORE: INFORMAZIONI GENERALI E MODIFICA */}
-      {/* ======================================================= */}
       <Row className='mb-5'>
         <Col xs={12} md={8}>
           <h1 className='fw-bold mb-0'>{profileTitle}</h1>
-          <p className='text-muted'>Nessuna recensione</p>
+
+          <div className='d-flex align-items-center mt-1'>
+            {isLoadingRating ? (
+              <Spinner animation='border' size='sm' className='text-primary' />
+            ) : reviewCount > 0 ? (
+              <>
+                {[...Array(5)].map((_, i) => (
+                  <FaStar
+                    key={i}
+                    size={18}
+                    color={
+                      i < Math.round(averageRating) ? '#ffc107' : '#e4e5e9'
+                    }
+                    className='me-1'
+                  />
+                ))}
+                <span className='ms-2 small text-muted'>
+                  ({averageRating.toFixed(1)}/5) - {reviewCount} recensioni
+                </span>
+              </>
+            ) : (
+              <p className='text-muted small mb-0'>
+                Nessuna recensione ancora.
+              </p>
+            )}
+          </div>
         </Col>
 
-        {/* Bottone Modifica Visibile solo sul proprio profilo */}
         {isViewingOwnProfile && (
           <Col
             xs={12}
@@ -193,63 +277,58 @@ function ProfilePage() {
           </Col>
         )}
 
-        {/* BLOCCO INFORMAZIONI (Solo su profilo privato) */}
-        {isViewingOwnProfile && (
-          <Col xs={12} className='mt-4'>
-            <Row>
-              <Col xs={12} md={6}>
-                <h5 className='fw-bold mb-3'>Informazioni:</h5>
-                <ul className='list-unstyled small'>
-                  <li>
-                    <FaMapMarkerAlt className='me-2 text-primary' />
-                    {cityAndCountry}
-                  </li>
-                </ul>
-              </Col>
+        {/* 🛑 BLOCCO INFORMAZIONI CORRETTO */}
+        <Col xs={12} className='mt-4'>
+          <Row>
+            <Col xs={12} md={6}>
+              <h5 className='fw-bold mb-3'>Informazioni:</h5>
+              <ul className='list-unstyled small'>
+                <li className='d-flex align-items-center'>
+                  <FaMapMarkerAlt className='me-2 text-primary' />
+                  {/* Ora mostrerà città e nazione perché abbiamo fetchato gli indirizzi */}
+                  <span>{cityAndCountry}</span>
+                </li>
+              </ul>
+            </Col>
 
-              <Col xs={12} md={6}>
-                <h5 className='fw-bold mb-3'>Informazioni verificate:</h5>
-                <ul className='list-unstyled small'>
-                  <li>
-                    <FaCheckCircle className='me-2 text-success' /> Google
-                  </li>
-                  <li>
-                    <FaEnvelopeOpenText className='me-2 text-success' /> E-mail
-                  </li>
-                </ul>
-              </Col>
-            </Row>
-          </Col>
-        )}
+            <Col xs={12} md={6}>
+              <h5 className='fw-bold mb-3'>Informazioni verificate:</h5>
+              <ul className='list-unstyled small'>
+                {isViewingOwnProfile ? (
+                  <>
+                    <li>
+                      <FaCheckCircle className='me-2 text-success' /> Google
+                    </li>
+                    <li>
+                      <FaEnvelopeOpenText className='me-2 text-success' />{' '}
+                      E-mail
+                    </li>
+                  </>
+                ) : (
+                  <p className='text-muted small'>
+                    Per privacy, le informazioni di verifica sono nascoste.
+                  </p>
+                )}
+              </ul>
+            </Col>
+          </Row>
+        </Col>
       </Row>
 
       <hr />
 
-      {/* ======================================================= */}
-      {/* 🛑 SEZIONE BOTTONI DI NAVIGAZIONE E CONTENUTO DINAMICO */}
-      {/* ======================================================= */}
       <Row className='mb-5'>
         <Col xs={12} className='d-flex gap-3'>
-          {/* 1. Bottone ANNUNCI IN CORSO */}
-          {isViewingOwnProfile && (
-            <Button
-              variant={
-                activeView === 'annunci' ? 'primary' : 'outline-secondary'
-              }
-              onClick={() => {
-                setActiveView('annunci');
-                // Se non li abbiamo ancora caricati, carichiamo ora
-                if (!myProducts.length) fetchMyProducts();
-              }}
-            >
-              <BsBoxSeamFill className='me-2' /> I Miei Annunci in Corso
-              {isLoadingProducts && (
-                <Spinner animation='border' size='sm' className='ms-2' />
-              )}
-            </Button>
-          )}
+          <Button
+            variant={activeView === 'annunci' ? 'primary' : 'outline-secondary'}
+            onClick={() => setActiveView('annunci')}
+          >
+            <BsBoxSeamFill className='me-2' /> Annunci in Vendita
+            {isLoadingProducts && (
+              <Spinner animation='border' size='sm' className='ms-2' />
+            )}
+          </Button>
 
-          {/* 2. Bottone RECENSIONI */}
           <Button
             variant={
               activeView === 'recensioni' ? 'primary' : 'outline-secondary'
@@ -263,25 +342,26 @@ function ProfilePage() {
 
       <Row>
         <Col md={12}>
-          {/* 🛑 VISUALIZZAZIONE CONTENUTO (Recensioni o Annunci) */}
-
-          {/* 1. Recensioni (Solo se activeView è 'recensioni' O se è un profilo PUBBLICO) */}
           {activeView === 'recensioni' && <RecensioniList utenteId={user.id} />}
 
-          {/* 2. Annunci in Corso (Solo per il proprio profilo e se selezionato) */}
-          {activeView === 'annunci' && isViewingOwnProfile && (
-            <div id='my-products-list'>
-              <h2 className='mb-4'>I Miei Annunci Attivi</h2>
+          {activeView === 'annunci' && (
+            <div id='products-list'>
+              <h2 className='mb-4'>
+                {isViewingOwnProfile
+                  ? 'I Miei Annunci Attivi'
+                  : `Annunci di ${user.username}`}
+              </h2>
               {isLoadingProducts ? (
                 <LoadingSpinner />
-              ) : myProducts.length === 0 ? (
+              ) : productsToDisplay.length === 0 ? (
                 <Alert variant='info'>
-                  Non hai prodotti attivi in vendita.
+                  {isViewingOwnProfile
+                    ? 'Non hai prodotti attivi in vendita.'
+                    : `${user.username} non ha prodotti attivi in vendita.`}
                 </Alert>
               ) : (
-                // Rendering della lista prodotti (Logica da ProfileProductPage.jsx)
                 <Row xs={1} md={2} lg={3} className='g-4'>
-                  {myProducts.map((prodotto) => (
+                  {productsToDisplay.map((prodotto) => (
                     <Col key={prodotto.id}>
                       <ProductCard prodotto={prodotto} />
                     </Col>

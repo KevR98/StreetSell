@@ -1,5 +1,6 @@
 package kevinramil.StreetSell.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,16 +35,19 @@ public class Recensione {
     // Relazione: La recensione è legata a un ordine specifico
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ordine_id", nullable = false, unique = true) // 🛑 unique=true impone l'unicità
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "recensione"})
     private Ordine ordine;
 
     // Relazione: La recensione è scritta da un utente (il recensore)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recensore_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "prodotti", "indirizzi", "password", "recensioni", "authorities"})
     private Utente recensore;
 
     // Relazione: La recensione è per un altro utente (il recensito)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recensito_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "prodotti", "indirizzi", "password", "recensioni", "authorities"})
     private Utente recensito;
 
 }

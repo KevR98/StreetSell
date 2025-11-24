@@ -223,7 +223,7 @@ function OrderManagementPage() {
 
       // 🛑 NUOVA TASK: Recensione (Solo compratore, ordine COMPLETO)
       const isTaskRecensione =
-        isUserBuyer && order.statoOrdine === 'COMPLETATO';
+        isUserBuyer && order.statoOrdine === 'COMPLETATO' && !order.recensione;
       // ⚠️ ASSUMIAMO che il BE non restituisca ordini già recensiti
       // Se restituisce tutti i completati, qui andrebbe: && !order.recensione
 
