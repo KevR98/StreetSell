@@ -1,7 +1,12 @@
 import { Container, Table, Alert, Badge, Button } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FaTruck, FaBoxOpen, FaCheckCircle } from 'react-icons/fa';
+import {
+  FaTruck,
+  FaBoxOpen,
+  FaCheckCircle,
+  FaTimesCircle,
+} from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
@@ -87,12 +92,71 @@ function OrderManagementPage() {
       body: JSON.stringify({ nuovoStato: newStatus }),
     })
       .then((res) => {
-        if (!res.ok)
-          throw new Error("Impossibile aggiornare lo stato dell'ordine.");
+        if (!res.ok) {
+          // 1. Il server ha risposto con un errore (es. 400, 403, 500)
+
+          // Tentiamo di leggere il body della risposta per trovare un messaggio di errore JSON
+          return res
+            .json()
+            .then((errorData) => {
+              // Se troviamo un messaggio di errore specifico nel JSON del backend, lo usiamo
+              throw new Error(
+                errorData.message ||
+                  `Errore HTTP ${res.status}: Impossibile completare l'azione.`
+              );
+            })
+            .catch(() => {
+              // Se la risposta non è JSON (es. un errore 500 nudo), usiamo un messaggio generico
+              throw new Error(
+                `Errore HTTP ${res.status}: Impossibile aggiornare lo stato dell'ordine.`
+              );
+            });
+        }
+
+        // 2. Il server ha risposto con successo (res.ok è true)
         alert(successMessage);
-        fetchOrders(); // Ricarica la lista per mostrare la modifica (la task sparirà)
+        fetchOrders(); // Ricarica la lista per l'aggiornamento immediato
       })
-      .catch((err) => alert(`Errore durante l'aggiornamento: ${err.message}`));
+      .catch((err) => {
+        // 3. Gestione di tutti gli errori (sia di rete che quelli lanciati sopra)
+        alert(`Errore durante l'aggiornamento: ${err.message}`);
+      });
+  };
+
+  const handleCancelOrder = (orderId) => {
+    const token = localStorage.getItem('accessToken');
+
+    if (
+      window.confirm(
+        'Sei sicuro di voler ANNULLARE questo ordine? Questa operazione è irreversibile.'
+      )
+    ) {
+      fetch(`${ENDPOINT_STATO_UPDATE_BASE}/${orderId}/stato`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        // 🛑 Imposta il nuovo stato come ANNULLATO
+        body: JSON.stringify({ nuovoStato: 'ANNULLATO' }),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            // Gestione errore, es. se l'ordine è già stato spedito
+            throw new Error("Impossibile annullare l'ordine in questo stato.");
+          }
+          alert(
+            `Ordine #${orderId.substring(0, 8)}... annullato con successo.`
+          );
+          // Aggiorna la lista degli ordini (dovrai definire una funzione di re-fetch)
+          // Es. fetchMyOrders();
+          fetchOrders();
+        })
+        .catch((err) => {
+          console.error('Errore annullamento:', err);
+          alert(`Errore: ${err.message}`);
+        });
+    }
   };
 
   useEffect(() => {
@@ -129,31 +193,42 @@ function OrderManagementPage() {
             <th>Stato</th>
             <th>Task</th>
             <th>Prodotto</th>
-            <th>Controparte</th>
+            <th>Compratore</th>
             <th>Azioni</th>
           </tr>
         </thead>
         <tbody>
           {orders.length > 0 ? (
             orders.map((order) => {
-              // 🛑 LOGICA CHIAVE: Chi sono io in questa transazione?
               const isUserVendor = order.venditore?.id === currentUserId;
               const isUserBuyer = order.compratore?.id === currentUserId;
 
-              // Il backend ci invia solo gli stati che richiedono azione.
+              // Il backend ci invia solo gli stati che richiedono azione (CONFERMATO o SPEDITO)
               const isTaskSpedire =
                 isUserVendor && order.statoOrdine === 'CONFERMATO';
               const isTaskConfermare =
                 isUserBuyer && order.statoOrdine === 'SPEDITO';
 
-              // Se l'ordine non è una task valida, salta (anche se l'endpoint dovrebbe essere pulito)
-              if (!isTaskSpedire && !isTaskConfermare) return null;
+              // 🛑 NUOVA LOGICA: Ordine Annullabile
+              const canCancel =
+                (isUserBuyer && order.statoOrdine === 'CONFERMATO') ||
+                order.statoOrdine === 'IN_ATTESA';
+
+              // Se l'ordine non è una task valida, salta
+              // Ho rimosso il 'return null' in modo che, se l'endpoint dovesse includere IN_ATTESA,
+              // l'ordine verrebbe comunque mostrato con l'azione "Annulla".
+              if (!isTaskSpedire && !isTaskConfermare && !canCancel)
+                return null;
 
               const relationshipText = isTaskSpedire
                 ? `Vendita a ${order.compratore?.username || 'N/D'}`
                 : `Acquisto da ${order.venditore?.username || 'N/D'}`;
 
-              const relationshipColor = isTaskSpedire ? 'warning' : 'primary';
+              // Adatta il colore anche per l'annullamento
+              let relationshipColor = 'secondary';
+              if (isTaskSpedire) relationshipColor = 'warning';
+              else if (isTaskConfermare) relationshipColor = 'primary';
+              else if (canCancel) relationshipColor = 'info';
 
               return (
                 <tr
@@ -169,7 +244,11 @@ function OrderManagementPage() {
                   </td>
                   <td>
                     <Badge bg={relationshipColor} className='fw-bold'>
-                      {isTaskSpedire ? 'DA SPEDIRE' : 'DA CONFERMARE'}
+                      {isTaskSpedire
+                        ? 'DA SPEDIRE'
+                        : isTaskConfermare
+                        ? 'DA CONFERMARE'
+                        : 'IN ATTESA'}
                     </Badge>
                   </td>
                   <td>
@@ -207,6 +286,15 @@ function OrderManagementPage() {
                         }
                       >
                         <FaCheckCircle /> Arrivato
+                      </Button>
+                    )}
+                    {canCancel && (
+                      <Button
+                        variant='danger'
+                        size='sm'
+                        onClick={() => handleCancelOrder(order.id)}
+                      >
+                        <FaTimesCircle /> Annulla
                       </Button>
                     )}
                   </td>

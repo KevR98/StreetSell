@@ -8,6 +8,7 @@ import { Button } from 'react-bootstrap';
 
 const endpointIndirizzi = 'http://localhost:8888/indirizzi';
 const endpointOrdini = 'http://localhost:8888/ordini';
+const ORDER_MANAGEMENT_ROUTE = '/ordini/gestione';
 
 function Order({ prodottoId }) {
   const [showModal, setShowModal] = useState(false);
@@ -108,7 +109,7 @@ function Order({ prodottoId }) {
         alert(`Ordine creato con successo! Stato: ${newOrder.statoOrdine}`);
         setShowModal(false);
         // Reindirizzamento a una pagina di successo o alla lista ordini
-        navigate(`/ordini/${newOrder.id}`);
+        navigate(ORDER_MANAGEMENT_ROUTE);
       })
       .catch((err) => {
         alert(`Errore nell'acquisto: ${err.message}`);

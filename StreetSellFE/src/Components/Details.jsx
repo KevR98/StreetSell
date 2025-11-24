@@ -6,8 +6,6 @@ import {
   Row,
   Col,
   Button,
-  Spinner,
-  Alert,
   Carousel,
   Modal,
   Badge,
@@ -15,6 +13,7 @@ import {
 import BackButton from './BackButton';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
+import Order from './Order';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
@@ -290,9 +289,7 @@ function Details() {
             </div>
           ) : canBuy ? (
             <div className='d-flex flex-column gap-2'>
-              <Button variant='success' size='lg' className='w-100'>
-                Acquista Ora
-              </Button>
+              <Order prodottoId={prodotto.id} />
               <Button variant='outline-primary' size='lg' className='w-100'>
                 Fai un'offerta
               </Button>

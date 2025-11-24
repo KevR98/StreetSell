@@ -32,7 +32,7 @@ public class Ordine {
     private Utente venditore;
 
     // Relazione: Un ordine è per un solo prodotto
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "prodotto_id", referencedColumnName = "id")
     private Prodotto prodotto;
 

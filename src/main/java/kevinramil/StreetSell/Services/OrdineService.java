@@ -150,10 +150,17 @@ public class OrdineService {
                 Sort.by(Sort.Direction.DESC, "dataOrdine")
         );
 
+        List<Ordine> ordiniCompratoreAnnullabili = ordineRepository.findByCompratoreAndStatoOrdine(
+                utenteCorrente,
+                StatoOrdine.CONFERMATO,
+                Sort.by(Sort.Direction.DESC, "dataOrdine")
+        );
+
         // 3. Uniamo le due liste
         List<Ordine> tutteLeTask = new java.util.ArrayList<>();
         tutteLeTask.addAll(ordiniVenditore);
         tutteLeTask.addAll(ordiniCompratore);
+        tutteLeTask.addAll(ordiniCompratoreAnnullabili);
         tutteLeTask.addAll(ordiniVenditoreNotifica);
 
         // 4. Ordiniamo la lista finale (opzionale, ma utile per la visualizzazione)
