@@ -185,6 +185,7 @@ public class ProdottoController {
 
     @GetMapping("/cerca")
     public List<Prodotto> cercaProdotti(@RequestParam String q) {
-        return prodottoRepository.findByTitoloContainingIgnoreCase(q);
+        // Chiama la nuova query personalizzata
+        return prodottoRepository.searchByKeyword(q);
     }
 }

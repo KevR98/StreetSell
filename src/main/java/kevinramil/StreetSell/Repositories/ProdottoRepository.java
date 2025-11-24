@@ -34,6 +34,11 @@ public interface ProdottoRepository extends JpaRepository<Prodotto, UUID> {
 
     List<Prodotto> findByVenditoreIdAndStatoProdotto(UUID venditoreId, StatoProdotto stato);
 
-    List<Prodotto> findByTitoloContainingIgnoreCase(String titolo);
+    @Query("SELECT p FROM Prodotto p WHERE " +
+            "LOWER(p.titolo) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(p.descrizione) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(p.categoria) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(CAST(p.condizione AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<Prodotto> searchByKeyword(@Param("keyword") String keyword);
 
 }
