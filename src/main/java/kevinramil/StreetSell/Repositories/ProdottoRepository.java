@@ -34,4 +34,6 @@ public interface ProdottoRepository extends JpaRepository<Prodotto, UUID> {
 
     List<Prodotto> findByVenditoreIdAndStatoProdotto(UUID venditoreId, StatoProdotto stato);
 
+    List<Prodotto> findByTitoloContainingIgnoreCase(String titolo);
+
 }

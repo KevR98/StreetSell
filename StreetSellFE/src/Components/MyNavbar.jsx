@@ -7,6 +7,7 @@ import {
   Spinner,
   Form,
   FormControl,
+  InputGroup, // 🛑 Importante per unire select e input
 } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,39 +19,43 @@ import {
   BsBoxSeamFill,
   BsPersonFill,
   BsController,
+  BsSearch, // Icona ricerca
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
+import { useState } from 'react'; // 🛑 Importa useState
 
 function MyNavbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Legge il token dal browser
+  // 🛑 STATI PER LA RICERCA
+  const [query, setQuery] = useState('');
+  const [searchType, setSearchType] = useState('prodotti'); // Default: cerca prodotti
+
   const token = localStorage.getItem('accessToken');
-
-  // Legge lo username da Redux (potrebbe essere undefined all'avvio)
   const username = useSelector((state) => state.auth.user?.username);
-
   const ruolo = useSelector((state) => state.auth.user?.ruolo);
 
-  console.log('Ruolo letto da Redux:', ruolo);
-  console.log('Variabile isAdmin:', ruolo === 'ADMIN');
-
-  // STATO 3: Loggato E Dati Utente Caricati
   const isLoggedInAndLoaded = token && username;
-
   const isAdmin = ruolo === 'ADMIN';
-
   const dropdownTitle = isAdmin ? 'Ciao, ADMIN' : `Ciao, ${username}`;
-
-  // STATO 2: Loggato MA Dati Utente in Caricamento (solo token presente)
   const isLoadingUserData = token && !username;
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     dispatch(logout());
     navigate('/login');
+  };
+
+  // 🛑 GESTIONE INVIO RICERCA
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (query.trim() !== '') {
+      // Reindirizza alla pagina di ricerca con i parametri
+      navigate(`/cerca?q=${query}&type=${searchType}`);
+      setQuery(''); // Opzionale: pulisce la barra dopo la ricerca
+    }
   };
 
   return (
@@ -62,36 +67,63 @@ function MyNavbar() {
           className='p-0 m-0 d-flex align-items-center'
         >
           <img
-            src={logo} // Usa la variabile importata
+            src={logo}
             alt='StreetSell Logo'
-            height='70' // Imposta l'altezza per allinearlo alla navbar
-            className='d-inline-block align-top p-0 m-0' // Classi Bootstrap per l'allineamento
+            height='70'
+            className='d-inline-block align-top p-0 m-0'
           />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
         <Navbar.Collapse id='basic-navbar-nav'>
-          {/* Menu Principale a Sinistra */}
           <Nav>
             <Nav.Link as={Link} to='/'>
               Home
             </Nav.Link>
           </Nav>
 
-          <Form className='d-flex mx-auto' style={{ maxWidth: '400px' }}>
-            <FormControl
-              type='search'
-              placeholder='Cerca prodotti...'
-              className='me-2'
-              aria-label='Search'
-              // NOTA: Qui andrebbero i props value={query} e onChange={handleChange}
-            />
-            <Button variant='outline-success'>Cerca</Button>
-            {/* NOTA: Il Button type="submit" andrebbe gestito con una funzione onSubmit */}
+          {/* 🛑 BARRA DI RICERCA AGGIORNATA */}
+          <Form
+            className='d-flex mx-auto'
+            style={{ maxWidth: '600px' }}
+            onSubmit={handleSearchSubmit}
+          >
+            <InputGroup>
+              {/* Selettore Tipo (Prodotti/Utenti) */}
+              <Form.Select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+                style={{
+                  maxWidth: '110px',
+                  backgroundColor: '#f8f9fa',
+                  color: '#333',
+                  border: 'none',
+                }}
+              >
+                <option value='prodotti'>Prodotti</option>
+                <option value='utenti'>Utenti</option>
+              </Form.Select>
+
+              {/* Campo Input */}
+              <FormControl
+                type='search'
+                placeholder={
+                  searchType === 'prodotti'
+                    ? 'Cerca un prodotto...'
+                    : 'Cerca un utente...'
+                }
+                aria-label='Search'
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+
+              {/* Bottone Invio */}
+              <Button variant='success' type='submit'>
+                <BsSearch />
+              </Button>
+            </InputGroup>
           </Form>
 
-          {/* Menu Utente a Destra (ms-auto) */}
           <Nav className='ms-auto'>
-            {/* STATO 1: OFFLINE (Mostra Login) */}
             {!token && !isLoadingUserData && (
               <Nav.Link as={Link} to='/login'>
                 Login
@@ -100,14 +132,12 @@ function MyNavbar() {
 
             <Notification />
 
-            {/* STATO 2: CARICAMENTO (Mostra Spinner) */}
             {isLoadingUserData && (
               <Nav.Item className='d-flex align-items-center'>
                 <Spinner animation='border' size='sm' className='me-2' />
               </Nav.Item>
             )}
 
-            {/* STATO 3: ONLINE E CARICATO (Mostra Dropdown) */}
             {isLoggedInAndLoaded && (
               <NavDropdown
                 title={dropdownTitle}

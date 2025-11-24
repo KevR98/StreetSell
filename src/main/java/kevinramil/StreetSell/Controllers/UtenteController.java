@@ -5,6 +5,7 @@ import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.ValidationException;
 import kevinramil.StreetSell.Payloads.UpdateUtenteDTO;
 import kevinramil.StreetSell.Payloads.UtenteAdminDTO;
+import kevinramil.StreetSell.Repositories.UtenteRepository;
 import kevinramil.StreetSell.Services.RecensioneService;
 import kevinramil.StreetSell.Services.UtenteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ public class UtenteController {
     // 🛑 AGGIUNTA
     @Autowired
     private RecensioneService recensioneService;
+
+    @Autowired
+    private UtenteRepository utenteRepository;
 
     // ---- ENDPOINT PUBBLICI PER LA PAGINA PROFILO ----
 
@@ -126,5 +130,10 @@ public class UtenteController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public Utente riattivaUtenteAdmin(@PathVariable UUID utenteId) {
         return utenteService.riattivaUtente(utenteId);
+    }
+
+    @GetMapping("/cerca")
+    public List<Utente> cercaUtenti(@RequestParam String q) {
+        return utenteRepository.findByUsernameContainingIgnoreCase(q);
     }
 }

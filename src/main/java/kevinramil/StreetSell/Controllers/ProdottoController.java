@@ -8,6 +8,7 @@ import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.UnauthorizedException;
 import kevinramil.StreetSell.Exceptions.ValidationException;
 import kevinramil.StreetSell.Payloads.ProdottoDTO;
+import kevinramil.StreetSell.Repositories.ProdottoRepository;
 import kevinramil.StreetSell.Services.ProdottoService;
 import kevinramil.StreetSell.Services.UtenteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class ProdottoController {
 
     @Autowired
     private Validator validator;
+
+    @Autowired
+    private ProdottoRepository prodottoRepository;
 
     // --- CREAZIONE (POST) ---
     @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -177,5 +181,10 @@ public class ProdottoController {
     @GetMapping("/utente/{venditoreId}")
     public List<Prodotto> getProdottiByVenditore(@PathVariable UUID venditoreId) {
         return prodottoService.findProdottiByVenditoreId(venditoreId);
+    }
+
+    @GetMapping("/cerca")
+    public List<Prodotto> cercaProdotti(@RequestParam String q) {
+        return prodottoRepository.findByTitoloContainingIgnoreCase(q);
     }
 }
