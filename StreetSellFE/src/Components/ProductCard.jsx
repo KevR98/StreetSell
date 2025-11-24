@@ -76,7 +76,10 @@ function ProductCard({ prodotto }) {
       to={`/prodotto/${prodotto.id}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
-      <Card className='h-100 border-0'>
+      <Card
+        className='h-100 border-0'
+        style={{ backgroundColor: 'transparent' }}
+      >
         {/* 2. AREA CAROUSEL: Sostituisce Card.Img */}
         <div
           style={{

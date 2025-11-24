@@ -24,3 +24,11 @@
 .dropdown-item-custom.dropdown-item {
   padding-right: 40px; /* Lascia spazio per la 'X' */
 }
+
+body {
+  /* Grigio chiaro standard di Bootstrap (o usa #e9ecef per uno più scuro) */
+  background-image: url(./assets/streetsell-background.png);
+
+  /* Opzionale: assicura che il colore copra sempre tutta l'altezza */
+  min-height: 100vh;
+}

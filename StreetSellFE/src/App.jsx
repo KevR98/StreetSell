@@ -83,6 +83,7 @@ function App() {
             {/* 5. PROFILO UTENTE */}
             <Route path='/prodotti/me' element={<ProfileProductPage />} />
             <Route path='/me' element={<ProfilePage />} />
+            <Route path='/utenti/:userId' element={<ProfilePage />} />
             <Route path='/profilo/gestione' element={<DetailsProfile />} />
             <Route path='/ordini/gestione' element={<OrderManagement />} />
             <Route path='/cerca' element={<SearchResults />} />
