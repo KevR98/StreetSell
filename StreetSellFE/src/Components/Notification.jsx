@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavDropdown, Badge, Spinner } from 'react-bootstrap';
+import { useEffect, useState, useCallback } from 'react';
+import { NavDropdown, Badge, Spinner, Button } from 'react-bootstrap';
 import {
   FaTruck,
   FaBoxOpen,
@@ -7,27 +7,98 @@ import {
   FaBell,
   FaTimesCircle,
   FaCheckCircle,
-} from 'react-icons/fa'; // 🛑 AGGIUNTE ICONE
+} from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 const MANAGEMENT_ENDPOINT = 'http://localhost:8888/ordini/gestione';
+const STORAGE_KEY = 'hidden_notification_ids';
 const POLLING_INTERVAL = 30000;
 
 function Notification() {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
+
+  // 1. STATO: Inizializza vuoto
+  const [hiddenIds, setHiddenIds] = useState(new Set());
+
+  // 🛑 NUOVO FLAG: Impedisce il salvataggio finché non abbiamo caricato i dati
+  const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
   const currentUser = useSelector((state) => state.auth.user);
   const token = localStorage.getItem('accessToken');
 
-  const fetchNotifications = async () => {
+  // Funzione helper per ottenere la chiave specifica per l'utente
+  const getStorageKey = useCallback((userId) => {
+    return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY;
+  }, []);
+
+  // 2. HIDE NOTIFICATION
+  const hideNotification = useCallback((id) => {
+    setHiddenIds((prevIds) => new Set(prevIds).add(id));
+  }, []);
+
+  // 3. CLEAR ALL NOTIFICATIONS
+  const clearAllNotifications = useCallback(() => {
+    const currentVisibleIds = notifications.map((n) => n.id);
+    setHiddenIds((prevIds) => new Set([...prevIds, ...currentVisibleIds]));
+  }, [notifications]);
+
+  // 🛑 4. CARICAMENTO (LOAD): Esegue solo all'avvio o cambio utente
+  useEffect(() => {
+    if (currentUser && currentUser.id) {
+      try {
+        const key = getStorageKey(currentUser.id);
+        const storedData = localStorage.getItem(key);
+
+        if (storedData) {
+          // Se troviamo dati, li impostiamo
+          setHiddenIds(new Set(JSON.parse(storedData)));
+        } else {
+          // Se non ci sono dati, resettiamo
+          setHiddenIds(new Set());
+        }
+      } catch (e) {
+        console.error('Errore nel caricamento della chiave utente:', e);
+        setHiddenIds(new Set());
+      } finally {
+        // 🛑 FONDAMENTALE: Diciamo all'app che abbiamo finito di caricare
+        setIsStorageLoaded(true);
+      }
+    } else {
+      // Logout
+      setHiddenIds(new Set());
+      setIsStorageLoaded(false);
+    }
+  }, [currentUser, getStorageKey]);
+
+  // 🛑 5. SALVATAGGIO (SAVE): Protetto dal flag isStorageLoaded
+  useEffect(() => {
+    // 🛑 SE NON ABBIAMO ANCORA CARICATO, NON SALVARE NULLA!
+    // Questo previene la sovrascrittura con array vuoto al refresh
+    if (!currentUser || !isStorageLoaded) return;
+
+    try {
+      const idsArray = Array.from(hiddenIds);
+      const key = getStorageKey(currentUser.id);
+      localStorage.setItem(key, JSON.stringify(idsArray));
+    } catch (e) {
+      console.error('Errore nel salvataggio in localStorage:', e);
+    }
+  }, [hiddenIds, currentUser, getStorageKey, isStorageLoaded]); // Dipende anche da isStorageLoaded
+
+  // 6. FETCH NOTIFICA
+  const fetchNotifications = useCallback(async () => {
     setIsLoading(true);
     let allNotifications = [];
 
     const headers = { Authorization: `Bearer ${token}` };
     const currentUserId = currentUser?.id;
+
+    if (!token || !currentUser) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const resManagement = await fetch(MANAGEMENT_ENDPOINT, { headers });
@@ -43,29 +114,23 @@ function Notification() {
           const isUserVendor = order.venditore?.id === currentUserId;
           const isUserBuyer = order.compratore?.id === currentUserId;
 
-          // Nomi utente per i messaggi
           const compratoreUsername = order.compratore?.username || 'Un utente';
           const venditoreUsername = order.venditore?.username || 'Il venditore';
           const prodottoTitolo = order.prodotto?.titolo || 'Prodotto N/D';
 
-          // ------------------------------------------------------------------
-          // 🛑 LOGICA NOTIFICHE VENDITORE (Acquisto, Annullamento, Completamento)
-          // ------------------------------------------------------------------
           if (isUserVendor) {
             if (
               order.statoOrdine === 'CONFERMATO' ||
               order.statoOrdine === 'IN_ATTESA'
             ) {
-              // Task Venditore: Acquisto effettuato (richiede spedizione)
               allNotifications.push({
                 id: order.id,
-                type: 'VENDITORE_ACQUISTO', // Nuovo tipo più specifico
+                type: 'VENDITORE_ACQUISTO',
                 message: `🎉 ${compratoreUsername} ha comprato: ${prodottoTitolo}. Spedisci subito!`,
                 date: new Date(order.dataOrdine),
                 prodottoId: order.prodotto?.id,
               });
             } else if (order.statoOrdine === 'ANNULLATO') {
-              // 🛑 Notifica Venditore: Ordine Annullato
               allNotifications.push({
                 id: order.id + '-annull',
                 type: 'VENDITORE_ANNULLATO',
@@ -74,7 +139,6 @@ function Notification() {
                 prodottoId: order.prodotto?.id,
               });
             } else if (order.statoOrdine === 'COMPLETATO') {
-              // Task Venditore: Completato (notifica di chiusura)
               allNotifications.push({
                 id: order.id + '-vend-comp',
                 type: 'VENDITORE_COMPLETATO',
@@ -85,60 +149,55 @@ function Notification() {
             }
           }
 
-          // ------------------------------------------------------------------
-          // 🛑 LOGICA NOTIFICHE COMPRATORE (Spedizione, Altro)
-          // ------------------------------------------------------------------
           if (isUserBuyer) {
             if (order.statoOrdine === 'SPEDITO') {
-              // Task Compratore: Conferma Arrivo
               allNotifications.push({
                 id: order.id + '-comp',
-                type: 'COMPRATORE_SPEDITO', // Nuovo tipo
+                type: 'COMPRATORE_SPEDITO',
                 message: `🚚 Ottime notizie! ${venditoreUsername} ha spedito il tuo ordine: ${prodottoTitolo}.`,
                 date: new Date(order.dataOrdine),
                 prodottoId: order.prodotto?.id,
               });
             }
-            // Non servono notifiche ANNULLATO per il compratore, perché è lui stesso ad annullare.
           }
         });
       }
 
-      // 2. Ordina e imposta il conteggio totale dalla lista
       allNotifications.sort((a, b) => b.date.getTime() - a.date.getTime());
-
-      setTotalCount(allNotifications.length);
-      setNotifications(allNotifications.slice(0, 5));
+      setNotifications(allNotifications);
     } catch (error) {
       console.error('Errore fetch notifiche:', error);
       setNotifications([]);
-      setTotalCount(0);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, currentUser]);
 
+  // 7. POLLING
   useEffect(() => {
-    // 🛑 NUOVA LOGICA: AZZERA LO STATO AL LOGOUT
     if (!token || !currentUser) {
-      // Interrompiamo il Polling se era attivo
-      // Resettiamo gli stati per non mostrare le vecchie notifiche
       setNotifications([]);
-      setTotalCount(0);
+      setHiddenIds(new Set());
+      setIsStorageLoaded(false); // Reset flag
+      localStorage.removeItem(getStorageKey(currentUser?.id));
       setIsLoading(false);
-      return; // Non procedere con il fetch
+      return;
     }
 
-    // Se l'utente è loggato, avvia il fetching e il polling
     fetchNotifications();
     const intervalId = setInterval(fetchNotifications, POLLING_INTERVAL);
 
-    // Cleanup: interrompe il polling quando il componente viene smontato o le dipendenze cambiano
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, currentUser]);
+  }, [token, currentUser, fetchNotifications]);
 
   if (!currentUser || !token) return null;
+
+  // FILTRAGGIO VISIVO
+  const visibleNotifications = notifications.filter(
+    (n) => !hiddenIds.has(n.id)
+  );
+  const totalCount = visibleNotifications.length;
 
   const titleContent = (
     <div className='d-flex align-items-center position-relative'>
@@ -168,51 +227,80 @@ function Notification() {
     >
       {isLoading && <NavDropdown.ItemText>Caricamento...</NavDropdown.ItemText>}
 
-      {!isLoading && totalCount === 0 && (
+      {!isLoading && visibleNotifications.length === 0 && (
         <NavDropdown.ItemText>Nessuna notifica in attesa.</NavDropdown.ItemText>
       )}
 
-      {/* Mappa gli ordini recenti nella tendina */}
-      {notifications.map((notif) => (
+      {visibleNotifications.slice(0, 5).map((notif) => (
         <NavDropdown.Item
           key={notif.id}
-          as={Link}
-          // Venditore va alla gestione per task/annullato, Compratore ai dettagli prodotto
+          as={notif.type.endsWith('_ANNULLATO') ? 'div' : Link}
           to={
-            notif.type.startsWith('VENDITORE')
+            notif.type.endsWith('_ANNULLATO')
+              ? '#'
+              : notif.type.startsWith('VENDITORE')
               ? '/ordini/gestione'
               : `/prodotto/${notif.prodottoId}`
           }
-          className='small'
+          className='small position-relative d-flex align-items-center dropdown-item-custom'
+          onClick={
+            notif.type.endsWith('_ANNULLATO')
+              ? (e) => e.preventDefault()
+              : undefined
+          }
         >
-          {/* 🛑 LOGICA ICONE AGGIORNATA */}
-          {notif.type === 'VENDITORE_ACQUISTO' ? (
-            <FaShoppingCart className='text-success me-2' /> // Task da Spedire
-          ) : notif.type === 'COMPRATORE_SPEDITO' ? (
-            <FaTruck className='text-primary me-2' /> // Task da Confermare
-          ) : notif.type === 'VENDITORE_ANNULLATO' ? (
-            <FaTimesCircle className='text-danger me-2' /> // Ordine Annullato
-          ) : (
-            <FaCheckCircle className='text-info me-2' /> // Completato (default)
-          )}
-          {notif.message}
-          <span className='d-block text-muted' style={{ fontSize: '0.75rem' }}>
-            {notif.date.toLocaleTimeString()}
+          <span className='flex-grow-1'>
+            {notif.type === 'VENDITORE_ACQUISTO' ? (
+              <FaShoppingCart className='text-success me-2' />
+            ) : notif.type === 'COMPRATORE_SPEDITO' ? (
+              <FaTruck className='text-primary me-2' />
+            ) : notif.type === 'VENDITORE_ANNULLATO' ? (
+              <FaTimesCircle className='text-danger me-2' />
+            ) : (
+              <FaCheckCircle className='text-info me-2' />
+            )}
+            {notif.message}
+            <span
+              className='d-block text-muted'
+              style={{ fontSize: '0.75rem' }}
+            >
+              {notif.date.toLocaleTimeString()}
+            </span>
           </span>
+
+          <Button
+            variant='link'
+            size='sm'
+            className='p-0 ms-auto text-muted btn-close-notif'
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              hideNotification(notif.id);
+            }}
+            style={{
+              visibility: 'hidden',
+            }}
+          >
+            &times;
+          </Button>
         </NavDropdown.Item>
       ))}
 
-      {totalCount > 0 && <NavDropdown.Divider />}
+      {visibleNotifications.length > 0 && <NavDropdown.Divider />}
 
-      {/* Link che porta alla lista completa degli ordini da gestire */}
-      {totalCount > 0 && (
-        <NavDropdown.Item
-          as={Link}
-          to='/ordini/gestione'
-          className='text-primary text-center'
-        >
-          Vedi tutti gli ordini da gestire ({totalCount})
-        </NavDropdown.Item>
+      {visibleNotifications.length > 0 && (
+        <NavDropdown.ItemText className='text-center d-flex justify-content-between align-items-center p-2'>
+          <Button
+            variant='outline-secondary'
+            size='sm'
+            onClick={clearAllNotifications}
+          >
+            ❌ Cancella Tutte ({totalCount})
+          </Button>
+          <Link to='/ordini/gestione' className='btn btn-link btn-sm'>
+            Vedi Gestione
+          </Link>
+        </NavDropdown.ItemText>
       )}
     </NavDropdown>
   );

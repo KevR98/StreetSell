@@ -7,3 +7,20 @@
   height: 450px; /* Esempio: Scegli un valore che si adatti al prodotto più grande */
   overflow: hidden; /* Nasconde l'eventuale contenuto in eccesso se non si adatta */
 }
+
+.btn-close-notif {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+/* 2. Rendi visibile l'elemento 'X' al passaggio del mouse sull'intera notifica */
+.dropdown-item-custom:hover .btn-close-notif {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* 3. Stile aggiuntivo per rendere i link (non annullati) cliccabili */
+.dropdown-item-custom.dropdown-item {
+  padding-right: 40px; /* Lascia spazio per la 'X' */
+}
