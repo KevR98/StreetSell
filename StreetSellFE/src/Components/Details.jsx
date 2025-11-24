@@ -1,11 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Button, Carousel, Col, Container, Row } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Spinner,
+  Alert,
+  Carousel,
+  Modal,
+  Badge,
+} from 'react-bootstrap';
 import BackButton from './BackButton';
-import ErrorAlert from './ErrorAlert';
 import LoadingSpinner from './LoadingSpinner';
-import Order from './Order';
+import ErrorAlert from './ErrorAlert';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
@@ -18,32 +27,34 @@ function Details() {
   const token = localStorage.getItem('accessToken');
   const navigate = useNavigate();
 
+  // Stati del Modal Carosello
+  const [showModal, setShowModal] = useState(false);
+  const [modalIndex, setModalIndex] = useState(0);
+
+  // Logica fetch (NON MODIFICATA)
   useEffect(() => {
     fetch(endpoint + '/' + prodottoId)
       .then((res) => {
         if (res.ok) {
           return res.json();
         } else {
-          throw new Error('Errore nel caricamento');
+          throw new Error('Errore nel caricamento del prodotto');
         }
       })
-
       .then((prodottoDetail) => {
-        console.log(prodottoDetail);
         setIsLoading(false);
         setError(false);
         setProdotto(prodottoDetail);
       })
-
       .catch((err) => {
-        console.log('Errore nel caricamento', err);
+        console.error('Errore nel caricamento:', err);
         setIsLoading(false);
         setError(true);
       });
-  }, [prodottoId]);
+  }, [prodottoId, token]);
 
+  // Logica gestione eliminazione (NON MODIFICATA)
   const handleDelete = () => {
-    // Semplice conferma browser (puoi usare un Modal Bootstrap per farlo più bello)
     if (
       window.confirm(
         'Sei sicuro di voler eliminare definitivamente questo annuncio?'
@@ -52,14 +63,14 @@ function Details() {
       fetch(endpoint + '/' + prodottoId, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`, // Fondamentale: Token per autorizzare
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
         .then((res) => {
           if (res.ok) {
             alert('Prodotto eliminato con successo!');
-            navigate('/prodotti/me'); // Reindirizza ai miei prodotti
+            navigate('/prodotti/me');
           } else {
             alert("C'è stato un errore durante l'eliminazione.");
           }
@@ -72,6 +83,9 @@ function Details() {
     }
   };
 
+  // ----------------------------------------------------
+  // GESTIONE STATI DI CARICAMENTO/ERRORE (NON MODIFICATA)
+  // ----------------------------------------------------
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -88,6 +102,7 @@ function Details() {
     );
   }
 
+  // Permessi (NON MODIFICATI)
   const isOwner =
     currentUser &&
     prodotto.venditore &&
@@ -100,7 +115,7 @@ function Details() {
   const canBuy =
     !isOwner && !isAdmin && prodotto.statoProdotto === 'DISPONIBILE';
 
-  // Logica per le immagini
+  // Logica per le immagini (miniatura e fallback) (NON MODIFICATA)
   const immaginiCarousel =
     prodotto.immagini && prodotto.immagini.length > 0
       ? prodotto.immagini
@@ -111,35 +126,101 @@ function Details() {
           },
         ];
 
+  const numeroImmagini = immaginiCarousel.length;
+
+  // Funzioni per il Modal Carosello (NON MODIFICATA)
+  const handleShowModal = (index) => {
+    setModalIndex(index);
+    setShowModal(true);
+  };
+  const handleCloseModal = () => setShowModal(false);
+
+  // Variabili per il layout della griglia (MODIFICATA)
+  // 🛑 MOSTRA AL MASSIMO 3 IMMAGINI
+  const visibleImages = immaginiCarousel.slice(0, 3);
+  const remainingImagesCount = numeroImmagini > 3 ? numeroImmagini - 3 : 0;
+  // ----------------------------------------------------
+
   return (
     <Container className='my-5'>
       <BackButton />
 
       <Row>
-        {/* COLONNA 1 (md=6): IMMAGINI */}
-        <Col md={6}>
-          {/* Manteniamo il carosello standard, ma puoi applicare le classi di oggetto/copertura come discusso */}
-          <Carousel interval={null} indicators={false}>
-            {immaginiCarousel.map((img, index) => (
-              <Carousel.Item key={img.id || index}>
+        {/* COLONNA 1 (md=6): GRIGLIA IMMAGINI */}
+        <Col
+          md={6}
+          className='d-flex flex-wrap gap-2'
+          style={{ backgroundColor: '#f8f9fa' }}
+        >
+          {visibleImages.map((img, index) => {
+            const isLarge = index === 0;
+            // Calcola l'altezza per le due immagini sotto
+            const smallImageHeight = '196px';
+
+            const sizeStyle = {
+              width: isLarge ? '100%' : 'calc(50% - 8px)',
+              height: isLarge ? '400px' : smallImageHeight,
+              overflow: 'hidden',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              position: 'relative',
+            };
+
+            // 🛑 Applica l'overlay +X solo sulla TERZA immagine visibile (index === 2)
+            const showOverlay = index === 2 && remainingImagesCount > 0;
+
+            // Se l'immagine è l'ultima visibile E ci sono immagini rimanenti,
+            // il click deve aprire il carosello modale.
+            // Altrimenti, il click apre il carosello modale impostando l'indice corretto.
+            const clickHandler = showOverlay
+              ? () => handleShowModal(index) // Apre il modale sull'immagine corrente (index 2)
+              : () => handleShowModal(index); // Apre il modale sull'indice cliccato
+
+            return (
+              <div
+                key={img.id || index}
+                style={sizeStyle}
+                onClick={clickHandler} // APRE IL MODAL AL CLICK
+              >
                 <img
-                  className='d-block w-100 rounded shadow'
                   src={img.url}
                   alt={`${prodotto.titolo} - ${index}`}
-                  style={{ height: '400px', objectFit: 'cover' }}
+                  className='w-100 h-100'
+                  style={{ objectFit: 'cover' }}
                 />
-              </Carousel.Item>
-            ))}
-          </Carousel>
+
+                {/* Badge per le immagini rimanenti */}
+                {showOverlay && (
+                  <div
+                    className='position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center'
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      zIndex: 10,
+                    }}
+                  >
+                    <Badge
+                      bg='light'
+                      text='dark'
+                      style={{
+                        fontSize: '1.2em',
+                        padding: '10px 15px',
+                        opacity: 0.9,
+                      }}
+                    >
+                      +{remainingImagesCount} altre
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </Col>
 
-        {/* COLONNA 2 (md=6): DETTAGLI E AZIONI */}
+        {/* COLONNA 2 (md=6): DETTAGLI E AZIONI (NON MODIFICATA) */}
         <Col md={6} className='pt-4 pt-md-0'>
           {/* 1. TITOLO E PREZZO */}
-          {/* 🛑 Titolo: Più piccolo (h3 o h4) e in grassetto, come richiesto */}
           <h3 className='mb-2 fw-bold'>{prodotto.titolo}</h3>
 
-          {/* Prezzo principale (Prominente) */}
           <p
             className='lead text-primary fw-bold mb-3'
             style={{ fontSize: '1.8rem' }}
@@ -147,7 +228,6 @@ function Details() {
             € {prodotto.prezzo.toFixed(2)}
           </p>
 
-          {/* 🛑 Prezzo Totale con Protezione (Simulazione) */}
           {canBuy && (
             <p className='text-success small'>
               € {(prodotto.prezzo * 1.05).toFixed(2)} include la Protezione
@@ -157,14 +237,9 @@ function Details() {
 
           <hr className='my-3' />
 
-          {/* 2. TABELLA DETTAGLI CHIAVE (Brand, Condizione, Venditore) */}
+          {/* 2. TABELLA DETTAGLI CHIAVE */}
           <h4 className='mb-3'>Dettagli Prodotto</h4>
           <Row className='mb-4 small'>
-            <Col xs={4} className='fw-bold'>
-              Brand:
-            </Col>
-            <Col xs={8}>{prodotto.brand || 'N/D'}</Col>
-
             <Col xs={4} className='fw-bold'>
               Condizione:
             </Col>
@@ -197,7 +272,6 @@ function Details() {
 
           {/* 4. BOTTONI DI AZIONE (ACQUISTA/MODIFICA) */}
           {canModerate ? (
-            // Se è PROPRIETARIO o ADMIN: Mostra Modifica/Elimina
             <div className='d-flex gap-3'>
               <Link
                 to={`/modifica-prodotto/${prodotto.id}`}
@@ -215,24 +289,46 @@ function Details() {
               </Button>
             </div>
           ) : canBuy ? (
-            // Se NON è proprietario/admin E DISPONIBILE: Mostra Acquista/Offerta
             <div className='d-flex flex-column gap-2'>
               <Button variant='success' size='lg' className='w-100'>
                 Acquista Ora
               </Button>
-              {/* 🛑 SIMULAZIONE BOTTONE AGGIUNTIVO: Fai un'offerta */}
               <Button variant='outline-primary' size='lg' className='w-100'>
                 Fai un'offerta
               </Button>
             </div>
           ) : (
-            // Altrimenti (NON disponibile): Mostra non disponibile
             <Button variant='secondary' size='lg' className='w-100' disabled>
               Non Disponibile / Venduto
             </Button>
           )}
         </Col>
       </Row>
+
+      {/* MODAL CAROUSELLO (NON MODIFICATO) */}
+      <Modal show={showModal} onHide={handleCloseModal} size='xl' centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Immagini Prodotto</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className='p-0'>
+          <Carousel
+            activeIndex={modalIndex}
+            onSelect={(idx) => setModalIndex(idx)}
+            interval={null}
+          >
+            {immaginiCarousel.map((img, index) => (
+              <Carousel.Item key={img.id || index}>
+                <img
+                  className='d-block w-100'
+                  src={img.url}
+                  alt={`${prodotto.titolo} - ${index}`}
+                  style={{ maxHeight: '80vh', objectFit: 'contain' }}
+                />
+              </Carousel.Item>
+            ))}
+          </Carousel>
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 }

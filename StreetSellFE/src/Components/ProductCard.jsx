@@ -22,7 +22,8 @@ function ProductCard({ prodotto }) {
           },
         ];
 
-  const numeroImmagini = prodotto.immagini ? prodotto.immagini.length : 0;
+  const primaImmagineUrl =
+    immaginiCarousel[0].urlImmagine || immaginiCarousel[0].url;
 
   const shortDescription =
     prodotto.descrizione && prodotto.descrizione.length > 80
@@ -75,49 +76,29 @@ function ProductCard({ prodotto }) {
       to={`/prodotto/${prodotto.id}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
-      <Card className='h-100 border-0 shadow-sm'>
+      <Card className='h-100 border-0'>
         {/* 2. AREA CAROUSEL: Sostituisce Card.Img */}
-        <div style={{ position: 'relative' }}>
-          <Carousel
-            interval={null} // Non scorre automaticamente
-            controls={false} // Mostra frecce solo se ci sono più di 1 foto
-            indicators={false} // Rimuove i puntini sotto l'immagine per essere più compatti
-          >
-            {immaginiCarousel.map((img, index) => (
-              <Carousel.Item key={img.id || index}>
-                <Card.Img
-                  variant='top'
-                  src={img.urlImmagine || img.url}
-                  style={{
-                    height: '400px',
-                    width: '100%',
-                    objectFit: 'cover',
-                    overflow: 'hidden',
-                    display: 'flex', // 🛑 NUOVO: Abilita flexbox per centrare
-                    justifyContent: 'center', // 🛑 NUOVO: Centra orizzontalmente
-                    alignItems: 'center', // 🛑 NUOVO: Centra verticalmente
-                    backgroundColor: '#f8f9fa',
-                  }}
-                />
-              </Carousel.Item>
-            ))}
-          </Carousel>
-
-          {/* Badge del Conteggio Foto (opzionale, ma utile) */}
-          {numeroImmagini > 1 && (
-            <Badge
-              pill
-              bg='dark'
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                zIndex: 10,
-              }}
-            >
-              {numeroImmagini} Foto
-            </Badge>
-          )}
+        <div
+          style={{
+            width: '100%',
+            height: '400px', // Altezza fissa come nel carosello precedente
+            overflow: 'hidden',
+            borderRadius: '8px',
+            // Non serve cursor: pointer se non c'è un click handler
+            position: 'relative',
+          }}
+        >
+          {/* 🛑 SOLO LA PRIMA IMMAGINE, SENZA CAROSELLO O BADGE */}
+          <img
+            src={primaImmagineUrl}
+            alt={prodotto.titolo || 'Immagine prodotto'}
+            className='w-100 h-100'
+            style={{
+              objectFit: 'cover',
+              // Centratura opzionale per coerenza con il vecchio stile
+              display: 'block',
+            }}
+          />
         </div>
 
         {/* Corpo della Card */}
