@@ -61,18 +61,18 @@ function MyNavbar() {
   return (
     <Navbar expand='lg' className='bg-dark' data-bs-theme='dark'>
       <Container>
-        <Navbar.Brand
-          as={Link}
+        <Link
           to='/'
-          className='p-0 m-0 d-flex align-items-center'
+          className='d-flex align-items-center text-decoration-none me-3'
         >
           <img
             src={logo}
             alt='StreetSell Logo'
-            height='70'
-            className='d-inline-block align-top p-0 m-0'
+            height='40'
+            // Assicuriamoci che l'immagine sia un blocco per evitare spazi sotto
+            style={{ objectFit: 'contain', display: 'block' }}
           />
-        </Navbar.Brand>
+        </Link>
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
         <Navbar.Collapse id='basic-navbar-nav'>
           <Nav>
@@ -81,10 +81,9 @@ function MyNavbar() {
             </Nav.Link>
           </Nav>
 
-          {/* 🛑 BARRA DI RICERCA AGGIORNATA */}
+          {/* 🛑 BARRA DI RICERCA AGGIORNATA CON FLEX-GROW-1 */}
           <Form
-            className='d-flex mx-auto'
-            style={{ maxWidth: '600px' }}
+            className='d-flex flex-grow-1 mx-4' // Aggiunto flex-grow-1, rimosso maxWidth
             onSubmit={handleSearchSubmit}
           >
             <InputGroup>
@@ -94,9 +93,9 @@ function MyNavbar() {
                 onChange={(e) => setSearchType(e.target.value)}
                 style={{
                   maxWidth: '110px',
-                  backgroundColor: '#f8f9fa',
-                  color: '#333',
-                  border: 'none',
+                  backgroundColor: '#212529', // Sfondo scuro (nero di Bootstrap)
+                  color: '#f8f9fa', // Testo chiaro (bianco/light di Bootstrap)
+                  border: '1px solid #495057', // Bordo leggermente più scuro
                 }}
               >
                 <option value='prodotti'>Prodotti</option>
