@@ -56,18 +56,22 @@ function MyNavbar() {
   return (
     <Navbar expand='lg' className='bg-dark' data-bs-theme='dark'>
       <Container>
-        <Navbar.Brand as={Link} to='/' className='d-flex align-items-center'>
+        <Navbar.Brand
+          as={Link}
+          to='/'
+          className='p-0 m-0 d-flex align-items-center'
+        >
           <img
             src={logo} // Usa la variabile importata
             alt='StreetSell Logo'
             height='70' // Imposta l'altezza per allinearlo alla navbar
-            className='d-inline-block' // Classi Bootstrap per l'allineamento
+            className='d-inline-block align-top p-0 m-0' // Classi Bootstrap per l'allineamento
           />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
         <Navbar.Collapse id='basic-navbar-nav'>
           {/* Menu Principale a Sinistra */}
-          <Nav className='me-auto'>
+          <Nav>
             <Nav.Link as={Link} to='/'>
               Home
             </Nav.Link>

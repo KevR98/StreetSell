@@ -77,7 +77,7 @@ function Home() {
   // --- RENDERING FINALE (Il Loop) ---
   return (
     <Container className='my-5'>
-      <h1 className='mb-4 text-center'>Annunci Recenti</h1>
+      <h1 className='mb-4 text-center'>Novità</h1>
 
       {/* 🚨 CORREZIONE 3: Mappa sulla lista 'prodotti' scaricata */}
       <Row xs={1} md={2} lg={3} xl={4} className='g-4'>

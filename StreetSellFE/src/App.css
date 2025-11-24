@@ -2,3 +2,8 @@
 .no-caret > .nav-link::after {
   display: none !important;
 }
+
+.fixed-height-card {
+  height: 450px; /* Esempio: Scegli un valore che si adatti al prodotto più grande */
+  overflow: hidden; /* Nasconde l'eventuale contenuto in eccesso se non si adatta */
+}

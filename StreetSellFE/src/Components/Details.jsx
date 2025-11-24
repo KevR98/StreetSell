@@ -116,8 +116,9 @@ function Details() {
       <BackButton />
 
       <Row>
-        {/* COLONNA IMMAGINI */}
+        {/* COLONNA 1 (md=6): IMMAGINI */}
         <Col md={6}>
+          {/* Manteniamo il carosello standard, ma puoi applicare le classi di oggetto/copertura come discusso */}
           <Carousel interval={null} indicators={false}>
             {immaginiCarousel.map((img, index) => (
               <Carousel.Item key={img.id || index}>
@@ -132,55 +133,102 @@ function Details() {
           </Carousel>
         </Col>
 
+        {/* COLONNA 2 (md=6): DETTAGLI E AZIONI */}
         <Col md={6} className='pt-4 pt-md-0'>
-          <h1 className='display-4'>{prodotto.titolo}</h1>
-          <p className='lead text-primary fw-bold'>
+          {/* 1. TITOLO E PREZZO */}
+          {/* 🛑 Titolo: Più piccolo (h3 o h4) e in grassetto, come richiesto */}
+          <h3 className='mb-2 fw-bold'>{prodotto.titolo}</h3>
+
+          {/* Prezzo principale (Prominente) */}
+          <p
+            className='lead text-primary fw-bold mb-3'
+            style={{ fontSize: '1.8rem' }}
+          >
             € {prodotto.prezzo.toFixed(2)}
           </p>
 
-          <hr />
+          {/* 🛑 Prezzo Totale con Protezione (Simulazione) */}
+          {canBuy && (
+            <p className='text-success small'>
+              € {(prodotto.prezzo * 1.05).toFixed(2)} include la Protezione
+              acquisti
+            </p>
+          )}
 
-          <h2>Descrizione</h2>
-          <p>{prodotto.descrizione}</p>
+          <hr className='my-3' />
 
-          <ul className='list-unstyled mb-4'>
-            <li>
-              **Venditore:**{' '}
-              {prodotto.venditore ? prodotto.venditore.username : 'N/D'}
-            </li>
-            <li>**Condizione:** {prodotto.condizione}</li>
-            <li>**Categoria:** {prodotto.categoria}</li>
-          </ul>
+          {/* 2. TABELLA DETTAGLI CHIAVE (Brand, Condizione, Venditore) */}
+          <h4 className='mb-3'>Dettagli Prodotto</h4>
+          <Row className='mb-4 small'>
+            <Col xs={4} className='fw-bold'>
+              Brand:
+            </Col>
+            <Col xs={8}>{prodotto.brand || 'N/D'}</Col>
+
+            <Col xs={4} className='fw-bold'>
+              Condizione:
+            </Col>
+            <Col xs={8}>{prodotto.condizione}</Col>
+
+            <Col xs={4} className='fw-bold'>
+              Venditore:
+            </Col>
+            <Col xs={8}>
+              {prodotto.venditore ? (
+                <Link to={`/utenti/${prodotto.venditore.id}`}>
+                  {prodotto.venditore.username}
+                </Link>
+              ) : (
+                'N/D'
+              )}
+            </Col>
+
+            <Col xs={4} className='fw-bold'>
+              Categoria:
+            </Col>
+            <Col xs={8}>{prodotto.categoria || 'N/D'}</Col>
+          </Row>
+
+          {/* 3. DESCRIZIONE */}
+          <h4 className='mb-2'>Descrizione</h4>
+          <p className='small text-muted mb-4'>{prodotto.descrizione}</p>
+
+          <hr className='my-3' />
+
+          {/* 4. BOTTONI DI AZIONE (ACQUISTA/MODIFICA) */}
           {canModerate ? (
-            // 1. Se è PROPRIETARIO o ADMIN: Mostra SEMPRE i bottoni Modifica/Elimina
+            // Se è PROPRIETARIO o ADMIN: Mostra Modifica/Elimina
             <div className='d-flex gap-3'>
-              {/* Bottone Modifica: Porta alla pagina di modifica */}
               <Link
                 to={`/modifica-prodotto/${prodotto.id}`}
                 className='btn btn-warning btn-lg flex-grow-1'
               >
-                ✏️ Modifica
+                ✏️ Modifica Annuncio
               </Link>
-
-              {/* Bottone Elimina: Scatena la funzione handleDelete */}
               <Button
                 variant='danger'
                 size='lg'
                 className='flex-grow-1'
                 onClick={handleDelete}
               >
-                🗑️ Elimina
+                🗑️ Elimina Annuncio
               </Button>
             </div>
           ) : canBuy ? (
-            // 🛑 2. Se NON è proprietario/admin E DISPONIBILE: Mostra il Widget
-            <Order
-              prodottoId={prodotto.id} // Passa l'ID al widget
-            />
+            // Se NON è proprietario/admin E DISPONIBILE: Mostra Acquista/Offerta
+            <div className='d-flex flex-column gap-2'>
+              <Button variant='success' size='lg' className='w-100'>
+                Acquista Ora
+              </Button>
+              {/* 🛑 SIMULAZIONE BOTTONE AGGIUNTIVO: Fai un'offerta */}
+              <Button variant='outline-primary' size='lg' className='w-100'>
+                Fai un'offerta
+              </Button>
+            </div>
           ) : (
-            // 3. Altrimenti (NON disponibile): Mostra non disponibile
+            // Altrimenti (NON disponibile): Mostra non disponibile
             <Button variant='secondary' size='lg' className='w-100' disabled>
-              Non Disponibile
+              Non Disponibile / Venduto
             </Button>
           )}
         </Col>

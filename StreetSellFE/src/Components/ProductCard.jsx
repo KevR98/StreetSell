@@ -59,16 +59,12 @@ function ProductCard({ prodotto }) {
     if (diff <= TWENTY_MINUTES) {
       // 1. Logica 'Minuti fa'
       const minutes = Math.floor(diff / (60 * 1000));
-      if (minutes === 0) return 'Pubblicato ora';
-      return `Pubblicato ${minutes} minuti fa`;
+      if (minutes === 0) return ' ora';
+      return ` ${minutes} minuti fa`;
     }
     const datePart = createdDate.toLocaleDateString('it-IT');
-    const timePart = createdDate.toLocaleTimeString('it-IT', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
-    return `${datePart} alle ${timePart}`;
+    return `${datePart}`;
   };
 
   const formattedDate = getDisplayDate(prodotto.createdAt);
@@ -79,7 +75,7 @@ function ProductCard({ prodotto }) {
       to={`/prodotto/${prodotto.id}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
-      <Card className='h- border-0 shadow-sm'>
+      <Card className='h-100 border-0 shadow-sm'>
         {/* 2. AREA CAROUSEL: Sostituisce Card.Img */}
         <div style={{ position: 'relative' }}>
           <Carousel
@@ -92,7 +88,16 @@ function ProductCard({ prodotto }) {
                 <Card.Img
                   variant='top'
                   src={img.urlImmagine || img.url}
-                  style={{ height: '200px', objectFit: 'cover' }}
+                  style={{
+                    height: '400px',
+                    width: '100%',
+                    objectFit: 'cover',
+                    overflow: 'hidden',
+                    display: 'flex', // 🛑 NUOVO: Abilita flexbox per centrare
+                    justifyContent: 'center', // 🛑 NUOVO: Centra orizzontalmente
+                    alignItems: 'center', // 🛑 NUOVO: Centra verticalmente
+                    backgroundColor: '#f8f9fa',
+                  }}
                 />
               </Carousel.Item>
             ))}
@@ -116,21 +121,39 @@ function ProductCard({ prodotto }) {
         </div>
 
         {/* Corpo della Card */}
-        <Card.Body className='d-flex flex-column'>
-          <Card.Title>{prodotto.titolo}</Card.Title>
-          <Card.Text>Descrizione: {shortDescription}</Card.Text>
-          <Card.Text style={{ fontSize: '0.9em' }}>
-            {displayCondizione(prodotto.condizione)}
-          </Card.Text>
-          <Card.Text style={{ fontSize: '0.9em' }}>
-            <strong>
+        <Card.Body className='d-flex flex-column p-2'>
+          <div className='mb-2'>
+            {/* Titolo: Normale ma in grassetto, come richiesto */}
+            <Card.Title className='mb-1 fw-bold' style={{ fontSize: '1em' }}>
+              {prodotto.titolo}
+            </Card.Title>
+
+            {/* Descrizione (lascia che Bootstrap gestisca il wrap) */}
+            <Card.Text className='mb-1 small text-muted'>
+              Descrizione: {shortDescription}
+            </Card.Text>
+
+            {/* Condizione */}
+            <Card.Text className='mb-1 small'>
+              {displayCondizione(prodotto.condizione)}
+            </Card.Text>
+          </div>
+          <div className='mt-auto d-flex justify-content-between align-items-end'>
+            {' '}
+            {/* 🛑 2. mt-auto spinge questo blocco in fondo */}
+            {/* Prezzo: Grande e in evidenza */}
+            <Card.Text className='mb-0 fw-bold' style={{ fontSize: '0.9em' }}>
               {prodotto.prezzo ? parseFloat(prodotto.prezzo).toFixed(2) : 'N/D'}{' '}
               €
-            </strong>
-          </Card.Text>
-          <Card.Text className='text-secondary small mb-2'>
-            Pubblicato il: <strong>{formattedDate}</strong>
-          </Card.Text>
+            </Card.Text>
+            {/* Data Pubblicazione: In fondo e molto piccola */}
+            <Card.Text
+              className='text-secondary mb-0'
+              style={{ fontSize: '0.75em' }}
+            >
+              Pubblicato: <strong>{formattedDate}</strong>
+            </Card.Text>
+          </div>
         </Card.Body>
       </Card>
     </Link>
