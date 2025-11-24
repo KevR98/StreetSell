@@ -1,11 +1,13 @@
 package kevinramil.StreetSell.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import kevinramil.StreetSell.Enums.StatoOrdine;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -44,8 +46,10 @@ public class Ordine {
     private StatoOrdine statoOrdine;
 
     // Relazione: Un ordine può avere più recensioni (di solito una dal compratore e una dal venditore)
-    @OneToMany(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Recensione> recensioni;
+    @OneToOne(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.JOIN) // 🛑 Forza il caricamento nel fetch dell'ordine
+    @JsonIgnoreProperties("ordine")
+    private Recensione recensione;
 
     // Relazione: L'ordine viene spedito a un indirizzo specifico
     @ManyToOne(fetch = FetchType.LAZY)

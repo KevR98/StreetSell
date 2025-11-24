@@ -14,11 +14,13 @@ import {
   FaBoxOpen,
   FaCheckCircle,
   FaTimesCircle,
+  FaStar, // 🛑 AGGIUNTO
 } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import BackButton from './BackButton';
+import ReviewModal from './ReviewModal'; // 🛑 NUOVO IMPORT
 
 // 🛑 ENDPOINT UNIFICATO per recuperare tutte le task da fare
 const ENDPOINT_FETCH_TASK = 'http://localhost:8888/ordini/gestione';
@@ -32,6 +34,10 @@ function OrderManagementPage() {
   const token = localStorage.getItem('accessToken');
   const currentUser = useSelector((state) => state.auth.user);
   const currentUserId = currentUser?.id; // ID dell'utente loggato
+
+  // 🛑 STATI PER LA RECENSIONE
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   // Funzione per recuperare gli ordini
   const fetchOrders = () => {
@@ -62,7 +68,20 @@ function OrderManagementPage() {
       .finally(() => setIsLoading(false));
   };
 
-  // GESTIONE UNIFICATA DELL'AGGIORNAMENTO STATO
+  // 🛑 FUNZIONE PER APRIRE IL MODAL
+  const handleOpenReviewModal = (orderId) => {
+    setSelectedOrderId(orderId);
+    setShowReviewModal(true);
+  };
+
+  // 🛑 FUNZIONE CHIAMATA DOPO IL SUBMIT DELLA RECENSIONE
+  const handleReviewSuccess = () => {
+    setShowReviewModal(false);
+    // Ricarichiamo gli ordini per nascondere il pulsante Recensione
+    fetchOrders();
+  };
+
+  // GESTIONE UNIFICATA DELL'AGGIORNAMENTO STATO (omissis, rimane invariata)
   const handleUpdateStatus = (orderId, currentStatus) => {
     let newStatus;
     let actionMessage;
@@ -167,14 +186,14 @@ function OrderManagementPage() {
 
   if (error) return <ErrorAlert message={error} />;
 
-  // 🛑 LOGICA DI FILTRAGGIO DELLE LISTE (QUESTO FILTRA CORRETTAMENTE)
+  // 🛑 LOGICA DI FILTRAGGIO DELLE LISTE (AGGIORNATA)
   // 1. Ordini che richiedono la mia attenzione come VENDITORE
   const mySales = orders.filter((order) => {
     const isUserVendor = order.venditore?.id === currentUserId;
     if (!isUserVendor) return false;
 
     const status = order.statoOrdine;
-    // VENDITORE: Mostra solo CONFERMATO (da spedire) e COMPLETATO (notifica)
+    // VENDITORE: Mostra CONFERMATO (da spedire) e COMPLETATO (notifica)
     return status === 'CONFERMATO' || status === 'COMPLETATO';
   });
 
@@ -184,36 +203,53 @@ function OrderManagementPage() {
     if (!isUserBuyer) return false;
 
     const status = order.statoOrdine;
-    // COMPRATORE: Mostra solo CONFERMATO/IN_ATTESA (da annullare) e SPEDITO (da confermare)
+    // 🛑 COMPRATORE: Mostra CONFERMATO/IN_ATTESA (annulla), SPEDITO (conferma), e COMPLETATO (recensione)
     return (
-      status === 'CONFERMATO' || status === 'IN_ATTESA' || status === 'SPEDITO'
+      status === 'CONFERMATO' ||
+      status === 'IN_ATTESA' ||
+      status === 'SPEDITO' ||
+      status === 'COMPLETATO' // 🛑 AGGIUNTO QUESTO STATO
     );
   });
 
   // Helper per mappare le righe della tabella
   const renderOrderRows = (orderList, isSalesTable) => {
-    // 🛑 NON CI SONO PIÙ CONDIZIONI DI 'return null' QUI
     return orderList.map((order) => {
       const isUserVendor = order.venditore?.id === currentUserId;
       const isUserBuyer = order.compratore?.id === currentUserId;
 
       const isTaskSpedire = isUserVendor && order.statoOrdine === 'CONFERMATO';
       const isTaskConfermare = isUserBuyer && order.statoOrdine === 'SPEDITO';
+
+      // 🛑 NUOVA TASK: Recensione (Solo compratore, ordine COMPLETO)
+      const isTaskRecensione =
+        isUserBuyer && order.statoOrdine === 'COMPLETATO';
+      // ⚠️ ASSUMIAMO che il BE non restituisca ordini già recensiti
+      // Se restituisce tutti i completati, qui andrebbe: && !order.recensione
+
       const canCancel =
         (isUserBuyer && order.statoOrdine === 'CONFERMATO') ||
         order.statoOrdine === 'IN_ATTESA';
+
+      const isNotificationComplete =
+        isUserVendor && order.statoOrdine === 'COMPLETATO';
 
       const relationshipColor = isTaskSpedire
         ? 'warning'
         : isTaskConfermare
         ? 'primary'
+        : isTaskRecensione
+        ? 'info'
         : 'secondary';
+
       const taskText = isTaskSpedire
         ? 'DA SPEDIRE'
         : isTaskConfermare
         ? 'DA CONFERMARE'
-        : order.statoOrdine === 'COMPLETATO'
-        ? 'COMPLETATO'
+        : isTaskRecensione
+        ? 'DA RECENSIRE'
+        : isNotificationComplete
+        ? 'NOTIFICA'
         : 'IN ATTESA';
 
       return (
@@ -224,6 +260,8 @@ function OrderManagementPage() {
               ? 'bg-warning-subtle'
               : !isSalesTable && isTaskConfermare
               ? 'bg-primary-subtle'
+              : !isSalesTable && isTaskRecensione
+              ? 'bg-info-subtle' // Colore per il feedback
               : ''
           }
         >
@@ -258,6 +296,7 @@ function OrderManagementPage() {
                 <FaTruck /> Spedisci
               </Button>
             )}
+
             {isTaskConfermare && (
               <Button
                 variant='primary'
@@ -267,6 +306,18 @@ function OrderManagementPage() {
                 <FaCheckCircle /> Arrivato
               </Button>
             )}
+
+            {/* 🛑 BOTTONE RECENSIONE */}
+            {isTaskRecensione && (
+              <Button
+                variant='info'
+                size='sm'
+                onClick={() => handleOpenReviewModal(order.id)}
+              >
+                <FaStar /> Feedback
+              </Button>
+            )}
+
             {canCancel && (
               <Button
                 variant='danger'
@@ -276,6 +327,9 @@ function OrderManagementPage() {
                 <FaTimesCircle /> Annulla
               </Button>
             )}
+
+            {/* Azioni per Notifica Venditore Completato */}
+            {isNotificationComplete && <Badge bg='success'>Completato</Badge>}
           </td>
         </tr>
       );
@@ -294,8 +348,7 @@ function OrderManagementPage() {
         <Col md={12} className='mb-5'>
           <h2>Le Tue Vendite ({mySales.length})</h2>
           <p className='text-muted'>
-            Ordini in cui sei il venditore (Da spedire o notifiche di
-            annullamento/completamento).
+            Ordini in cui sei il venditore (Da spedire o notifiche).
           </p>
 
           <Table striped bordered hover responsive className='shadow-sm mt-3'>
@@ -333,8 +386,8 @@ function OrderManagementPage() {
         <Col md={12} className='mt-4'>
           <h2>I Tuoi Acquisti ({myPurchases.length})</h2>
           <p className='text-muted'>
-            Ordini in cui sei il compratore (Da annullare o confermare
-            ricezione).
+            Ordini in cui sei il compratore (Da annullare, confermare o
+            recensire).
           </p>
 
           <Table striped bordered hover responsive className='shadow-sm mt-3'>
@@ -364,6 +417,15 @@ function OrderManagementPage() {
           </Table>
         </Col>
       </Row>
+
+      {/* 🛑 MODALE DI RECENSIONE */}
+      <ReviewModal
+        show={showReviewModal}
+        handleClose={() => setShowReviewModal(false)}
+        orderId={selectedOrderId}
+        token={token}
+        onReviewSuccess={handleReviewSuccess}
+      />
     </Container>
   );
 }

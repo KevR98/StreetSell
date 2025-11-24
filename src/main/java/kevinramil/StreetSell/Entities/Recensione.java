@@ -32,8 +32,8 @@ public class Recensione {
     // --- RELAZIONI FONDAMENTALI ---
 
     // Relazione: La recensione è legata a un ordine specifico
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ordine_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ordine_id", nullable = false, unique = true) // 🛑 unique=true impone l'unicità
     private Ordine ordine;
 
     // Relazione: La recensione è scritta da un utente (il recensore)
@@ -45,5 +45,5 @@ public class Recensione {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recensito_id", nullable = false)
     private Utente recensito;
-    
+
 }
