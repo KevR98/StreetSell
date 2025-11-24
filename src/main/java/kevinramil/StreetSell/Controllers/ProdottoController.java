@@ -173,4 +173,9 @@ public class ProdottoController {
         // Non è necessario passare currentUser se la logica di controllo è stata spostata nell'endpoint
         return prodottoService.sospendiProdottoAdmin(prodottoId);
     }
+
+    @GetMapping("/utente/{venditoreId}")
+    public List<Prodotto> getProdottiByVenditore(@PathVariable UUID venditoreId) {
+        return prodottoService.findProdottiByVenditoreId(venditoreId);
+    }
 }

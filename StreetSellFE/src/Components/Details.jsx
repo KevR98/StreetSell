@@ -9,13 +9,17 @@ import {
   Carousel,
   Modal,
   Badge,
+  Alert, // Aggiunto Alert
+  Card, // Aggiunto Card per la visualizzazione
 } from 'react-bootstrap';
 import BackButton from './BackButton';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import Order from './Order';
+import ProductCard from './ProductCard';
 
 const endpoint = 'http://localhost:8888/prodotti';
+const userProductsEndpoint = 'http://localhost:8888/prodotti/utente';
 
 function Details() {
   const [prodotto, setProdotto] = useState(null);
@@ -30,7 +34,48 @@ function Details() {
   const [showModal, setShowModal] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
 
-  // Logica fetch (NON MODIFICATA)
+  // 🛑 STATO PER GLI ALTRI ANNUNCI
+  const [otherProducts, setOtherProducts] = useState([]);
+  const [isLoadingOther, setIsLoadingOther] = useState(false);
+
+  // 🛑 NUOVO STATO: Conteggio totale prima del filtro (incluso il prodotto corrente)
+  const [totalSellerProductsCount, setTotalSellerProductsCount] = useState(0);
+
+  // 🛑 FUNZIONE FETCH PER GLI ALTRI ANNUNCI (Aggiornata)
+  const fetchOtherProducts = (sellerId) => {
+    setIsLoadingOther(true);
+    fetch(`${userProductsEndpoint}/${sellerId}`)
+      .then((res) => {
+        if (res.ok) {
+          return res.json();
+        } else if (res.status === 404) {
+          return [];
+        } else {
+          throw new Error('Errore nel caricamento degli altri annunci.');
+        }
+      })
+      .then((data) => {
+        const rawData = Array.isArray(data) ? data : [];
+
+        // 🛑 1. IMPOSTA IL CONTEGGIO TOTALE PRIMA DEL FILTRO
+        setTotalSellerProductsCount(rawData.length);
+
+        // 2. Filtra il prodotto corrente dalla lista e limita a 4
+        const filteredData = rawData
+          .filter((p) => p.id !== prodottoId)
+          .slice(0, 4);
+
+        setOtherProducts(filteredData);
+      })
+      .catch((err) => {
+        console.error('Errore nel caricamento degli altri prodotti:', err);
+        setOtherProducts([]);
+        setTotalSellerProductsCount(0); // Resetta il conteggio in caso di errore
+      })
+      .finally(() => setIsLoadingOther(false));
+  };
+
+  // Logica fetch principale
   useEffect(() => {
     fetch(endpoint + '/' + prodottoId)
       .then((res) => {
@@ -44,12 +89,21 @@ function Details() {
         setIsLoading(false);
         setError(false);
         setProdotto(prodottoDetail);
+
+        // 🛑 Dopo aver caricato il prodotto, se ha un venditore, carichiamo gli altri annunci
+        if (prodottoDetail.venditore && prodottoDetail.venditore.id) {
+          fetchOtherProducts(prodottoDetail.venditore.id);
+        } else {
+          // Se non c'è venditore, forziamo il reset dei conteggi
+          setTotalSellerProductsCount(0);
+        }
       })
       .catch((err) => {
         console.error('Errore nel caricamento:', err);
         setIsLoading(false);
         setError(true);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prodottoId, token]);
 
   // Logica gestione eliminazione (NON MODIFICATA)
@@ -135,10 +189,11 @@ function Details() {
   const handleCloseModal = () => setShowModal(false);
 
   // Variabili per il layout della griglia (MODIFICATA)
-  // 🛑 MOSTRA AL MASSIMO 3 IMMAGINI
   const visibleImages = immaginiCarousel.slice(0, 3);
   const remainingImagesCount = numeroImmagini > 3 ? numeroImmagini - 3 : 0;
   // ----------------------------------------------------
+
+  const venditoreUsername = prodotto.venditore?.username || 'questo venditore';
 
   return (
     <Container className='my-5'>
@@ -153,7 +208,6 @@ function Details() {
         >
           {visibleImages.map((img, index) => {
             const isLarge = index === 0;
-            // Calcola l'altezza per le due immagini sotto
             const smallImageHeight = '196px';
 
             const sizeStyle = {
@@ -165,21 +219,17 @@ function Details() {
               position: 'relative',
             };
 
-            // 🛑 Applica l'overlay +X solo sulla TERZA immagine visibile (index === 2)
             const showOverlay = index === 2 && remainingImagesCount > 0;
 
-            // Se l'immagine è l'ultima visibile E ci sono immagini rimanenti,
-            // il click deve aprire il carosello modale.
-            // Altrimenti, il click apre il carosello modale impostando l'indice corretto.
             const clickHandler = showOverlay
-              ? () => handleShowModal(index) // Apre il modale sull'immagine corrente (index 2)
-              : () => handleShowModal(index); // Apre il modale sull'indice cliccato
+              ? () => handleShowModal(index)
+              : () => handleShowModal(index);
 
             return (
               <div
                 key={img.id || index}
                 style={sizeStyle}
-                onClick={clickHandler} // APRE IL MODAL AL CLICK
+                onClick={clickHandler}
               >
                 <img
                   src={img.url}
@@ -215,7 +265,7 @@ function Details() {
           })}
         </Col>
 
-        {/* COLONNA 2 (md=6): DETTAGLI E AZIONI (NON MODIFICATA) */}
+        {/* COLONNA 2 (md=6): DETTAGLI E AZIONI */}
         <Col md={6} className='pt-4 pt-md-0'>
           {/* 1. TITOLO E PREZZO */}
           <h3 className='mb-2 fw-bold'>{prodotto.titolo}</h3>
@@ -301,6 +351,37 @@ function Details() {
           )}
         </Col>
       </Row>
+
+      {/* 🛑 SEZIONE NUOVA: ALTRI ANNUNCI DEL VENDITORE */}
+      {totalSellerProductsCount > 0 && !isOwner && (
+        <div className='mt-5'>
+          <h4 className='mb-3'>Altri annunci di {venditoreUsername}</h4>
+          <hr />
+
+          {isLoadingOther ? (
+            <LoadingSpinner size='sm' />
+          ) : otherProducts.length > 0 ? (
+            <Row className='g-4'>
+              {otherProducts.map((otherProdotto) => (
+                <Col md={3} sm={6} xs={12} key={otherProdotto.id}>
+                  <ProductCard prodotto={otherProdotto} />
+                </Col>
+              ))}
+            </Row>
+          ) : totalSellerProductsCount === 1 ? (
+            // 🛑 CASO 1: SOLO QUESTO PRODOTTO IN VENDITA
+            <Alert variant='info'>
+              Il venditore ({venditoreUsername}) ha solo questo annuncio attivo
+              in vendita al momento.
+            </Alert>
+          ) : (
+            // CASO 2: NESSUN PRODOTTO (dovrebbe essere coperto dal count > 0)
+            <Alert variant='info'>
+              Nessun altro annuncio disponibile da questo venditore.
+            </Alert>
+          )}
+        </div>
+      )}
 
       {/* MODAL CAROUSELLO (NON MODIFICATO) */}
       <Modal show={showModal} onHide={handleCloseModal} size='xl' centered>

@@ -172,4 +172,15 @@ public class ProdottoService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
     }
+
+    public List<Prodotto> findProdottiByVenditoreId(UUID venditoreId) {
+
+        // Questo metodo assume l'esistenza di un metodo nel ProdottoRepository:
+        // List<Prodotto> findByVenditoreIdAndStatoProdotto(UUID venditoreId, StatoProdotto stato);
+
+        return prodottoRepository.findByVenditoreIdAndStatoProdotto(
+                venditoreId,
+                StatoProdotto.DISPONIBILE // Mostra solo i prodotti che sono DISPONIBILI
+        );
+    }
 }

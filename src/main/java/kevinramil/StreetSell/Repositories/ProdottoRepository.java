@@ -32,4 +32,6 @@ public interface ProdottoRepository extends JpaRepository<Prodotto, UUID> {
     @Query("SELECT COUNT(p) FROM Prodotto p WHERE p.venditore.id = :venditoreId AND p.statoProdotto = 'DISPONIBILE'")
     long countByVenditoreAndStatoProdotto(@Param("venditoreId") UUID venditoreId);
 
+    List<Prodotto> findByVenditoreIdAndStatoProdotto(UUID venditoreId, StatoProdotto stato);
+
 }
