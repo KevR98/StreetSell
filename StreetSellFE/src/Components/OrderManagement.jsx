@@ -6,6 +6,9 @@ import {
   Button,
   Row,
   Col,
+  Dropdown,
+  DropdownButton,
+  ButtonGroup,
 } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -15,6 +18,7 @@ import {
   FaCheckCircle,
   FaTimesCircle,
   FaStar,
+  FaFilter,
 } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
@@ -33,10 +37,14 @@ function OrderManagementPage() {
   const [error, setError] = useState(null);
   const token = localStorage.getItem('accessToken');
   const currentUser = useSelector((state) => state.auth.user);
-  const currentUserId = currentUser?.id; // ID dell'utente loggato
-  const [reviewedOrderIds, setReviewedOrderIds] = useState(new Set());
+  const currentUserId = currentUser?.id;
+
+  // STATI PER I FILTRI
+  const [salesFilter, setSalesFilter] = useState('ALL'); // ALL, ACTIVE, COMPLETED, CANCELLED
+  const [purchasesFilter, setPurchasesFilter] = useState('ALL'); // ALL, ACTIVE, COMPLETED, CANCELLED, TO_REVIEW
 
   // STATI PER LA RECENSIONE
+  const [reviewedOrderIds, setReviewedOrderIds] = useState(new Set());
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
@@ -69,16 +77,17 @@ function OrderManagementPage() {
       .finally(() => setIsLoading(false));
   };
 
-  // FUNZIONE PER APRIRE IL MODAL
+  // APRIRE IL MODAL
   const handleOpenReviewModal = (orderId) => {
     setSelectedOrderId(orderId);
     setShowReviewModal(true);
   };
 
-  // FUNZIONE CHIAMATA DOPO IL SUBMIT DELLA RECENSIONE
+  // SUBMIT RECENSIONE SUCCESS
   const handleReviewSuccess = () => {
     setShowReviewModal(false);
 
+    // Aggiorniamo il Set locale
     if (selectedOrderId) {
       setReviewedOrderIds((prevSet) => {
         const newSet = new Set(prevSet);
@@ -86,11 +95,10 @@ function OrderManagementPage() {
         return newSet;
       });
     }
-    // Ricarichiamo gli ordini per nascondere il pulsante Recensione
     fetchOrders();
   };
 
-  // GESTIONE UNIFICATA DELL'AGGIORNAMENTO STATO (omissis, rimane invariata)
+  // AGGIORNAMENTO STATO
   const handleUpdateStatus = (orderId, currentStatus) => {
     let newStatus;
     let actionMessage;
@@ -120,22 +128,7 @@ function OrderManagementPage() {
       body: JSON.stringify({ nuovoStato: newStatus }),
     })
       .then((res) => {
-        if (!res.ok) {
-          return res
-            .json()
-            .then((errorData) => {
-              throw new Error(
-                errorData.message ||
-                  `Errore HTTP ${res.status}: Impossibile completare l'azione.`
-              );
-            })
-            .catch(() => {
-              throw new Error(
-                `Errore HTTP ${res.status}: Impossibile aggiornare lo stato dell'ordine.`
-              );
-            });
-        }
-
+        if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
         alert(successMessage);
         fetchOrders();
       })
@@ -144,12 +137,11 @@ function OrderManagementPage() {
       });
   };
 
+  // ANNULLAMENTO ORDINE
   const handleCancelOrder = (orderId) => {
-    const token = localStorage.getItem('accessToken');
-
     if (
       window.confirm(
-        'Sei sicuro di voler ANNULLARE questo ordine? Questa operazione è irreversibile.'
+        'Sei sicuro di voler ANNULLARE questo ordine? Operazione irreversibile.'
       )
     ) {
       fetch(`${ENDPOINT_STATO_UPDATE_BASE}/${orderId}/stato`, {
@@ -161,21 +153,11 @@ function OrderManagementPage() {
         body: JSON.stringify({ nuovoStato: 'ANNULLATO' }),
       })
         .then((res) => {
-          if (!res.ok) {
-            return res.json().then((errorData) => {
-              throw new Error(
-                errorData.message ||
-                  "Impossibile annullare l'ordine in questo stato."
-              );
-            });
-          }
-          alert(
-            `Ordine #${orderId.substring(0, 8)}... annullato con successo.`
-          );
+          if (!res.ok) throw new Error('Errore annullamento');
+          alert('Ordine annullato con successo.');
           fetchOrders();
         })
         .catch((err) => {
-          console.error('Errore annullamento:', err);
           alert(`Errore: ${err.message}`);
         });
     }
@@ -186,57 +168,86 @@ function OrderManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, currentUser]);
 
-  if (isLoading)
-    return (
-      <Container className='mt-5 text-center'>
-        <LoadingSpinner />
-      </Container>
-    );
+  // --- LOGICA DI FILTRAGGIO ---
 
-  if (error) return <ErrorAlert message={error} />;
+  // 1. Filtraggio VENDITE (Sales)
+  const filteredSales = orders.filter((order) => {
+    // Deve essere una mia vendita
+    if (order.venditore?.id !== currentUserId) return false;
 
-  // LOGICA DI FILTRAGGIO DELLE LISTE (AGGIORNATA)
-  // Ordini che richiedono la mia attenzione come VENDITORE
-  const mySales = orders.filter((order) => {
-    const isUserVendor = order.venditore?.id === currentUserId;
-    if (!isUserVendor) return false;
+    const s = order.statoOrdine;
 
-    const status = order.statoOrdine;
-    // VENDITORE: Mostra CONFERMATO (da spedire) e COMPLETATO (notifica)
-    return status === 'CONFERMATO' || status === 'COMPLETATO';
+    switch (salesFilter) {
+      case 'ACTIVE': // In corso
+        return s === 'CONFERMATO' || s === 'SPEDITO';
+      case 'COMPLETED': // Completati
+        return s === 'COMPLETATO';
+      case 'CANCELLED': // Annullati
+        return s === 'ANNULLATO';
+      case 'ALL':
+      default:
+        return true;
+    }
   });
 
-  // Ordini che richiedono la mia attenzione come COMPRATORE
-  const myPurchases = orders.filter((order) => {
-    const isUserBuyer = order.compratore?.id === currentUserId;
-    if (!isUserBuyer) return false;
+  // 2. Filtraggio ACQUISTI (Purchases)
+  const filteredPurchases = orders.filter((order) => {
+    // Deve essere un mio acquisto
+    if (order.compratore?.id !== currentUserId) return false;
 
-    const status = order.statoOrdine;
+    const s = order.statoOrdine;
 
-    // 1. Se l'ordine è attivo (non ancora completato), mostralo sempre
-    if (
-      status === 'CONFERMATO' ||
-      status === 'IN_ATTESA' ||
-      status === 'SPEDITO'
-    ) {
-      return true;
+    switch (purchasesFilter) {
+      case 'ACTIVE': // In corso
+        return s === 'CONFERMATO' || s === 'IN_ATTESA' || s === 'SPEDITO';
+      case 'COMPLETED': // Completati (Storico)
+        return s === 'COMPLETATO';
+      case 'CANCELLED': // Annullati
+        return s === 'ANNULLATO';
+      case 'TO_REVIEW': {
+        // Da Recensire
+        if (s !== 'COMPLETATO') return false;
+        // Logica recensione (Backend + Locale)
+        const haRecensioneBackend = !!order.recensione;
+        const haRecensioneLocale = reviewedOrderIds.has(order.id);
+        return !haRecensioneBackend && !haRecensioneLocale;
+      }
+      case 'ALL':
+      default:
+        return true;
     }
-
-    // 2. Se l'ordine è COMPLETATO, mostralo SOLO se NON è stato ancora recensito
-    if (status === 'COMPLETATO') {
-      // Verifica se il backend dice che c'è già una recensione
-      const haRecensioneBackend = !!order.recensione;
-      // Verifica se l'abbiamo appena recensito noi in questa sessione
-      const haRecensioneLocale = reviewedOrderIds.has(order.id);
-
-      // Mostra la riga solo se NON c'è recensione (né dal backend né locale)
-      return !haRecensioneBackend && !haRecensioneLocale;
-    }
-
-    return false;
   });
 
-  // Helper per mappare le righe della tabella
+  // --- HELPER PER ETICHETTE DROPDOWN ---
+  const getSalesLabel = () => {
+    switch (salesFilter) {
+      case 'ACTIVE':
+        return 'In Corso';
+      case 'COMPLETED':
+        return 'Completati';
+      case 'CANCELLED':
+        return 'Annullati';
+      default:
+        return 'Tutte le Vendite';
+    }
+  };
+
+  const getPurchasesLabel = () => {
+    switch (purchasesFilter) {
+      case 'ACTIVE':
+        return 'In Corso';
+      case 'COMPLETED':
+        return 'Completati';
+      case 'CANCELLED':
+        return 'Annullati';
+      case 'TO_REVIEW':
+        return 'Da Recensire';
+      default:
+        return 'Tutti gli Acquisti';
+    }
+  };
+
+  // --- RENDER RIGHE ---
   const renderOrderRows = (orderList, isSalesTable) => {
     return orderList.map((order) => {
       const isUserVendor = order.venditore?.id === currentUserId;
@@ -245,48 +256,44 @@ function OrderManagementPage() {
       const isTaskSpedire = isUserVendor && order.statoOrdine === 'CONFERMATO';
       const isTaskConfermare = isUserBuyer && order.statoOrdine === 'SPEDITO';
 
-      // Recensione (Solo compratore, ordine COMPLETO)
+      // Controllo recensione per mostrare il BOTTONE (indipendente dal filtro lista)
+      const hasReview = !!order.recensione || reviewedOrderIds.has(order.id);
       const isTaskRecensione =
-        isUserBuyer && order.statoOrdine === 'COMPLETATO' && !order.recensione;
+        isUserBuyer && order.statoOrdine === 'COMPLETATO' && !hasReview;
 
       const canCancel =
         (isUserBuyer && order.statoOrdine === 'CONFERMATO') ||
         order.statoOrdine === 'IN_ATTESA';
 
-      const isNotificationComplete =
-        isUserVendor && order.statoOrdine === 'COMPLETATO';
+      const isCancelled = order.statoOrdine === 'ANNULLATO';
+      const isCompleted = order.statoOrdine === 'COMPLETATO';
 
-      const relationshipColor = isTaskSpedire
-        ? 'warning'
-        : isTaskConfermare
-        ? 'primary'
-        : isTaskRecensione
-        ? 'info'
-        : 'secondary';
+      // Colori Badge
+      let relationshipColor = 'secondary';
+      let taskText = 'STORICO';
 
-      const taskText = isTaskSpedire
-        ? 'DA SPEDIRE'
-        : isTaskConfermare
-        ? 'DA CONFERMARE'
-        : isTaskRecensione
-        ? 'DA RECENSIRE'
-        : isNotificationComplete
-        ? 'NOTIFICA'
-        : 'IN ATTESA';
+      if (isCancelled) {
+        relationshipColor = 'danger';
+        taskText = 'ANNULLATO';
+      } else if (isCompleted) {
+        relationshipColor = 'success';
+        taskText = 'COMPLETATO';
+      } else if (isTaskSpedire) {
+        relationshipColor = 'warning';
+        taskText = 'DA SPEDIRE';
+      } else if (isTaskConfermare) {
+        relationshipColor = 'primary';
+        taskText = 'DA CONFERMARE';
+      } else if (isTaskRecensione) {
+        relationshipColor = 'info';
+        taskText = 'DA RECENSIRE';
+      } else if (order.statoOrdine === 'IN_ATTESA') {
+        relationshipColor = 'secondary';
+        taskText = 'IN ATTESA';
+      }
 
       return (
-        <tr
-          key={order.id}
-          className={
-            isSalesTable && isTaskSpedire
-              ? 'bg-warning-subtle'
-              : !isSalesTable && isTaskConfermare
-              ? 'bg-primary-subtle'
-              : !isSalesTable && isTaskRecensione
-              ? 'bg-info-subtle'
-              : ''
-          }
-        >
+        <tr key={order.id}>
           <td>{order.id.substring(0, 8)}...</td>
           <td>
             <Badge bg={relationshipColor}>{order.statoOrdine}</Badge>
@@ -313,6 +320,7 @@ function OrderManagementPage() {
               <Button
                 variant='success'
                 size='sm'
+                className='me-1'
                 onClick={() => handleUpdateStatus(order.id, order.statoOrdine)}
               >
                 <FaTruck /> Spedisci
@@ -323,17 +331,18 @@ function OrderManagementPage() {
               <Button
                 variant='primary'
                 size='sm'
+                className='me-1'
                 onClick={() => handleUpdateStatus(order.id, order.statoOrdine)}
               >
                 <FaCheckCircle /> Arrivato
               </Button>
             )}
 
-            {/* BOTTONE RECENSIONE */}
             {isTaskRecensione && (
               <Button
                 variant='info'
                 size='sm'
+                className='me-1'
                 onClick={() => handleOpenReviewModal(order.id)}
               >
                 <FaStar /> Feedback
@@ -350,13 +359,25 @@ function OrderManagementPage() {
               </Button>
             )}
 
-            {/* Azioni per Notifica Venditore Completato */}
-            {isNotificationComplete && <Badge bg='success'>Completato</Badge>}
+            {/* Se non ci sono azioni e l'ordine è completato/annullato, mostriamo un placeholder o vuoto */}
+            {!isTaskSpedire &&
+              !isTaskConfermare &&
+              !isTaskRecensione &&
+              !canCancel && <span className='text-muted small fs-6'>-</span>}
           </td>
         </tr>
       );
     });
   };
+
+  if (isLoading)
+    return (
+      <Container className='mt-5 text-center'>
+        <LoadingSpinner />
+      </Container>
+    );
+
+  if (error) return <ErrorAlert message={error} />;
 
   return (
     <Container className='my-5'>
@@ -366,32 +387,73 @@ function OrderManagementPage() {
       </h1>
 
       <Row>
-        {/* LE MIE VENDITE (Task del Venditore) */}
+        {/* --- SEZIONE VENDITE --- */}
         <Col md={12} className='mb-5'>
-          <h2>Le Tue Vendite ({mySales.length})</h2>
-          <p className='text-muted'>
-            Ordini in cui sei il venditore (Da spedire o notifiche).
-          </p>
+          <div className='d-flex justify-content-between align-items-center mb-3'>
+            <div>
+              <h2 className='m-0'></h2>
+              <p className='text-muted m-0'>Gestisci gli ordini ricevuti.</p>
+            </div>
 
-          <Table striped bordered hover responsive className='shadow-sm mt-3'>
-            <thead>
+            <DropdownButton
+              as={ButtonGroup}
+              variant='light'
+              className='text-dark p-0 border-0'
+              title={
+                <>
+                  <FaFilter className='me-2' /> {getSalesLabel()}
+                </>
+              }
+              id='sales-dropdown'
+              align='end'
+            >
+              <Dropdown.Item
+                active={salesFilter === 'ALL'}
+                onClick={() => setSalesFilter('ALL')}
+              >
+                Tutte le Vendite
+              </Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item
+                active={salesFilter === 'ACTIVE'}
+                onClick={() => setSalesFilter('ACTIVE')}
+              >
+                In Corso (Da Spedire)
+              </Dropdown.Item>
+              <Dropdown.Item
+                active={salesFilter === 'COMPLETED'}
+                onClick={() => setSalesFilter('COMPLETED')}
+              >
+                Completati
+              </Dropdown.Item>
+              <Dropdown.Item
+                active={salesFilter === 'CANCELLED'}
+                onClick={() => setSalesFilter('CANCELLED')}
+              >
+                Annullati
+              </Dropdown.Item>
+            </DropdownButton>
+          </div>
+
+          <Table striped bordered hover responsive className='shadow-sm'>
+            <thead className='table-light'>
               <tr>
-                <th>ID Ordine</th>
+                <th>ID</th>
                 <th>Stato</th>
-                <th>Azione Richiesta</th>
+                <th>Info</th>
                 <th>Prodotto</th>
                 <th>Compratore</th>
                 <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
-              {mySales.length > 0 ? (
-                renderOrderRows(mySales, true)
+              {filteredSales.length > 0 ? (
+                renderOrderRows(filteredSales, true)
               ) : (
                 <tr>
-                  <td colSpan='6'>
-                    <Alert variant='info' className='m-0'>
-                      Nessuna vendita effettuata
+                  <td colSpan='6' className='text-center py-4'>
+                    <Alert variant='light' className='m-0 border-0'>
+                      Nessuna vendita trovata con questo filtro.
                     </Alert>
                   </td>
                 </tr>
@@ -404,33 +466,81 @@ function OrderManagementPage() {
           <hr />
         </Col>
 
-        {/* I MIEI ACQUISTI (Task del Compratore) */}
+        {/* --- SEZIONE ACQUISTI --- */}
         <Col md={12} className='mt-4'>
-          <h2>I Tuoi Acquisti ({myPurchases.length})</h2>
-          <p className='text-muted'>
-            Ordini in cui sei il compratore (Da annullare, confermare o
-            recensire).
-          </p>
+          <div className='d-flex justify-content-between align-items-center mb-3'>
+            <div>
+              <h2 className='m-0'>I Tuoi Acquisti</h2>
+              <p className='text-muted m-0'>
+                Traccia e gestisci i tuoi ordini.
+              </p>
+            </div>
 
-          <Table striped bordered hover responsive className='shadow-sm mt-3'>
-            <thead>
+            <DropdownButton
+              as={ButtonGroup}
+              variant='light'
+              className='text-dark p-0 border-0'
+              title={
+                <>
+                  <FaFilter className='me-2' /> {getPurchasesLabel()}
+                </>
+              }
+              id='purchases-dropdown'
+              align='end'
+            >
+              <Dropdown.Item
+                active={purchasesFilter === 'ALL'}
+                onClick={() => setPurchasesFilter('ALL')}
+              >
+                Tutti gli Acquisti
+              </Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item
+                active={purchasesFilter === 'ACTIVE'}
+                onClick={() => setPurchasesFilter('ACTIVE')}
+              >
+                In Corso
+              </Dropdown.Item>
+              <Dropdown.Item
+                active={purchasesFilter === 'TO_REVIEW'}
+                onClick={() => setPurchasesFilter('TO_REVIEW')}
+              >
+                Da Recensire
+              </Dropdown.Item>
+              <Dropdown.Item
+                active={purchasesFilter === 'COMPLETED'}
+                onClick={() => setPurchasesFilter('COMPLETED')}
+              >
+                Completati
+              </Dropdown.Item>
+              <Dropdown.Item
+                active={purchasesFilter === 'CANCELLED'}
+                onClick={() => setPurchasesFilter('CANCELLED')}
+              >
+                Annullati
+              </Dropdown.Item>
+            </DropdownButton>
+          </div>
+
+          <Table striped bordered hover responsive className='shadow-sm'>
+            <thead className='table-light'>
               <tr>
-                <th>ID Ordine</th>
+                <th>ID</th>
                 <th>Stato</th>
-                <th>Azione Richiesta</th>
+                <th>Info</th>
                 <th>Prodotto</th>
                 <th>Venditore</th>
                 <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
-              {myPurchases.length > 0 ? (
-                renderOrderRows(myPurchases, false)
+              {filteredPurchases.length > 0 ? (
+                renderOrderRows(filteredPurchases, false)
               ) : (
                 <tr>
-                  <td colSpan='6'>
-                    <Alert variant='info' className='m-0'>
-                      Nessun acquisto effettuato
+                  <td colSpan='6' className='text-center py-4'>
+                    <Alert variant='light' className='m-0 border-0'>
+                      Nessun acquisto trovato con questo filtro.
                     </Alert>
                   </td>
                 </tr>
