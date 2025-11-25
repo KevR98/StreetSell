@@ -133,7 +133,7 @@ function RegisterPage() {
                     value={username}
                     onChange={(e) => {
                       const { value } = e.target;
-                      setUsername(value); // 1. Aggiorna lo stato
+                      setUsername(value); // Aggiorna lo stato
                       validateField('username', value);
                     }}
                     required
@@ -174,7 +174,7 @@ function RegisterPage() {
                   <Form.Label>Password</Form.Label>
                   <InputGroup>
                     <Form.Control
-                      type={showPassword ? 'text' : 'password'} // 🛑 Toggle per l'occhio
+                      type={showPassword ? 'text' : 'password'}
                       placeholder='Password*'
                       value={password}
                       onChange={(e) => {
@@ -184,7 +184,7 @@ function RegisterPage() {
                       }}
                       required
                       isInvalid={!!errors.password}
-                      isValid={password.length > 7 && !errors.password} // Lunghezza minima per mostrare 'Valido'
+                      isValid={password.length > 7 && !errors.password}
                     />
                     <Button
                       variant='outline-secondary'
@@ -205,7 +205,7 @@ function RegisterPage() {
                   <Form.Label>Conferma Password</Form.Label>
                   <InputGroup>
                     <Form.Control
-                      type={showPassword ? 'text' : 'password'} // 🛑 Usa lo stesso toggle showPassword
+                      type={showPassword ? 'text' : 'password'}
                       placeholder='Conferma Password*'
                       value={confirmPassword}
                       onChange={(e) => {
@@ -214,7 +214,6 @@ function RegisterPage() {
                         validateField('confirmPassword', value);
                       }}
                       required
-                      // 🛑 La validazione si basa sull'errore specifico (password non corrispondente)
                       isInvalid={!!errors.confirmPassword}
                       isValid={
                         confirmPassword.length > 0 &&

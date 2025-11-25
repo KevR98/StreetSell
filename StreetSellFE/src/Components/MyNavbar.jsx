@@ -7,7 +7,7 @@ import {
   Spinner,
   Form,
   FormControl,
-  InputGroup, // 🛑 Importante per unire select e input
+  InputGroup,
 } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -19,19 +19,19 @@ import {
   BsBoxSeamFill,
   BsPersonFill,
   BsController,
-  BsSearch, // Icona ricerca
+  BsSearch,
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
-import { useState } from 'react'; // 🛑 Importa useState
+import { useState } from 'react';
 
 function MyNavbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // 🛑 STATI PER LA RICERCA
+  // STATI PER LA RICERCA
   const [query, setQuery] = useState('');
-  const [searchType, setSearchType] = useState('prodotti'); // Default: cerca prodotti
+  const [searchType, setSearchType] = useState('prodotti');
 
   const token = localStorage.getItem('accessToken');
   const username = useSelector((state) => state.auth.user?.username);
@@ -48,13 +48,13 @@ function MyNavbar() {
     navigate('/login');
   };
 
-  // 🛑 GESTIONE INVIO RICERCA
+  // GESTIONE INVIO RICERCA
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (query.trim() !== '') {
       // Reindirizza alla pagina di ricerca con i parametri
       navigate(`/cerca?q=${query}&type=${searchType}`);
-      setQuery(''); // Opzionale: pulisce la barra dopo la ricerca
+      setQuery('');
     }
   };
 
@@ -69,7 +69,6 @@ function MyNavbar() {
             src={logo}
             alt='StreetSell Logo'
             height='40'
-            // Assicuriamoci che l'immagine sia un blocco per evitare spazi sotto
             style={{ objectFit: 'contain', display: 'block' }}
           />
         </Link>
@@ -81,21 +80,19 @@ function MyNavbar() {
             </Nav.Link>
           </Nav>
 
-          {/* 🛑 BARRA DI RICERCA AGGIORNATA CON FLEX-GROW-1 */}
           <Form
-            className='d-flex flex-grow-1 mx-4' // Aggiunto flex-grow-1, rimosso maxWidth
+            className='d-flex flex-grow-1 mx-4'
             onSubmit={handleSearchSubmit}
           >
             <InputGroup>
-              {/* Selettore Tipo (Prodotti/Utenti) */}
               <Form.Select
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value)}
                 style={{
                   maxWidth: '110px',
-                  backgroundColor: '#212529', // Sfondo scuro (nero di Bootstrap)
-                  color: '#f8f9fa', // Testo chiaro (bianco/light di Bootstrap)
-                  border: '1px solid #495057', // Bordo leggermente più scuro
+                  backgroundColor: '#212529',
+                  color: '#f8f9fa',
+                  border: '1px solid #495057',
                 }}
               >
                 <option value='prodotti'>Prodotti</option>

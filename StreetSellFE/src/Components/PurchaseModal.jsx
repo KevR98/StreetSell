@@ -1,8 +1,8 @@
-import { useState } from 'react'; // 🛑 Necessario per 'isAddingNew'
+import { useState } from 'react';
 import { Button, Modal, Form, Alert } from 'react-bootstrap';
 import { FaShoppingCart, FaMapMarkerAlt } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
-import Indirizzo from './Indirizzo'; // 🛑 Importa il tuo componente del form
+import Indirizzo from './Indirizzo';
 
 function PurchaseModal({
   show,
@@ -22,9 +22,9 @@ function PurchaseModal({
   // Questa funzione viene chiamata da Indirizzo.jsx al successo
   // eslint-disable-next-line no-unused-vars
   const handleNewAddressAdded = (newAddress) => {
-    // 1. Chiude il form di aggiunta
+    // Chiude il form di aggiunta
     setIsAddingNew(false);
-    // 2. Ricarica la lista degli indirizzi (nel componente Order.jsx)
+    // Ricarica la lista degli indirizzi (nel componente Order.jsx)
     onFetchAddresses();
   };
 
@@ -39,9 +39,6 @@ function PurchaseModal({
 
       <Modal.Body>
         {isAddingNew ? (
-          // **********************************************
-          // ** A. VISUALIZZA IL MODULO PER AGGIUNGERE UN INDIRIZZO **
-          // **********************************************
           <>
             <h4>Aggiungi Nuovo Indirizzo</h4>
             <Indirizzo
@@ -51,12 +48,9 @@ function PurchaseModal({
             />
           </>
         ) : (
-          // **********************************************
-          // ** B. VISUALIZZA LA SELEZIONE O L'AVVISO **
-          // **********************************************
           <>
             {hasAddresses ? (
-              // 1. Se ci sono indirizzi: Mostra il dropdown di selezione
+              // Se ci sono indirizzi: Mostra il dropdown di selezione
               <Form.Group className='mb-3' controlId='addressSelection'>
                 <Form.Label className='fw-bold'>
                   <FaMapMarkerAlt className='me-1 text-danger' />
@@ -80,7 +74,7 @@ function PurchaseModal({
                 </Form.Text>
               </Form.Group>
             ) : (
-              // 2. Se NON ci sono indirizzi: Mostra l'avviso
+              // Se NON ci sono indirizzi: Mostra l'avviso
               <Alert variant='info'>
                 Non hai indirizzi di spedizione salvati. Aggiungine uno qui
                 sotto.
@@ -115,8 +109,6 @@ function PurchaseModal({
         <Button
           variant='success'
           onClick={onConfirmPurchase}
-          // 🛑 CONDIZIONE CORRETTA: Disabilita se manca un ID selezionato, o se si sta elaborando, o se siamo nel form di aggiunta.
-          // L'ID selezionato viene impostato in Order.jsx dopo il fetch.
           disabled={!selectedAddressId || isProcessing || isAddingNew}
         >
           {isProcessing ? (

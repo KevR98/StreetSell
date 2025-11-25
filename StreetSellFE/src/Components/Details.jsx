@@ -34,14 +34,14 @@ function Details() {
   const [showModal, setShowModal] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
 
-  // 🛑 STATO PER GLI ALTRI ANNUNCI
+  // STATO PER GLI ALTRI ANNUNCI
   const [otherProducts, setOtherProducts] = useState([]);
   const [isLoadingOther, setIsLoadingOther] = useState(false);
 
-  // 🛑 NUOVO STATO: Conteggio totale prima del filtro (incluso il prodotto corrente)
+  // Conteggio totale prima del filtro (incluso il prodotto corrente)
   const [totalSellerProductsCount, setTotalSellerProductsCount] = useState(0);
 
-  // 🛑 FUNZIONE FETCH PER GLI ALTRI ANNUNCI (Aggiornata)
+  // UNZIONE FETCH PER GLI ALTRI ANNUNCI
   const fetchOtherProducts = (sellerId) => {
     setIsLoadingOther(true);
     fetch(`${userProductsEndpoint}/${sellerId}`)
@@ -57,10 +57,10 @@ function Details() {
       .then((data) => {
         const rawData = Array.isArray(data) ? data : [];
 
-        // 🛑 1. IMPOSTA IL CONTEGGIO TOTALE PRIMA DEL FILTRO
+        // IMPOSTA IL CONTEGGIO TOTALE PRIMA DEL FILTRO
         setTotalSellerProductsCount(rawData.length);
 
-        // 2. Filtra il prodotto corrente dalla lista e limita a 4
+        // Filtra il prodotto corrente dalla lista e limita a 4
         const filteredData = rawData
           .filter((p) => p.id !== prodottoId)
           .slice(0, 4);
@@ -90,7 +90,7 @@ function Details() {
         setError(false);
         setProdotto(prodottoDetail);
 
-        // 🛑 Dopo aver caricato il prodotto, se ha un venditore, carichiamo gli altri annunci
+        // Dopo aver caricato il prodotto, se ha un venditore, carichiamo gli altri annunci
         if (prodottoDetail.venditore && prodottoDetail.venditore.id) {
           fetchOtherProducts(prodottoDetail.venditore.id);
         } else {
@@ -106,7 +106,7 @@ function Details() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prodottoId, token]);
 
-  // Logica gestione eliminazione (NON MODIFICATA)
+  // Logica gestione eliminazione
   const handleDelete = () => {
     if (
       window.confirm(
@@ -136,9 +136,7 @@ function Details() {
     }
   };
 
-  // ----------------------------------------------------
-  // GESTIONE STATI DI CARICAMENTO/ERRORE (NON MODIFICATA)
-  // ----------------------------------------------------
+  // GESTIONE STATI DI CARICAMENTO/ERRORE
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -155,7 +153,7 @@ function Details() {
     );
   }
 
-  // Permessi (NON MODIFICATI)
+  // Permessi
   const isOwner =
     currentUser &&
     prodotto.venditore &&
@@ -168,7 +166,7 @@ function Details() {
   const canBuy =
     !isOwner && !isAdmin && prodotto.statoProdotto === 'DISPONIBILE';
 
-  // Logica per le immagini (miniatura e fallback) (NON MODIFICATA)
+  // Logica per le immagini (miniatura e fallback)
   const immaginiCarousel =
     prodotto.immagini && prodotto.immagini.length > 0
       ? prodotto.immagini
@@ -181,17 +179,16 @@ function Details() {
 
   const numeroImmagini = immaginiCarousel.length;
 
-  // Funzioni per il Modal Carosello (NON MODIFICATA)
+  // Funzioni per il Modal Carosello
   const handleShowModal = (index) => {
     setModalIndex(index);
     setShowModal(true);
   };
   const handleCloseModal = () => setShowModal(false);
 
-  // Variabili per il layout della griglia (MODIFICATA)
+  // Variabili per il layout della griglia
   const visibleImages = immaginiCarousel.slice(0, 3);
   const remainingImagesCount = numeroImmagini > 3 ? numeroImmagini - 3 : 0;
-  // ----------------------------------------------------
 
   const venditoreUsername = prodotto.venditore?.username || 'questo venditore';
 
@@ -265,9 +262,8 @@ function Details() {
           })}
         </Col>
 
-        {/* COLONNA 2 (md=6): DETTAGLI E AZIONI */}
         <Col md={6} className='pt-4 pt-md-0'>
-          {/* 1. TITOLO E PREZZO */}
+          {/* TITOLO E PREZZO */}
           <h3 className='mb-2 fw-bold'>{prodotto.titolo}</h3>
 
           <p
@@ -279,7 +275,7 @@ function Details() {
 
           <hr className='my-3' />
 
-          {/* 2. TABELLA DETTAGLI CHIAVE */}
+          {/* TABELLA DETTAGLI CHIAVE */}
           <h4 className='mb-3'>Dettagli Prodotto</h4>
           <Row className='mb-4 small'>
             <Col xs={4} className='fw-bold'>
@@ -306,13 +302,13 @@ function Details() {
             <Col xs={8}>{prodotto.categoria || 'N/D'}</Col>
           </Row>
 
-          {/* 3. DESCRIZIONE */}
+          {/* DESCRIZIONE */}
           <h4 className='mb-2'>Descrizione</h4>
           <p className='small text-muted mb-4'>{prodotto.descrizione}</p>
 
           <hr className='my-3' />
 
-          {/* 4. BOTTONI DI AZIONE (ACQUISTA/MODIFICA) */}
+          {/* BOTTONI DI AZIONE (ACQUISTA/MODIFICA) */}
           {canModerate ? (
             <div className='d-flex gap-3'>
               <Link
@@ -345,7 +341,7 @@ function Details() {
         </Col>
       </Row>
 
-      {/* 🛑 SEZIONE NUOVA: ALTRI ANNUNCI DEL VENDITORE */}
+      {/* ALTRI ANNUNCI DEL VENDITORE */}
       {totalSellerProductsCount > 0 && !isOwner && (
         <div className='mt-5'>
           <h4 className='mb-3'>Altri annunci di {venditoreUsername}</h4>
@@ -362,13 +358,13 @@ function Details() {
               ))}
             </Row>
           ) : totalSellerProductsCount === 1 ? (
-            // 🛑 CASO 1: SOLO QUESTO PRODOTTO IN VENDITA
+            // SOLO QUESTO PRODOTTO IN VENDITA
             <Alert variant='info'>
               Il venditore ({venditoreUsername}) ha solo questo annuncio attivo
               in vendita al momento.
             </Alert>
           ) : (
-            // CASO 2: NESSUN PRODOTTO (dovrebbe essere coperto dal count > 0)
+            // NESSUN PRODOTTO (dovrebbe essere coperto dal count > 0)
             <Alert variant='info'>
               Nessun altro annuncio disponibile da questo venditore.
             </Alert>

@@ -17,18 +17,16 @@ function Home() {
     // Avvia la catena fetch
     fetch(endpoint)
       .then((res) => {
-        // 1. Controlla lo status HTTP (es. 404, 500)
+        // Controlla lo status HTTP
         if (!res.ok) {
           throw new Error(
             `Errore HTTP ${res.status}: Impossibile caricare gli annunci.`
           );
         }
-        // 2. Converte la risposta in JSON e passa al prossimo .then()
+        // Converte la risposta in JSON e passa al prossimo .then()
         return res.json();
       })
       .then((data) => {
-        // 3. Elabora i dati JSON
-
         // Estrai la lista di prodotti dal campo 'content' di Spring Page (essenziale!)
         if (data && data.content) {
           setProdotti(data.content);
@@ -36,16 +34,14 @@ function Home() {
           // Caso di fallback se l'endpoint non usa la paginazione
           setProdotti(data);
         }
-
-        console.log(data);
       })
       .catch((err) => {
-        // 4. Gestisce qualsiasi errore (di rete o lanciato da throw new Error)
+        // Gestisce qualsiasi errore (di rete o lanciato da throw new Error)
         console.error('Errore nel caricamento degli annunci:', err);
         setError(err.message);
       })
       .finally(() => {
-        // 5. Esegue questo blocco alla fine, che la chiamata sia andata bene o male
+        // Esegue questo blocco alla fine, che la chiamata sia andata bene o male
         setIsLoading(false);
       });
   }, []);
@@ -79,7 +75,6 @@ function Home() {
     <Container className='my-5'>
       <h1 className='mb-4 text-center'>Novità</h1>
 
-      {/* 🚨 CORREZIONE 3: Mappa sulla lista 'prodotti' scaricata */}
       <Row xs={1} md={2} lg={3} xl={4} className='g-4'>
         {prodotti.map((singoloProdotto) => (
           <Col key={singoloProdotto.id}>

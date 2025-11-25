@@ -70,7 +70,7 @@ function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
         {error && <Alert variant='danger'>{error}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          {/* 1. SEZIONE RATING A STELLE */}
+          {/* SEZIONE RATING A STELLE */}
           <Form.Group className='mb-3 text-center'>
             <Form.Label className='d-block fw-bold'>
               Valutazione (obbligatoria):
@@ -103,7 +103,7 @@ function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
             })}
           </Form.Group>
 
-          {/* 2. SEZIONE COMMENTO */}
+          {/* SEZIONE COMMENTO */}
           <Form.Group className='mb-3'>
             <Form.Label>Commento (opzionale):</Form.Label>
             <Form.Control

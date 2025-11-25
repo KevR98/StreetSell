@@ -82,7 +82,6 @@ function SearchResults() {
                         fontSize: '2rem',
                       }}
                     >
-                      {/* 🛑 FIX: Usa ?.charAt(0) e un fallback per evitare crash se username è null */}
                       {(item.username?.charAt(0) || '?').toUpperCase()}
                     </div>
                     <Card.Title>

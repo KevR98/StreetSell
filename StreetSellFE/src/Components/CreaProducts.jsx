@@ -90,7 +90,7 @@ function CreaProductPage() {
     })
       .then((res) => {
         if (res.ok) {
-          // Rimuovi l'immagine dallo stato locale per aggiornare la UI
+          // Rimuove l'immagine dallo stato locale per aggiornare la UI
           setImmaginiEsistenti((prev) =>
             prev.filter((img) => img.id !== imgId)
           );
@@ -141,7 +141,6 @@ function CreaProductPage() {
       method: method,
       headers: {
         Authorization: `Bearer ${token}`,
-        // NO Content-Type (lo gestisce il browser per FormData)
       },
       body: formData,
     })

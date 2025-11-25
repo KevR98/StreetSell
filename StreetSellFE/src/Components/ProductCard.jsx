@@ -8,7 +8,7 @@ function ProductCard({ prodotto }) {
     return null;
   }
 
-  // 1. Logica per preparare le immagini:
+  // Logica per preparare le immagini:
   // Se non ci sono immagini, usiamo un array contenente solo il placeholder.
   const immaginiCarousel =
     prodotto.immagini && prodotto.immagini.length > 0
@@ -58,7 +58,7 @@ function ProductCard({ prodotto }) {
     const now = Date.now();
     const diff = now - createdDate.getTime();
     if (diff <= TWENTY_MINUTES) {
-      // 1. Logica 'Minuti fa'
+      // Logica 'Minuti fa'
       const minutes = Math.floor(diff / (60 * 1000));
       if (minutes === 0) return ' ora';
       return ` ${minutes} minuti fa`;
@@ -80,18 +80,15 @@ function ProductCard({ prodotto }) {
         className='h-100 border-0'
         style={{ backgroundColor: 'transparent' }}
       >
-        {/* 2. AREA CAROUSEL: Sostituisce Card.Img */}
         <div
           style={{
             width: '100%',
-            height: '400px', // Altezza fissa come nel carosello precedente
+            height: '400px',
             overflow: 'hidden',
             borderRadius: '8px',
-            // Non serve cursor: pointer se non c'è un click handler
             position: 'relative',
           }}
         >
-          {/* 🛑 SOLO LA PRIMA IMMAGINE, SENZA CAROSELLO O BADGE */}
           <img
             src={primaImmagineUrl}
             alt={prodotto.titolo || 'Immagine prodotto'}
@@ -123,14 +120,10 @@ function ProductCard({ prodotto }) {
             </Card.Text>
           </div>
           <div className='mt-auto d-flex justify-content-between align-items-end'>
-            {' '}
-            {/* 🛑 2. mt-auto spinge questo blocco in fondo */}
-            {/* Prezzo: Grande e in evidenza */}
             <Card.Text className='mb-0 fw-bold' style={{ fontSize: '0.9em' }}>
               {prodotto.prezzo ? parseFloat(prodotto.prezzo).toFixed(2) : 'N/D'}{' '}
               €
             </Card.Text>
-            {/* Data Pubblicazione: In fondo e molto piccola */}
             <Card.Text
               className='text-secondary mb-0'
               style={{ fontSize: '0.75em' }}

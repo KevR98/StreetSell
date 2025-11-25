@@ -28,7 +28,6 @@ const endpointProdotti = 'http://localhost:8888/prodotti';
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/D';
-  // Assumiamo che la data di creazione dell'utente sia disponibile nel formato ISO
   return new Date(dateString).toLocaleDateString('it-IT');
 };
 
@@ -41,7 +40,7 @@ function AdminDashboard() {
   const currentUser = useSelector((state) => state.auth.user);
 
   useEffect(() => {
-    // 1. Controllo del ruolo (security check frontend opzionale)
+    // Controllo del ruolo (security check frontend opzionale)
     if (currentUser && currentUser.ruolo !== 'ADMIN') {
       setError('Accesso negato. Non sei un amministratore.');
       setLoading(false);
@@ -64,7 +63,7 @@ function AdminDashboard() {
     setLoading(true);
     const headers = { Authorization: `Bearer ${token}` };
 
-    // 1. Fetch Utenti
+    // Fetch Utenti
     fetch(`${endpointUtenti}/all`, { headers })
       .then((response) => {
         if (!response.ok) {
@@ -82,7 +81,7 @@ function AdminDashboard() {
       .then((utentiData) => {
         setUtenti(utentiData);
 
-        // 2. CHAINING: Inizia la fetch Prodotti
+        // CHAINING: Inizia la fetch Prodotti
         return fetch(`${endpointProdotti}/admin/all?page=0&size=100`, {
           headers,
         });
@@ -101,7 +100,7 @@ function AdminDashboard() {
         return response.json();
       })
       .then((prodottiData) => {
-        // 3. Aggiorna stato prodotti
+        // Aggiorna stato prodotti
         setProdotti(prodottiData.content);
       })
       .catch((err) => {
@@ -114,9 +113,6 @@ function AdminDashboard() {
       });
   };
 
-  // ------------------------------------------
-  // AZIONI DI MODERAZIONE (Ora usano fetchAdminData per refresh)
-  // ------------------------------------------
   const handleToggleAccount = (userId, isCurrentlyActive) => {
     const action = isCurrentlyActive ? 'disattiva' : 'riattiva';
     const endpoint = isCurrentlyActive
@@ -152,7 +148,7 @@ function AdminDashboard() {
       })
       .then(() => {
         alert(`Account ${action}to con successo!`);
-        fetchAdminData(); // 🛑 Refresh completo
+        fetchAdminData(); // Lo richiamo per il refresh
       })
       .catch((err) => {
         console.error(`Errore nell'azione di ${action}:`, err);
@@ -182,7 +178,7 @@ function AdminDashboard() {
       })
       .then(() => {
         alert('Prodotto sospeso con successo!');
-        fetchAdminData(); // 🛑 Refresh completo
+        fetchAdminData(); // Lo richiamo per il refresh
       })
       .catch((err) => {
         console.error('Errore sospensione:', err);
@@ -233,14 +229,13 @@ function AdminDashboard() {
                   {utente.attivo ? 'Attivo' : 'Inattivo'}
                 </Badge>
               </td>
-              {/* PLACEHOLDER: La tua idea era ottima ma richiede modifiche al backend */}
               <td className='align-middle'>{utente.prodottiAttiviCount}</td>
               <td className='align-middle'>{formatDate(utente.createdAt)}</td>
               <td
                 className='align-middle text-center'
                 style={{ minWidth: '250px' }}
               >
-                {/* 1. Bottone VEDI PROFILO */}
+                {/* Bottone VEDI PROFILO */}
                 <Button
                   variant='outline-primary'
                   size='sm'
@@ -251,7 +246,7 @@ function AdminDashboard() {
                   <FaUserCircle /> Profilo
                 </Button>
 
-                {/* 2. Bottone RIATTIVA/DISATTIVA */}
+                {/* Bottone RIATTIVA/DISATTIVA */}
                 <Button
                   variant={utente.attivo ? 'danger' : 'success'}
                   size='sm'
@@ -263,7 +258,7 @@ function AdminDashboard() {
                   {utente.attivo ? 'Disattiva' : 'Riattiva'}
                 </Button>
 
-                {/* 3. Bottone SOSPENDI (Da implementare con logica separata se serve) */}
+                {/* Bottone SOSPENDI (Da implementare con logica separata se serve) */}
                 <Button
                   variant='warning'
                   size='sm'
@@ -277,7 +272,7 @@ function AdminDashboard() {
         </tbody>
       </Table>
 
-      {/* SEZIONE 2: GESTIONE PRODOTTI (Placeholder per il futuro) */}
+      {/* GESTIONE PRODOTTI (Placeholder per il futuro) */}
       <h2 className='mt-5 mb-3'>Gestione Prodotti (Placeholder)</h2>
       <Table striped bordered hover responsive className='shadow-sm'>
         <thead>

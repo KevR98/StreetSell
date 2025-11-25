@@ -14,17 +14,17 @@ import {
   FaBoxOpen,
   FaCheckCircle,
   FaTimesCircle,
-  FaStar, // 🛑 AGGIUNTO
+  FaStar,
 } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import BackButton from './BackButton';
-import ReviewModal from './ReviewModal'; // 🛑 NUOVO IMPORT
+import ReviewModal from './ReviewModal';
 
-// 🛑 ENDPOINT UNIFICATO per recuperare tutte le task da fare
+// ENDPOINT UNIFICATO per recuperare tutte le task da fare
 const ENDPOINT_FETCH_TASK = 'http://localhost:8888/ordini/gestione';
-// 🛑 ENDPOINT BASE per l'aggiornamento dello stato (PUT /ordini/{id}/stato)
+// ENDPOINT BASE per l'aggiornamento dello stato (PUT /ordini/{id}/stato)
 const ENDPOINT_STATO_UPDATE_BASE = 'http://localhost:8888/ordini';
 
 function OrderManagementPage() {
@@ -35,7 +35,7 @@ function OrderManagementPage() {
   const currentUser = useSelector((state) => state.auth.user);
   const currentUserId = currentUser?.id; // ID dell'utente loggato
 
-  // 🛑 STATI PER LA RECENSIONE
+  // STATI PER LA RECENSIONE
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
@@ -68,13 +68,13 @@ function OrderManagementPage() {
       .finally(() => setIsLoading(false));
   };
 
-  // 🛑 FUNZIONE PER APRIRE IL MODAL
+  // FUNZIONE PER APRIRE IL MODAL
   const handleOpenReviewModal = (orderId) => {
     setSelectedOrderId(orderId);
     setShowReviewModal(true);
   };
 
-  // 🛑 FUNZIONE CHIAMATA DOPO IL SUBMIT DELLA RECENSIONE
+  // FUNZIONE CHIAMATA DOPO IL SUBMIT DELLA RECENSIONE
   const handleReviewSuccess = () => {
     setShowReviewModal(false);
     // Ricarichiamo gli ordini per nascondere il pulsante Recensione
@@ -186,8 +186,8 @@ function OrderManagementPage() {
 
   if (error) return <ErrorAlert message={error} />;
 
-  // 🛑 LOGICA DI FILTRAGGIO DELLE LISTE (AGGIORNATA)
-  // 1. Ordini che richiedono la mia attenzione come VENDITORE
+  // LOGICA DI FILTRAGGIO DELLE LISTE (AGGIORNATA)
+  // Ordini che richiedono la mia attenzione come VENDITORE
   const mySales = orders.filter((order) => {
     const isUserVendor = order.venditore?.id === currentUserId;
     if (!isUserVendor) return false;
@@ -197,18 +197,18 @@ function OrderManagementPage() {
     return status === 'CONFERMATO' || status === 'COMPLETATO';
   });
 
-  // 2. Ordini che richiedono la mia attenzione come COMPRATORE
+  // Ordini che richiedono la mia attenzione come COMPRATORE
   const myPurchases = orders.filter((order) => {
     const isUserBuyer = order.compratore?.id === currentUserId;
     if (!isUserBuyer) return false;
 
     const status = order.statoOrdine;
-    // 🛑 COMPRATORE: Mostra CONFERMATO/IN_ATTESA (annulla), SPEDITO (conferma), e COMPLETATO (recensione)
+    // COMPRATORE: Mostra CONFERMATO/IN_ATTESA (annulla), SPEDITO (conferma), e COMPLETATO (recensione)
     return (
       status === 'CONFERMATO' ||
       status === 'IN_ATTESA' ||
       status === 'SPEDITO' ||
-      status === 'COMPLETATO' // 🛑 AGGIUNTO QUESTO STATO
+      status === 'COMPLETATO'
     );
   });
 
@@ -221,11 +221,9 @@ function OrderManagementPage() {
       const isTaskSpedire = isUserVendor && order.statoOrdine === 'CONFERMATO';
       const isTaskConfermare = isUserBuyer && order.statoOrdine === 'SPEDITO';
 
-      // 🛑 NUOVA TASK: Recensione (Solo compratore, ordine COMPLETO)
+      // Recensione (Solo compratore, ordine COMPLETO)
       const isTaskRecensione =
         isUserBuyer && order.statoOrdine === 'COMPLETATO' && !order.recensione;
-      // ⚠️ ASSUMIAMO che il BE non restituisca ordini già recensiti
-      // Se restituisce tutti i completati, qui andrebbe: && !order.recensione
 
       const canCancel =
         (isUserBuyer && order.statoOrdine === 'CONFERMATO') ||
@@ -261,7 +259,7 @@ function OrderManagementPage() {
               : !isSalesTable && isTaskConfermare
               ? 'bg-primary-subtle'
               : !isSalesTable && isTaskRecensione
-              ? 'bg-info-subtle' // Colore per il feedback
+              ? 'bg-info-subtle'
               : ''
           }
         >
@@ -307,7 +305,7 @@ function OrderManagementPage() {
               </Button>
             )}
 
-            {/* 🛑 BOTTONE RECENSIONE */}
+            {/* BOTTONE RECENSIONE */}
             {isTaskRecensione && (
               <Button
                 variant='info'
@@ -344,7 +342,7 @@ function OrderManagementPage() {
       </h1>
 
       <Row>
-        {/* === SEZIONE 1: LE MIE VENDITE (Task del Venditore) === */}
+        {/* LE MIE VENDITE (Task del Venditore) */}
         <Col md={12} className='mb-5'>
           <h2>Le Tue Vendite ({mySales.length})</h2>
           <p className='text-muted'>
@@ -382,7 +380,7 @@ function OrderManagementPage() {
           <hr />
         </Col>
 
-        {/* === SEZIONE 2: I MIEI ACQUISTI (Task del Compratore) === */}
+        {/* I MIEI ACQUISTI (Task del Compratore) */}
         <Col md={12} className='mt-4'>
           <h2>I Tuoi Acquisti ({myPurchases.length})</h2>
           <p className='text-muted'>
@@ -418,7 +416,7 @@ function OrderManagementPage() {
         </Col>
       </Row>
 
-      {/* 🛑 MODALE DI RECENSIONE */}
+      {/* MODALE DI RECENSIONE */}
       <ReviewModal
         show={showReviewModal}
         handleClose={() => setShowReviewModal(false)}

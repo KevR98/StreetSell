@@ -23,7 +23,7 @@ function Order({ prodottoId }) {
   const token = localStorage.getItem('accessToken');
   const navigate = useNavigate();
 
-  // 1. FUNZIONE PER CARICARE GLI INDIRIZZI
+  // FUNZIONE PER CARICARE GLI INDIRIZZI
   const fetchUserAddresses = () => {
     if (!token) {
       setErrorAddresses('Token non disponibile. Effettua il login.');
@@ -61,7 +61,7 @@ function Order({ prodottoId }) {
       });
   };
 
-  // 2. FETCH DEGLI INDIRIZZI AL MONTAGGIO DEL COMPONENTE
+  // FETCH DEGLI INDIRIZZI AL MONTAGGIO DEL COMPONENTE
   useEffect(() => {
     // Carica gli indirizzi solo se l'utente è loggato e non stiamo già caricando
     if (currentUser && !userAddresses.length) {
@@ -70,7 +70,7 @@ function Order({ prodottoId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, token]);
 
-  // 3. FUNZIONE PER LANCIARTE L'ACQUISTO
+  // FUNZIONE PER LANCIARTE L'ACQUISTO
   const handlePurchase = () => {
     if (!selectedAddressId) {
       alert('Seleziona un indirizzo di spedizione per procedere.');
@@ -137,11 +137,11 @@ function Order({ prodottoId }) {
   }
 
   if (errorAddresses) {
-    // 🛑 Mostra il componente riutilizzabile ErrorAlert
+    // Mostra il componente riutilizzabile ErrorAlert
     return <ErrorAlert message={errorAddresses} />;
   }
 
-  // 4. RENDERING DEL BOTTONE E DEL MODAL
+  // RENDERING DEL BOTTONE E DEL MODAL
   return (
     <>
       <Button

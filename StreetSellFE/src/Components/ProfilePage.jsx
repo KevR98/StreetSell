@@ -33,7 +33,7 @@ const MY_PRODUCTS_ENDPOINT = 'http://localhost:8888/prodotti/me';
 // Endpoint per il rating
 const RATING_ENDPOINT = 'http://localhost:8888/utenti';
 
-// 🛑 NUOVO ENDPOINT INDIRIZZI
+// NUOVO ENDPOINT INDIRIZZI
 const ADDRESSES_ENDPOINT = 'http://localhost:8888/indirizzi';
 
 function ProfilePage() {
@@ -58,7 +58,6 @@ function ProfilePage() {
   const [reviewCount, setReviewCount] = useState(0);
   const [isLoadingRating, setIsLoadingRating] = useState(false);
 
-  // 🛑 NUOVO STATO PER GLI INDIRIZZI (Specifico per il profilo privato)
   const [myAddresses, setMyAddresses] = useState([]);
 
   const isViewingOwnProfile =
@@ -80,7 +79,7 @@ function ProfilePage() {
     }
   }, []);
 
-  // 2. FETCH PRODOTTI
+  // FETCH PRODOTTI
   const fetchProducts = useCallback(
     async (targetUserId) => {
       setIsLoadingProducts(true);
@@ -111,7 +110,7 @@ function ProfilePage() {
     [isViewingOwnProfile, token]
   );
 
-  // 🛑 3. FETCH INDIRIZZI (SOLO PER PROFILO PRIVATO)
+  // FETCH INDIRIZZI (SOLO PER PROFILO PRIVATO)
   // Serve perché currentUser di Redux spesso non ha la lista indirizzi
   useEffect(() => {
     if (isViewingOwnProfile && token) {
@@ -129,7 +128,7 @@ function ProfilePage() {
     }
   }, [isViewingOwnProfile, token]);
 
-  // 4. LOGICA FETCH PROFILO GENERALE
+  // LOGICA FETCH PROFILO GENERALE
   useEffect(() => {
     // Caso Privato: Usa i dati da Redux
     if (isViewingOwnProfile && currentUser) {
@@ -164,7 +163,7 @@ function ProfilePage() {
     }
   }, [userId, currentUser, isViewingOwnProfile, token]);
 
-  // 5. CARICAMENTO DATI DIPENDENTI (Rating e Prodotti)
+  // CARICAMENTO DATI DIPENDENTI (Rating e Prodotti)
   useEffect(() => {
     if (userToDisplay) {
       fetchRating(userToDisplay.id);
@@ -202,10 +201,6 @@ function ProfilePage() {
   const user = userToDisplay;
   const profileTitle = isViewingOwnProfile ? user.username : user.username;
 
-  // =========================================================================
-  // 🛑 LOGICA CALCOLO INDIRIZZO CORRETTA
-  // =========================================================================
-
   // Se è il mio profilo, uso 'myAddresses' caricato appositamente.
   // Se è pubblico, uso 'user.indirizzi' (se il backend pubblico li fornisce).
   const addressList = isViewingOwnProfile ? myAddresses : user.indirizzi || [];
@@ -223,8 +218,6 @@ function ProfilePage() {
   const cityAndCountry = mainAddress
     ? `${mainAddress.citta}, ${mainAddress.nazione}`
     : locationFallback;
-
-  // =========================================================================
 
   return (
     <Container className='my-5'>
@@ -277,7 +270,6 @@ function ProfilePage() {
           </Col>
         )}
 
-        {/* 🛑 BLOCCO INFORMAZIONI CORRETTO */}
         <Col xs={12} className='mt-4'>
           <Row>
             <Col xs={12} md={6}>

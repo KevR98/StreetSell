@@ -47,7 +47,7 @@ function Login() {
         }
       })
       .then((data) => {
-        const { token, user } = data; // 🛑 CORREZIONE QUI
+        const { token, user } = data;
         dispatch(loginSuccess({ user: user, token: token }));
         localStorage.setItem('accessToken', token);
         navigate('/');
@@ -87,7 +87,7 @@ function Login() {
               <InputGroup>
                 {/* CAMPO DI INPUT */}
                 <Form.Control
-                  // 🛑 LA CHIAVE: Cambia il tipo in base allo stato 'showPassword'
+                  // Cambia il tipo in base allo stato 'showPassword'
                   type={showPassword ? 'text' : 'password'}
                   placeholder='Inserisci la password'
                   value={password}
@@ -111,7 +111,6 @@ function Login() {
 
             {/* Bottone Accedi */}
             <div className='d-grid mt-4'>
-              {/* 🛑 <button> diventa <Button> */}
               <Button type='submit' variant='primary' size='lg'>
                 Accedi
               </Button>

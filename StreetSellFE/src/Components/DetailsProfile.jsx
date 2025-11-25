@@ -14,9 +14,9 @@ import { FaMapMarkerAlt, FaTrash, FaCheckCircle, FaStar } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import BackButton from './BackButton';
-import Indirizzo from './Indirizzo'; // Il form che hai già creato
+import Indirizzo from './Indirizzo';
 
-const endpointUtenti = 'http://localhost:8888/utenti/me'; // 🛑 Endpoint da creare nel BE
+const endpointUtenti = 'http://localhost:8888/utenti/me';
 const endpointIndirizzi = 'http://localhost:8888/indirizzi';
 
 function DetailsProfile() {
@@ -101,12 +101,10 @@ function DetailsProfile() {
       })
       // eslint-disable-next-line no-unused-vars
       .then((updatedUser) => {
-        // L'ideale sarebbe dispatchare l'azione Redux per aggiornare l'utente
         setDetailMessage({
           variant: 'success',
           text: 'Dettagli aggiornati con successo!',
         });
-        // Potresti anche dispatchare l'azione qui per aggiornare lo stato Redux auth.user
       })
       .catch((err) => {
         setDetailMessage({ variant: 'danger', text: `Errore: ${err.message}` });
@@ -128,7 +126,7 @@ function DetailsProfile() {
       <h1 className='mb-4'>⚙️ Gestione Profilo</h1>
 
       <Row>
-        {/* COLONNA 1: DATI PERSONALI (Nome, Cognome) */}
+        {/* DATI PERSONALI (Nome, Cognome) */}
         <Col md={5} className='mb-4'>
           <Card className='shadow-sm'>
             <Card.Header as='h5' className='bg-info text-white'>
@@ -183,7 +181,7 @@ function DetailsProfile() {
           </Card>
         </Col>
 
-        {/* COLONNA 2: INDIRIZZI DI SPEDIZIONE */}
+        {/* INDIRIZZI DI SPEDIZIONE */}
         <Col md={7} className='mb-4'>
           <Card className='shadow-sm'>
             <Card.Header as='h5' className='bg-info text-white'>
@@ -215,13 +213,6 @@ function DetailsProfile() {
                           </div>
                           <div>
                             {/* Bottone per impostare come predefinito (logica da implementare nel BE) */}
-                            {/*
-                                            {!addr.isDefault && (
-                                                <Button variant="outline-success" size="sm" className='me-2'>
-                                                    <FaStar /> Imposta Default
-                                                </Button>
-                                            )}
-                                            */}
                             <Button
                               variant='danger'
                               size='sm'

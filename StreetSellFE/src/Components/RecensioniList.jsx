@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Card, Spinner, Alert, ListGroup, Pagination } from 'react-bootstrap';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
-// 🛑 Importa l'icona a stella per una visualizzazione pulita
 import { FaStar } from 'react-icons/fa';
 
 const endpoint = 'http://localhost:8888/utenti';
@@ -94,13 +93,13 @@ const RecensioniList = ({ utenteId }) => {
 
       <hr />
 
-      {/* 🛑 Blocco 1: Riepilogo del Rating (MODIFICATO) */}
+      {/* Riepilogo del Rating (MODIFICATO) */}
       <Card
         className='border-0 mb-4 p-3'
         style={{ backgroundColor: 'transparent' }}
       >
         <Card.Body className='d-flex align-items-center justify-content-between'>
-          {/* 1. Rating Numerico e Stelle Medie */}
+          {/* Rating Numerico e Stelle Medie */}
           <div className='text-center flex-grow-1'>
             <p className='mb-0 fw-bold' style={{ fontSize: '1.2rem' }}>
               Rating Medio:
@@ -123,7 +122,7 @@ const RecensioniList = ({ utenteId }) => {
             </div>
           </div>
 
-          {/* 2. Conteggio Recensioni (MODIFICATO in p con font più grande) */}
+          {/* Conteggio Recensioni (MODIFICATO in p con font più grande) */}
           <div className='text-center ps-4 border-start'>
             <p className='mb-0 text-muted'>Totale Recensioni:</p>
             <p style={{ fontSize: '2rem' }}>{reviewCount}</p>
@@ -133,7 +132,7 @@ const RecensioniList = ({ utenteId }) => {
 
       <hr />
 
-      {/* Blocco 2: Contenuto Principale */}
+      {/* Contenuto Principale */}
       {loading && <LoadingSpinner />}
       {error && <ErrorAlert />}
 
@@ -150,7 +149,6 @@ const RecensioniList = ({ utenteId }) => {
                 >
                   <div className='d-flex justify-content-between align-items-start'>
                     <h6 className='mb-1 text-warning'>
-                      {/* 🛑 Utilizzo di FaStar per la valutazione */}
                       {[...Array(r.valutazione)].map((_, i) => (
                         <FaStar
                           key={i}

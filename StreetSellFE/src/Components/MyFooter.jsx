@@ -5,7 +5,7 @@ function MyFooter() {
     <footer className='bg-dark text-white pt-4 pb-2'>
       <div className='container text-center text-md-start'>
         <div className='row'>
-          {/* COLONNA 1: DESCRIZIONE */}
+          {/* DESCRIZIONE */}
           <div className='col-md-4 col-lg-4 col-xl-4 mx-auto mb-4'>
             <h6 className='text-uppercase fw-bold'>Street Sell</h6>
             <hr
@@ -22,7 +22,7 @@ function MyFooter() {
             </p>
           </div>
 
-          {/* COLONNA 2: LINK UTILI */}
+          {/* LINK UTILI */}
           <div className='col-md-4 col-lg-2 col-xl-2 mx-auto mb-4'>
             <h6 className='text-uppercase fw-bold'>Link Utili</h6>
             <hr
@@ -50,7 +50,7 @@ function MyFooter() {
             </p>
           </div>
 
-          {/* COLONNA 3: CONTATTI E SOCIAL */}
+          {/* CONTATTI E SOCIAL */}
           <div className='col-md-4 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4'>
             <h6 className='text-uppercase fw-bold'>Contatti</h6>
             <hr

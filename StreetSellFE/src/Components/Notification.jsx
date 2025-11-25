@@ -19,10 +19,10 @@ function Notification() {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. STATO: Inizializza vuoto
+  // Inizializza vuoto
   const [hiddenIds, setHiddenIds] = useState(new Set());
 
-  // 🛑 NUOVO FLAG: Impedisce il salvataggio finché non abbiamo caricato i dati
+  // Impedisce il salvataggio finché non abbiamo caricato i dati
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
   const currentUser = useSelector((state) => state.auth.user);
@@ -33,18 +33,18 @@ function Notification() {
     return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY;
   }, []);
 
-  // 2. HIDE NOTIFICATION
+  // HIDE NOTIFICATION
   const hideNotification = useCallback((id) => {
     setHiddenIds((prevIds) => new Set(prevIds).add(id));
   }, []);
 
-  // 3. CLEAR ALL NOTIFICATIONS
+  // CLEAR ALL NOTIFICATIONS
   const clearAllNotifications = useCallback(() => {
     const currentVisibleIds = notifications.map((n) => n.id);
     setHiddenIds((prevIds) => new Set([...prevIds, ...currentVisibleIds]));
   }, [notifications]);
 
-  // 🛑 4. CARICAMENTO (LOAD): Esegue solo all'avvio o cambio utente
+  // Esegue solo all'avvio o cambio utente
   useEffect(() => {
     if (currentUser && currentUser.id) {
       try {
@@ -62,7 +62,7 @@ function Notification() {
         console.error('Errore nel caricamento della chiave utente:', e);
         setHiddenIds(new Set());
       } finally {
-        // 🛑 FONDAMENTALE: Diciamo all'app che abbiamo finito di caricare
+        // Diciamo all'app che abbiamo finito di caricare
         setIsStorageLoaded(true);
       }
     } else {
@@ -72,9 +72,8 @@ function Notification() {
     }
   }, [currentUser, getStorageKey]);
 
-  // 🛑 5. SALVATAGGIO (SAVE): Protetto dal flag isStorageLoaded
+  // Protetto dal flag isStorageLoaded
   useEffect(() => {
-    // 🛑 SE NON ABBIAMO ANCORA CARICATO, NON SALVARE NULLA!
     // Questo previene la sovrascrittura con array vuoto al refresh
     if (!currentUser || !isStorageLoaded) return;
 
@@ -87,7 +86,7 @@ function Notification() {
     }
   }, [hiddenIds, currentUser, getStorageKey, isStorageLoaded]); // Dipende anche da isStorageLoaded
 
-  // 6. FETCH NOTIFICA
+  // FETCH NOTIFICA
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true);
     let allNotifications = [];
@@ -173,7 +172,7 @@ function Notification() {
     }
   }, [token, currentUser]);
 
-  // 7. POLLING
+  // POLLING
   useEffect(() => {
     if (!token || !currentUser) {
       setNotifications([]);
