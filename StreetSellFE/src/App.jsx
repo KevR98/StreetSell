@@ -74,6 +74,7 @@ function App() {
 
             <Route path='/prodotto/:prodottoId' element={<Details />} />
 
+            {/* 5. PROFILO UTENTE */}
             <Route path='/me' element={<ProfilePage />} />
             <Route path='/utenti/:userId' element={<ProfilePage />} />
             <Route path='/profilo/gestione' element={<DetailsProfile />} />

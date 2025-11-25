@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
 import logo from '../assets/streetsell-logo.png';
-import avatar from '../assets/streetsell-profile-pic.png';
+import avatarDefault from '../assets/streetsell-profile-pic.png'; // Rinomino per chiarezza
 import {
   BsBoxArrowRight,
   BsFillTagFill,
@@ -36,28 +36,36 @@ function MyNavbar() {
 
   const token = localStorage.getItem('accessToken');
 
-  const username = useSelector((state) => state.auth.user?.username);
-  const ruolo = useSelector((state) => state.auth.user?.ruolo);
+  // Recuperiamo tutto l'oggetto user per sicurezza
+  const user = useSelector((state) => state.auth.user);
+  const username = user?.username;
+  const ruolo = user?.ruolo;
 
   const isLoggedInAndLoaded = token && username;
   const isAdmin = ruolo === 'ADMIN';
   const isLoadingUserData = token && !username;
 
-  const avatarToDisplay = avatar;
+  // ✅ CORREZIONE LOGICA AVATAR
+  // Se l'URL è nullo, vuoto o è la stringa "default" (il nostro trucco), usa l'immagine locale
+  const hasValidAvatar =
+    user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
+  const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
+  // ✅ CORREZIONE TITOLO DROPDOWN (SOLO FOTO)
   const dropdownTitle = (
-    <div className='d-flex align-items-center'>
+    <div className='d-flex align-items-center justify-content-center'>
       <img
         src={avatarToDisplay}
-        alt={`${username} Avatar`}
-        className='rounded-circle me-2'
+        alt='Profilo' // Tolto username dall'alt per evitare che esca testo in caso di errore
+        className='rounded-circle' // Tolto 'me-2' perché non c'è testo a fianco
         style={{
           width: '32px',
           height: '32px',
           objectFit: 'cover',
+          border: '1px solid #444', // Opzionale: bordo sottile per stacco
         }}
       />
-      {isAdmin && <span>ADMIN</span>}
+      {/* Rimosso lo span ADMIN come richiesto ("solo il profilo") */}
     </div>
   );
 
@@ -71,7 +79,6 @@ function MyNavbar() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (query.trim() !== '') {
-      // Reindirizza alla pagina di ricerca con i parametri
       navigate(`/cerca?q=${query}&type=${searchType}`);
       setQuery('');
     }
@@ -118,7 +125,6 @@ function MyNavbar() {
                 <option value='utenti'>Utenti</option>
               </Form.Select>
 
-              {/* Campo Input */}
               <FormControl
                 type='search'
                 placeholder={
@@ -131,7 +137,6 @@ function MyNavbar() {
                 onChange={(e) => setQuery(e.target.value)}
               />
 
-              {/* Bottone Invio */}
               <Button variant='success' type='submit'>
                 <BsSearch />
               </Button>
@@ -158,7 +163,7 @@ function MyNavbar() {
                   title={dropdownTitle}
                   id='basic-nav-dropdown'
                   align='end'
-                  className='no-caret'
+                  className='no-caret' // Assicurati di avere CSS per nascondere la freccia se non la vuoi
                 >
                   {isAdmin && (
                     <NavDropdown.Item as={Link} to='/admin/dashboard'>

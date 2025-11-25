@@ -8,7 +8,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { FaMapMarkerAlt, FaPen, FaStar } from 'react-icons/fa';
 import { BsBoxSeamFill, BsStarHalf } from 'react-icons/bs';
 import ProductCard from './ProductCard';
-import avatar from '../assets/streetsell-profile-pic.png';
+
+// ✅ RINOMINATO PER CHIAREZZA
+import avatarDefault from '../assets/streetsell-profile-pic.png';
 
 // Endpoint pubblico per recuperare i dati utente
 const PUBLIC_USER_ENDPOINT = 'http://localhost:8888/utenti';
@@ -98,7 +100,6 @@ function ProfilePage() {
   );
 
   // FETCH INDIRIZZI (SOLO PER PROFILO PRIVATO)
-  // Serve perché currentUser di Redux spesso non ha la lista indirizzi
   useEffect(() => {
     if (isViewingOwnProfile && token) {
       fetch(ADDRESSES_ENDPOINT, {
@@ -117,14 +118,12 @@ function ProfilePage() {
 
   // LOGICA FETCH PROFILO GENERALE
   useEffect(() => {
-    // Caso Privato: Usa i dati da Redux
     if (isViewingOwnProfile && currentUser) {
       setUserToDisplay(currentUser);
       setIsLoading(false);
       return;
     }
 
-    // Caso Pubblico: Fetch da API
     if (userId) {
       setIsLoading(true);
       setError(null);
@@ -150,7 +149,7 @@ function ProfilePage() {
     }
   }, [userId, currentUser, isViewingOwnProfile, token]);
 
-  // CARICAMENTO DATI DIPENDENTI (Rating e Prodotti)
+  // CARICAMENTO DATI DIPENDENTI
   useEffect(() => {
     if (userToDisplay) {
       fetchRating(userToDisplay.id);
@@ -188,10 +187,7 @@ function ProfilePage() {
   const user = userToDisplay;
   const profileTitle = isViewingOwnProfile ? user.username : user.username;
 
-  // Se è il mio profilo, uso 'myAddresses' caricato appositamente.
-  // Se è pubblico, uso 'user.indirizzi' (se il backend pubblico li fornisce).
   const addressList = isViewingOwnProfile ? myAddresses : user.indirizzi || [];
-
   const mainAddress =
     addressList.find((addr) => addr.principale === true) || addressList[0];
 
@@ -206,7 +202,11 @@ function ProfilePage() {
     ? `${mainAddress.citta}, ${mainAddress.nazione}`
     : locationFallback;
 
-  const displayAvatarUrl = user.avatarUrl || avatar;
+  // ✅ CORREZIONE LOGICA AVATAR:
+  // Se avatarUrl è "default" (il nostro trucco backend) o vuoto, usa l'immagine locale.
+  const hasValidAvatar =
+    user.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
+  const displayAvatarUrl = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
   return (
     <Container className='my-5'>
@@ -223,7 +223,7 @@ function ProfilePage() {
             <img
               src={displayAvatarUrl}
               alt={`${user.username} Avatar`}
-              className='rounded-circle border border-3 border-secondary'
+              className='rounded-circle border-0'
               style={{ width: '200px', height: '200px', objectFit: 'cover' }}
             />
           </div>

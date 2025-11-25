@@ -150,4 +150,11 @@ public class UtenteController {
             throw new RuntimeException("Errore durante il caricamento del file", e);
         }
     }
+
+    @DeleteMapping("/me/avatar")
+    public Utente deleteAvatar(@AuthenticationPrincipal Utente utente) {
+        // Logica per eliminare il file (opzionale) e settare url a null
+        utente.setAvatarUrl("default");
+        return utenteRepository.save(utente);
+    }
 }
