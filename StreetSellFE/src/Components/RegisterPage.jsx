@@ -14,6 +14,9 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const endpoint = 'http://localhost:8888/auth/register';
 
+// ✅ BRAND COLOR
+const BRAND_COLOR = '#fa8229';
+
 function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -24,6 +27,14 @@ function RegisterPage() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
+
+  // Stile per tutti i Form.Control (Input) per garantire lo sfondo bianco
+  const inputStyle = {
+    backgroundColor: 'white',
+    borderColor: '#ced4da',
+  };
+
+  // Stile per il bottone Occhio (InputGroup) per il contrasto
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
@@ -103,8 +114,8 @@ function RegisterPage() {
         setPassword('');
 
         setTimeout(() => {
-          navigate('/login'), 2000;
-        });
+          navigate('/login');
+        }, 2000);
       })
 
       .catch((err) => {
@@ -117,7 +128,7 @@ function RegisterPage() {
       <Row className='justify-content-md-center'>
         <Col xs={12} md={8} lg={6}>
           {/* La Card vera e propria */}
-          <Card className='shadow-sm'>
+          <Card className='border-0' style={{ backgroundColor: 'transparent' }}>
             <Card.Body>
               <Card.Title className='text-center mb-4 fs-2'>
                 Crea il Tuo Account
@@ -139,6 +150,8 @@ function RegisterPage() {
                     required
                     isInvalid={!!errors.username}
                     isValid={username.length > 0 && !errors.username}
+                    // ✅ Stile Input
+                    style={inputStyle}
                   />
                   <Form.Text className='text-muted'>
                     Deve avere tra 3 e 20 caratteri.
@@ -162,6 +175,8 @@ function RegisterPage() {
                     required
                     isInvalid={!!errors.email}
                     isValid={email.length > 0 && !errors.email}
+                    // ✅ Stile Input
+                    style={inputStyle}
                   />
                   <Form.Text className='text-muted'>
                     Deve avere tra 3 e 10 caratteri.
@@ -170,6 +185,8 @@ function RegisterPage() {
                     {errors.email}
                   </Form.Control.Feedback>
                 </Form.Group>
+
+                {/* Password */}
                 <Form.Group className='mb-4' controlId='formBasicPassword'>
                   <Form.Label>Password</Form.Label>
                   <InputGroup>
@@ -185,6 +202,8 @@ function RegisterPage() {
                       required
                       isInvalid={!!errors.password}
                       isValid={password.length > 7 && !errors.password}
+                      // ✅ Stile Input
+                      style={inputStyle}
                     />
                     <Button
                       variant='outline-secondary'
@@ -201,6 +220,7 @@ function RegisterPage() {
                   </InputGroup>
                 </Form.Group>
 
+                {/* Conferma Password */}
                 <Form.Group className='mb-4' controlId='formConfirmPassword'>
                   <Form.Label>Conferma Password</Form.Label>
                   <InputGroup>
@@ -220,6 +240,8 @@ function RegisterPage() {
                         !errors.confirmPassword &&
                         !errors.password
                       }
+                      // ✅ Stile Input
+                      style={inputStyle}
                     />
                     <Button
                       variant='outline-secondary'
@@ -241,7 +263,15 @@ function RegisterPage() {
 
                 {/* Il bottone a larghezza piena */}
                 <div className='d-grid'>
-                  <Button variant='primary' type='submit' size='lg'>
+                  <Button
+                    type='submit'
+                    size='lg'
+                    // ✅ Stile Brand Color
+                    style={{
+                      backgroundColor: BRAND_COLOR,
+                      borderColor: BRAND_COLOR,
+                    }}
+                  >
                     Registrati
                   </Button>
                 </div>

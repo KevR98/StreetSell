@@ -72,15 +72,7 @@ function Login() {
         className='border-0'
         style={{ backgroundColor: 'transparent' }}
       >
-        <Card.Body
-          // ✅ Sfondo bianco per il Body (per contrasto)
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '0.375rem',
-            padding: '1.5rem',
-            boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)',
-          }}
-        >
+        <Card.Body>
           <h2 className='card-title text-center mb-4'>Accedi</h2>
 
           {error && <ErrorAlert message={error} />}
