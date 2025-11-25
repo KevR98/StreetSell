@@ -110,7 +110,7 @@ public class UtenteController {
 
     // ---- ENDPOINT PER ADMIN ----
 
-    // 🛑 MODIFICA: Spostato su /all per evitare conflitti con la rotta /utenteId
+    // /all per evitare conflitti con la rotta /utenteId
     // GET /utenti/all -> Ritorna la lista di tutti gli utenti
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ADMIN')")

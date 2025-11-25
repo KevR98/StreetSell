@@ -42,25 +42,25 @@ public class AuthorizationService implements UserDetailsService {
 
         nuovoUtente.setAttivo(true);
 
-        // <-- MODIFICA CRUCIALE: Ora criptiamo la password!
+        // Criptiamo la password!
         nuovoUtente.setPassword(passwordEncoder.encode(body.password()));
 
         nuovoUtente.setRuolo(Ruolo.USER);
         return utenteRepository.save(nuovoUtente);
     }
 
-    // 🛑 MODIFICA QUI: Il metodo ora restituisce LoginResponseDTO
+    // Restituisce LoginResponseDTO
     public LoginResponseDTO authenticateAndGenerateToken(LoginDTO body) {
         Utente utente = utenteRepository.findByEmail(body.email())
                 .orElseThrow(() -> new UnauthorizedException("Credenziali non valide."));
 
-        // <-- Confrontiamo la password usando il metodo sicuro di BCrypt
+        // Confrontiamo la password usando il metodo sicuro di BCrypt
         if (passwordEncoder.matches(body.password(), utente.getPassword())) {
 
-            // 1. Generiamo il token
+            // Generiamo il token
             String token = jwtTools.createToken(utente);
 
-            // 2. ✅ AZIONE CRUCIALE: Restituiamo il DTO completo con token E utente
+            // Restituisco il DTO completo con token E utente
             return new LoginResponseDTO(token, utente);
 
         } else {
@@ -70,9 +70,6 @@ public class AuthorizationService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Non farti ingannare dal nome 'loadUserByUsername'.
-        // La stringa che arriva qui è quella che l'utente scrive nel campo "username" del form di login,
-        // che per noi è l'email.
 
         return utenteRepository.findByEmail(email) // Cerchiamo nel DB per email
                 .orElseThrow(() -> new UsernameNotFoundException("Utente con email " + email + " non trovato"));

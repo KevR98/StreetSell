@@ -39,7 +39,6 @@ public class JWTTools {
     }
 
     public UUID extractIdFromToken(String token) {
-        // Metodo moderno e non deprecato per estrarre il subject (ID utente)
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(getSecretKey())

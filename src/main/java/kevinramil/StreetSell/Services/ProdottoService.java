@@ -33,10 +33,10 @@ public class ProdottoService {
     @Autowired
     private ProdottoRepository prodottoRepository;
 
-    // 2. INIETTIAMO IL SERVIZIO CLOUDINARY (dal CloudinaryConfig.java)
     @Autowired
     private ImmagineProdottoRepository immagineRepository;
 
+    // Innietto il Cloudinary (dal CloudinaryConfig.java)
     @Autowired
     private Cloudinary cloudinary;
 
@@ -57,7 +57,7 @@ public class ProdottoService {
         return prodottoRepository.save(nuovoProdotto);
     }
 
-    // UPDATE (Modificato per gestire immagini)
+    // Gestisce l'immagine
     @Transactional
     public Prodotto updateProdotto(UUID prodottoId, ProdottoDTO body, Utente currentUser, MultipartFile[] nuoveImmagini) {
         Prodotto prodotto = this.findById(prodottoId);
@@ -125,7 +125,7 @@ public class ProdottoService {
         return lista;
     }
 
-    // ALTRI METODI (findById, archiviaProdotto, etc) rimangono uguali...
+    // ALTRI METODI
     @Transactional
     public Page<Prodotto> findProdottiDisponibili(Pageable pageable) {
         return prodottoRepository.findByStatoProdotto(StatoProdotto.DISPONIBILE, pageable);
@@ -175,9 +175,7 @@ public class ProdottoService {
 
     public List<Prodotto> findProdottiByVenditoreId(UUID venditoreId) {
 
-        // Questo metodo assume l'esistenza di un metodo nel ProdottoRepository:
-        // List<Prodotto> findByVenditoreIdAndStatoProdotto(UUID venditoreId, StatoProdotto stato);
-
+        // Metodo che assume l'esistenza di un metodo nel ProdottoRepository:
         return prodottoRepository.findByVenditoreIdAndStatoProdotto(
                 venditoreId,
                 StatoProdotto.DISPONIBILE // Mostra solo i prodotti che sono DISPONIBILI

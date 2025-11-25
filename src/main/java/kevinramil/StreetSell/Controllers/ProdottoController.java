@@ -134,7 +134,7 @@ public class ProdottoController {
 
         if (currentUser == null) throw new UnauthorizedException("Devi effettuare il login.");
 
-        // 🛑 Ricarica Utente Completo
+        // Ricarica Utente Completo
         Utente venditoreCompleto = utenteService.findById(currentUser.getId());
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());

@@ -17,18 +17,17 @@ public class ImmagineProdottoService {
     private ImmagineProdottoRepository immagineProdottoRepository;
 
     public void eliminaImmagine(UUID immagineId, Utente utente) {
-        // 1. Trovo l'immagine nel database tramite il suo ID
+        // Trovo l'immagine nel database tramite il suo ID
         ImmagineProdotto immagine = immagineProdottoRepository.findById(immagineId)
                 .orElseThrow(() -> new NotFoundException("Immagine con ID " + immagineId + " non trovata."));
 
-        // 2. CONTROLLO DI SICUREZZA FONDAMENTALE:
         // Verifico che l'utente che sta chiedendo di cancellare l'immagine
         // sia effettivamente il venditore del prodotto a cui l'immagine è associata.
         if (!immagine.getProdotto().getVenditore().getId().equals(utente.getId())) {
             throw new BadRequestException("Non hai i permessi per eliminare l'immagine di un prodotto che non ti appartiene.");
         }
 
-        // 3. Se il controllo di sicurezza passa, elimino l'immagine.
+        // Controllo di sicurezza passa, elimino l'immagine.
         immagineProdottoRepository.delete(immagine);
     }
 }

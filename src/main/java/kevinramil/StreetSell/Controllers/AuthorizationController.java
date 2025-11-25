@@ -23,7 +23,7 @@ public class AuthorizationController {
 
     // Endpoint per il LOGIN -> POST /auth/login
     @PostMapping("/login")
-    // 🛑 MODIFICA QUI: Il tipo di ritorno è ora LoginResponseDTO
+    // Il tipo di ritorno è ora LoginResponseDTO
     public LoginResponseDTO login(@RequestBody @Validated LoginDTO body, BindingResult validation) {
         if (validation.hasErrors()) {
             throw new ValidationException(

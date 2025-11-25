@@ -1,5 +1,3 @@
-// src/main/java/kevinramil/StreetSell/Config/CloudinaryConfig.java
-
 package kevinramil.StreetSell.Configurations;
 
 import com.cloudinary.Cloudinary;

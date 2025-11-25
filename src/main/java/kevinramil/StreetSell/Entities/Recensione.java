@@ -21,7 +21,7 @@ public class Recensione {
     private UUID id;
 
     @Column(nullable = false)
-    private int valutazione; // Es. un valore da 1 a 5
+    private int valutazione;
 
     @Column(columnDefinition = "TEXT")
     private String commento;
@@ -30,11 +30,8 @@ public class Recensione {
     @org.hibernate.annotations.CreationTimestamp
     private LocalDateTime dataCreazione;
 
-    // --- RELAZIONI FONDAMENTALI ---
-
-    // Relazione: La recensione è legata a un ordine specifico
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ordine_id", nullable = false, unique = true) // 🛑 unique=true impone l'unicità
+    @JoinColumn(name = "ordine_id", nullable = false, unique = true)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "recensione"})
     private Ordine ordine;
 

@@ -41,7 +41,7 @@ public class OrdineController {
         return ordineService.creaOrdine(body, currentUser);
     }
 
-    @GetMapping("/gestione") // 🛑 NUOVO ENDPOINT UNIFICATO
+    @GetMapping("/gestione")
     public List<Ordine> getOrdiniUtenteCompleto(@AuthenticationPrincipal Utente currentUser) {
         // Questo endpoint restituisce tutte le task da fare (Vendita CONFERMATA e Acquisto SPEDITO)
         // Dobbiamo assicuraci che il service abbia questo metodo.

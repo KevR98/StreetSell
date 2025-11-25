@@ -42,10 +42,9 @@ public class Utente implements UserDetails {
     @Column(nullable = true)
     private String cognome;
 
-    private String username; // ✅ ORA SARÀ VISIBILE
+    private String username;
     private String email;
 
-    // 🚨 PROTEZIONE CRITICA: Dobbiamo nascondere la password 🚨
     @JsonIgnore
     private String password;
 
@@ -56,17 +55,14 @@ public class Utente implements UserDetails {
     private Boolean attivo = true;
 
     @Column(updatable = false, nullable = false)
-    @CreationTimestamp // Lombok genera il getter/setter, Hibernate la data
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    // 4. RELAZIONI CON LE ALTRE TABELLE (tutte correttamente nascoste)
-    // ====================================================
     @OneToMany(mappedBy = "venditore")
     @ToString.Exclude
     @JsonIgnore
     private List<Prodotto> prodottodaVendere;
 
-    // ... (tutte le altre relazioni con @JsonIgnore sono corrette)
     @OneToMany(mappedBy = "compratore")
     @ToString.Exclude
     @JsonIgnore
@@ -87,16 +83,12 @@ public class Utente implements UserDetails {
     @JsonIgnore
     private List<Indirizzo> indirizzi;
 
-
-    // 5. METODI RICHIESTI DA UserDetails (rimangono invariati)
-    // ===============================================
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.ruolo.name()));
     }
 
-    // ... (metodi isAccountNonExpired, isAccountNonLocked, etc. che restituiscono true)
+
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -117,14 +109,13 @@ public class Utente implements UserDetails {
         return true;
     }
 
-    // 🚨 UserDetails richiede questi getter SENZA @JsonIgnore 🚨
     @Override
     public String getUsername() {
         return this.username;
     }
 
     @Override
-    @JsonIgnore // Aggiungiamo JsonIgnore qui per sicurezza se il campo non è già protetto
+    @JsonIgnore
     public String getPassword() {
         return this.password;
     }

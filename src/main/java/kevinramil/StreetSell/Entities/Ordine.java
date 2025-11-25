@@ -47,7 +47,7 @@ public class Ordine {
 
     // Relazione: Un ordine può avere più recensioni (di solito una dal compratore e una dal venditore)
     @OneToOne(mappedBy = "ordine", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Fetch(FetchMode.JOIN) // 🛑 Forza il caricamento nel fetch dell'ordine
+    @Fetch(FetchMode.JOIN)
     @JsonIgnoreProperties("ordine")
     private Recensione recensione;
 

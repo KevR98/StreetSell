@@ -25,7 +25,7 @@ public class UtenteService {
     private ProdottoRepository prodottoRepository;
 
     public List<Utente> findAllActive() {
-        // MODIFICA: Filtra la lista per restituire solo gli utenti attivi.
+        // Filtra la lista per restituire solo gli utenti attivi.
         return utenteRepository.findAll().stream()
                 .filter(Utente::getAttivo)
                 .collect(Collectors.toList());
@@ -55,7 +55,6 @@ public class UtenteService {
         utenteRepository.save(utenteDaDisattivare); // Salva la modifica
     }
 
-    // QUESTO METODO È GIÀ CORRETTO!
     // Metodo dove è l'utente stesso a voler disattivare il proprio account
     public void disattivaMioAccount(Utente utente) {
         utente.setAttivo(false);
@@ -68,7 +67,7 @@ public class UtenteService {
 
         return utenti.stream()
                 .map(u -> {
-                    // 🛑 CORREZIONE: Passa l'ID dell'utente (u.getId()) al Repository.
+                    // Passa l'ID dell'utente (u.getId()) al Repository.
                     long count = prodottoRepository.countByVenditoreAndStatoProdotto(u.getId());
 
                     return UtenteAdminDTO.fromUtente(u, count);
@@ -97,13 +96,8 @@ public class UtenteService {
     @Transactional
     public Utente updateProfileDetails(UpdateUtenteDTO payload, Utente utenteCorrente) {
 
-        // Applica le modifiche. Dato che i campi sono nullable nel DB,
-        // possiamo accettare i valori dal DTO. Se il DTO è @Validated e @NotEmpty,
-        // questi valori non saranno mai null qui, ma saranno gestiti dalla Validation.
         utenteCorrente.setNome(payload.nome());
         utenteCorrente.setCognome(payload.cognome());
-
-        // Nota: se volessi aggiornare altri campi (es. email), lo faresti qui.
 
         // Salva l'oggetto aggiornato.
         return utenteRepository.save(utenteCorrente);

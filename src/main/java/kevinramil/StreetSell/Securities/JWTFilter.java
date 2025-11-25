@@ -48,13 +48,9 @@ public class JWTFilter extends OncePerRequestFilter {
             UUID utenteId = jwtTools.extractIdFromToken(accessToken);
             Utente found = utenteService.findById(utenteId);
 
-            //**************************************************//
-            // CONTROLLO UTENTE ATTIVO (Corretto)
-            //**************************************************//
             if (!found.isEnabled()) {
                 throw new UnauthorizedException("Il tuo account è stato disattivato. Contatta l'assistenza.");
             }
-            //**************************************************//
 
             List<SimpleGrantedAuthority> authorities = List.of(
                     new SimpleGrantedAuthority(found.getRuolo().name())
@@ -80,22 +76,17 @@ public class JWTFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         AntPathMatcher matcher = new AntPathMatcher();
 
-        // Rotte da ESCLUDERE dal filtro (rotte pubbliche)
         boolean isAuthRoute = matcher.match("/auth/**", path);
 
-        // Rotta del profilo utente (deve essere protetta)
         boolean isProtectedMeRoute = matcher.match("/prodotti/me", path);
         boolean isAdminRoute = matcher.match("/prodotti/admin/**", path);
 
-        // Rotte GET pubbliche generali (es. lista prodotti pubblici, dettagli prodotto)
-        // Tutta la rotta /prodotti/** è pubblica TRANNE /prodotti/me
+
         boolean isPublicGet = request.getMethod().equalsIgnoreCase("GET")
                 && matcher.match("/prodotti/**", path)
-                && !isProtectedMeRoute // 🛑 ASSICURATI DI NON SALTARE LA ROTTA /me
+                && !isProtectedMeRoute
                 && !isAdminRoute;
 
-        // Se la rotta è /prodotti/me, isProtectedMeRoute è TRUE, isPublicGet è FALSE
-        // Il filtro sarà eseguito perché la condizione qui sotto sarà FALSE.
         return isAuthRoute || isPublicGet;
     }
 }
