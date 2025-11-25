@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Card,
-  Col,
-  Container,
-  Row,
-  Spinner,
-  Button,
-} from 'react-bootstrap';
+import { Alert, Col, Container, Row, Spinner, Button } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import RecensioniList from './RecensioniList';
 import LoadingSpinner from './LoadingSpinner';
@@ -223,7 +215,7 @@ function ProfilePage() {
     <Container className='my-5'>
       <BackButton />
 
-      <Row className='mb-5'>
+      <Row className='mb-4 align-items-center'>
         <Col xs={12} md={8}>
           <h1 className='fw-bold mb-0'>{profileTitle}</h1>
 
@@ -269,41 +261,18 @@ function ProfilePage() {
             </Button>
           </Col>
         )}
+      </Row>
 
-        <Col xs={12} className='mt-4'>
-          <Row>
-            <Col xs={12} md={6}>
-              <h5 className='fw-bold mb-3'>Informazioni:</h5>
-              <ul className='list-unstyled small'>
-                <li className='d-flex align-items-center'>
-                  <FaMapMarkerAlt className='me-2 text-primary' />
-                  {/* Ora mostrerà città e nazione perché abbiamo fetchato gli indirizzi */}
-                  <span>{cityAndCountry}</span>
-                </li>
-              </ul>
-            </Col>
-
-            <Col xs={12} md={6}>
-              <h5 className='fw-bold mb-3'>Informazioni verificate:</h5>
-              <ul className='list-unstyled small'>
-                {isViewingOwnProfile ? (
-                  <>
-                    <li>
-                      <FaCheckCircle className='me-2 text-success' /> Google
-                    </li>
-                    <li>
-                      <FaEnvelopeOpenText className='me-2 text-success' />{' '}
-                      E-mail
-                    </li>
-                  </>
-                ) : (
-                  <p className='text-muted small'>
-                    Per privacy, le informazioni di verifica sono nascoste.
-                  </p>
-                )}
-              </ul>
-            </Col>
-          </Row>
+      {/* ✅ SEZIONE INFORMAZIONI MODIFICATA E RIDOTTA */}
+      <Row className='mb-4'>
+        <Col xs={12} md={6}>
+          <h5 className='fw-bold mb-3'>Informazioni:</h5>
+          <ul className='list-unstyled small'>
+            <li className='d-flex align-items-center'>
+              <FaMapMarkerAlt className='me-2 text-primary' />
+              <span>{cityAndCountry}</span>
+            </li>
+          </ul>
         </Col>
       </Row>
 
