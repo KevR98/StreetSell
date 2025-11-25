@@ -16,6 +16,9 @@ import BackButton from './BackButton';
 
 const endpoint = 'http://localhost:8888/prodotti';
 
+// ✅ BRAND COLOR
+const BRAND_COLOR = '#fa8229';
+
 function CreaProductPage() {
   const { id } = useParams();
   const isEditing = !!id;
@@ -39,6 +42,18 @@ function CreaProductPage() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingData, setIsFetchingData] = useState(false);
+
+  // ✅ STILE INPUT BASE (per contrasto su sfondo trasparente)
+  const inputStyle = {
+    backgroundColor: 'white',
+    borderColor: '#ced4da',
+  };
+
+  // ✅ STILE BOTTONE PRIMARIO
+  const primaryButtonStyle = {
+    backgroundColor: BRAND_COLOR,
+    borderColor: BRAND_COLOR,
+  };
 
   // Caricamento dati iniziali per modifica
   useEffect(() => {
@@ -179,13 +194,17 @@ function CreaProductPage() {
       <BackButton />
       <Row className='justify-content-center'>
         <Col md={8} lg={8}>
-          <Card className='shadow-sm'>
+          <Card
+            className='border-0'
+            // ✅ Rimosso shadow-sm, reso trasparente
+            style={{ backgroundColor: 'transparent' }}
+          >
             <Card.Body>
-              <Card.Title className='text-center mb-4'>
+              <h1 className='text-center mb-4'>
                 {isEditing
                   ? 'Modifica Annuncio'
                   : 'Metti in Vendita un Articolo'}
-              </Card.Title>
+              </h1>
 
               <Form onSubmit={handleSubmit}>
                 {/* TITOLO */}
@@ -197,6 +216,8 @@ function CreaProductPage() {
                     value={prodotto.titolo}
                     onChange={handleInputChange}
                     required
+                    // ✅ Stile input
+                    style={inputStyle}
                   />
                 </Form.Group>
 
@@ -210,6 +231,8 @@ function CreaProductPage() {
                     value={prodotto.descrizione}
                     onChange={handleInputChange}
                     required
+                    // ✅ Stile input
+                    style={inputStyle}
                   />
                 </Form.Group>
 
@@ -259,6 +282,8 @@ function CreaProductPage() {
                     accept='image/*'
                     multiple
                     onChange={handleFileChange}
+                    // ✅ Stile input
+                    style={inputStyle}
                   />
                 </Form.Group>
 
@@ -273,6 +298,8 @@ function CreaProductPage() {
                         value={prodotto.prezzo}
                         onChange={handleInputChange}
                         required
+                        // ✅ Stile input
+                        style={inputStyle}
                       />
                     </Form.Group>
                   </Col>
@@ -285,6 +312,8 @@ function CreaProductPage() {
                         value={prodotto.categoria}
                         onChange={handleInputChange}
                         required
+                        // ✅ Stile input
+                        style={inputStyle}
                       />
                     </Form.Group>
                   </Col>
@@ -296,6 +325,8 @@ function CreaProductPage() {
                     name='condizione'
                     value={prodotto.condizione}
                     onChange={handleInputChange}
+                    // ✅ Stile input
+                    style={inputStyle}
                   >
                     <option value='NUOVO'>Nuovo</option>
                     <option value='COME_NUOVO'>Usato - Come nuovo</option>
@@ -305,13 +336,23 @@ function CreaProductPage() {
                   </Form.Select>
                 </Form.Group>
 
-                {error && <Alert variant='danger'>{error}</Alert>}
-                {success && <Alert variant='success'>{success}</Alert>}
+                {/* ✅ Sfondo Alert */}
+                {error && (
+                  <Alert variant='danger' style={{ backgroundColor: 'white' }}>
+                    {error}
+                  </Alert>
+                )}
+                {success && (
+                  <Alert variant='success' style={{ backgroundColor: 'white' }}>
+                    {success}
+                  </Alert>
+                )}
 
                 <div className='d-grid'>
                   <Button
                     type='submit'
-                    variant={isEditing ? 'warning' : 'primary'}
+                    // ✅ Stile Brand Color
+                    style={primaryButtonStyle}
                     size='lg'
                     disabled={isLoading}
                   >

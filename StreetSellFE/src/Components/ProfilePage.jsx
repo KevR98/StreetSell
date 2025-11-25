@@ -25,6 +25,10 @@ const RATING_ENDPOINT = 'http://localhost:8888/utenti';
 // NUOVO ENDPOINT INDIRIZZI
 const ADDRESSES_ENDPOINT = 'http://localhost:8888/indirizzi';
 
+// ✅ BRAND COLOR
+const BRAND_COLOR = '#fa8229';
+const BRAND_HOVER_FILL = '#fff3e0'; // Sfondo molto chiaro per l'effetto hover outline
+
 function ProfilePage() {
   const currentUser = useSelector((state) => state.auth.user);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -48,6 +52,11 @@ function ProfilePage() {
   const [isLoadingRating, setIsLoadingRating] = useState(false);
 
   const [myAddresses, setMyAddresses] = useState([]);
+
+  // ✅ STATI HOVER PER BOTTONI
+  const [hoverModifica, setHoverModifica] = useState(false);
+  const [hoverAnnunci, setHoverAnnunci] = useState(false);
+  const [hoverRecensioni, setHoverRecensioni] = useState(false);
 
   const isViewingOwnProfile =
     !userId || (currentUser && currentUser.id === userId);
@@ -163,6 +172,28 @@ function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userToDisplay, activeView, fetchProducts, fetchRating]);
 
+  // ✅ FUNZIONE PER CALCOLARE LO STILE DEL BOTTONE IN BASE ALLO STATO
+  const getButtonStyle = (isActive, isHovering) => {
+    if (isActive) {
+      // Stile Attivo (Arancione Pieno)
+      return {
+        backgroundColor: BRAND_COLOR,
+        borderColor: BRAND_COLOR,
+        color: 'white',
+        // Hover per stato attivo (leggermente più scuro, opzionale)
+        opacity: isHovering ? 0.9 : 1,
+      };
+    } else {
+      // Stile Inattivo (Outline Arancione)
+      return {
+        borderColor: BRAND_COLOR,
+        color: BRAND_COLOR,
+        // Sfondo trasparente che viene sovrascritto dall'hover
+        backgroundColor: isHovering ? BRAND_HOVER_FILL : 'transparent',
+      };
+    }
+  };
+
   // Controlli di stato
   if (!isAuthenticated && !userId) {
     return (
@@ -203,7 +234,6 @@ function ProfilePage() {
     : locationFallback;
 
   // ✅ CORREZIONE LOGICA AVATAR:
-  // Se avatarUrl è "default" (il nostro trucco backend) o vuoto, usa l'immagine locale.
   const hasValidAvatar =
     user.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const displayAvatarUrl = hasValidAvatar ? user.avatarUrl : avatarDefault;
@@ -235,14 +265,15 @@ function ProfilePage() {
             {/* USERNAME E RATING (md=8) */}
             <Col xs={12} md={8}>
               <div className='mt-4'>
-                <h1 className='fw-bold mb-0 color'>{profileTitle}</h1>
+                <h1 className='fw-bold mb-0'>{profileTitle}</h1>
 
                 <div className='d-flex align-items-center mt-1'>
                   {isLoadingRating ? (
                     <Spinner
                       animation='border'
                       size='sm'
-                      className='text-primary'
+                      // ✅ BRAND COLOR SPINNER
+                      style={{ color: BRAND_COLOR }}
                     />
                   ) : reviewCount > 0 ? (
                     <>
@@ -252,7 +283,7 @@ function ProfilePage() {
                           size={18}
                           color={
                             i < Math.round(averageRating)
-                              ? '#ffc107'
+                              ? '#ffc107' // Giallo standard per le stelle
                               : '#e4e5e9'
                           }
                           className='me-1'
@@ -280,9 +311,13 @@ function ProfilePage() {
                 className='d-flex justify-content-start justify-content-md-end mt-3 mt-md-0'
               >
                 <Button
-                  variant='outline-secondary'
+                  // ✅ Tolgo variant per il controllo manuale
                   as={Link}
                   to='/profilo/gestione'
+                  // ✅ Controllo Hover
+                  onMouseEnter={() => setHoverModifica(true)}
+                  onMouseLeave={() => setHoverModifica(false)}
+                  style={getButtonStyle(false, hoverModifica)}
                 >
                   <FaPen className='me-2' /> Modifica Profilo
                 </Button>
@@ -293,10 +328,14 @@ function ProfilePage() {
           {/* INFORMAZIONI DI BASE (Sotto il Rating/Button) */}
           <Row className='mt-4'>
             <Col xs={12} md={6}>
-              <h5 className='fw-bold mb-3 color'>Informazioni:</h5>
+              <h5 className='fw-bold mb-3'>Informazioni:</h5>
               <ul className='list-unstyled small'>
                 <li className='d-flex align-items-center'>
-                  <FaMapMarkerAlt className='me-2 text-primary' />
+                  {/* ✅ BRAND COLOR ICONA */}
+                  <FaMapMarkerAlt
+                    className='me-2'
+                    style={{ color: BRAND_COLOR }}
+                  />
                   <span>{cityAndCountry}</span>
                 </li>
               </ul>
@@ -310,8 +349,11 @@ function ProfilePage() {
       <Row className='mb-5'>
         <Col xs={12} className='d-flex gap-3'>
           <Button
-            variant={activeView === 'annunci' ? 'primary' : 'outline-secondary'}
             onClick={() => setActiveView('annunci')}
+            // ✅ Controllo Hover
+            onMouseEnter={() => setHoverAnnunci(true)}
+            onMouseLeave={() => setHoverAnnunci(false)}
+            style={getButtonStyle(activeView === 'annunci', hoverAnnunci)}
           >
             <BsBoxSeamFill className='me-2' /> Annunci in Vendita
             {isLoadingProducts && (
@@ -320,10 +362,11 @@ function ProfilePage() {
           </Button>
 
           <Button
-            variant={
-              activeView === 'recensioni' ? 'primary' : 'outline-secondary'
-            }
             onClick={() => setActiveView('recensioni')}
+            // ✅ Controllo Hover
+            onMouseEnter={() => setHoverRecensioni(true)}
+            onMouseLeave={() => setHoverRecensioni(false)}
+            style={getButtonStyle(activeView === 'recensioni', hoverRecensioni)}
           >
             <BsStarHalf className='me-2' /> Recensioni Ricevute
           </Button>
@@ -336,7 +379,7 @@ function ProfilePage() {
 
           {activeView === 'annunci' && (
             <div id='products-list'>
-              <h2 className='mb-4 color'>
+              <h2 className='mb-4'>
                 {isViewingOwnProfile
                   ? 'I Miei Annunci Attivi'
                   : `Annunci di ${user.username}`}

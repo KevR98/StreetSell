@@ -18,6 +18,8 @@ import ErrorAlert from './ErrorAlert';
 import Order from './Order';
 import ProductCard from './ProductCard';
 
+const brandColor = '#fa8229';
+
 const endpoint = 'http://localhost:8888/prodotti';
 const userProductsEndpoint = 'http://localhost:8888/prodotti/utente';
 
@@ -201,7 +203,7 @@ function Details() {
         <Col
           md={6}
           className='d-flex flex-wrap gap-2'
-          style={{ backgroundColor: '#f8f9fa' }}
+          style={{ backgroundColor: 'transparent' }}
         >
           {visibleImages.map((img, index) => {
             const isLarge = index === 0;
@@ -266,10 +268,7 @@ function Details() {
           {/* TITOLO E PREZZO */}
           <h3 className='mb-2 fw-bold'>{prodotto.titolo}</h3>
 
-          <p
-            className='lead text-primary fw-bold mb-3'
-            style={{ fontSize: '1.8rem' }}
-          >
+          <p className='fw-bold mb-3' style={{ fontSize: '1.8rem' }}>
             € {prodotto.prezzo.toFixed(2)}
           </p>
 
@@ -329,7 +328,15 @@ function Details() {
           ) : canBuy ? (
             <div className='d-flex flex-column gap-2'>
               <Order prodottoId={prodotto.id} />
-              <Button variant='outline-primary' size='lg' className='w-100'>
+              <Button
+                style={{
+                  color: brandColor,
+                  backgroundColor: 'transparent',
+                  borderColor: brandColor,
+                }}
+                size='lg'
+                className='w-100'
+              >
                 Fai un'offerta
               </Button>
             </div>

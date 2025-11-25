@@ -25,6 +25,8 @@ import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
 import { useState } from 'react';
 
+const brandColor = '#fa8229';
+
 function MyNavbar() {
   const location = useLocation();
   const dispatch = useDispatch();
@@ -137,7 +139,13 @@ function MyNavbar() {
                 onChange={(e) => setQuery(e.target.value)}
               />
 
-              <Button variant='success' type='submit'>
+              <Button
+                type='submit'
+                style={{
+                  backgroundColor: brandColor,
+                  borderColor: brandColor,
+                }}
+              >
                 <BsSearch />
               </Button>
             </InputGroup>

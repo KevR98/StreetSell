@@ -8,8 +8,10 @@ import ErrorAlert from './ErrorAlert';
 
 const endpoint = 'http://localhost:8888/auth/login';
 
+// ✅ BRAND COLOR
+const BRAND_COLOR = '#fa8229';
+
 function Login() {
-  // 1. State locali solo per i valori degli input
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,14 +19,18 @@ function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Stile per tutti i Form.Control (Input) per garantire lo sfondo bianco
+  const inputStyle = {
+    backgroundColor: 'white',
+    borderColor: '#ced4da',
+  };
+
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
-  // 2. Funzione che gestisce l'invio del form
   const handleSubmit = (event) => {
     setError(null);
-    // Previene il ricaricamento della pagina, che è il comportamento di default dei form HTML
     event.preventDefault();
 
     const loginPayload = {
@@ -53,7 +59,6 @@ function Login() {
         navigate('/');
       })
       .catch((err) => {
-        // Gestisci l'errore per l'utente
         setError(err.message);
         dispatch(loginFailure(err.message));
         console.error('Errore nel caricamento:', err);
@@ -62,8 +67,20 @@ function Login() {
 
   return (
     <Container className='my-5' style={{ maxWidth: '400px' }}>
-      <Card className='shadow-sm border-0'>
-        <Card.Body className='p-4'>
+      <Card
+        // ✅ Rimosso shadow-sm, reso trasparente
+        className='border-0'
+        style={{ backgroundColor: 'transparent' }}
+      >
+        <Card.Body
+          // ✅ Sfondo bianco per il Body (per contrasto)
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '0.375rem',
+            padding: '1.5rem',
+            boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.075)',
+          }}
+        >
           <h2 className='card-title text-center mb-4'>Accedi</h2>
 
           {error && <ErrorAlert message={error} />}
@@ -77,6 +94,8 @@ function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                // ✅ Stile Input
+                style={inputStyle}
               />
             </Form.Group>
 
@@ -87,12 +106,13 @@ function Login() {
               <InputGroup>
                 {/* CAMPO DI INPUT */}
                 <Form.Control
-                  // Cambia il tipo in base allo stato 'showPassword'
                   type={showPassword ? 'text' : 'password'}
                   placeholder='Inserisci la password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  // ✅ Stile Input
+                  style={inputStyle}
                 />
 
                 {/* BOTTONE OCULARIO */}
@@ -102,8 +122,8 @@ function Login() {
                   aria-label={
                     showPassword ? 'Nascondi password' : 'Mostra password'
                   }
+                  // ✅ Stile Bottone Occhio
                 >
-                  {/* L'icona cambia in base allo stato */}
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </Button>
               </InputGroup>
@@ -111,7 +131,15 @@ function Login() {
 
             {/* Bottone Accedi */}
             <div className='d-grid mt-4'>
-              <Button type='submit' variant='primary' size='lg'>
+              <Button
+                type='submit'
+                size='lg'
+                // ✅ Stile Brand Color
+                style={{
+                  backgroundColor: BRAND_COLOR,
+                  borderColor: BRAND_COLOR,
+                }}
+              >
                 Accedi
               </Button>
             </div>

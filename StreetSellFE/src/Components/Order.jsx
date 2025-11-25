@@ -10,6 +10,8 @@ const endpointIndirizzi = 'http://localhost:8888/indirizzi';
 const endpointOrdini = 'http://localhost:8888/ordini';
 const ORDER_MANAGEMENT_ROUTE = '/ordini/gestione';
 
+const brandColor = '#fa8229';
+
 function Order({ prodottoId }) {
   const [showModal, setShowModal] = useState(false);
   const [userAddresses, setUserAddresses] = useState([]);
@@ -145,7 +147,7 @@ function Order({ prodottoId }) {
   return (
     <>
       <Button
-        variant='success'
+        style={{ backgroundColor: brandColor, borderColor: brandColor }}
         size='lg'
         className='w-100'
         onClick={() => setShowModal(true)} // Apre il modal
