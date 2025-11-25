@@ -27,7 +27,6 @@ import java.util.UUID;
 @ToString
 @Entity
 @Table(name = "utenti")
-// 🚨 RIMOZIONE DELLA CHIAVE DI BLOCCO: NON USIAMO JsonIgnoreProperties QUI 🚨
 public class Utente implements UserDetails {
 
     // 3. CAMPI DELL'ENTITÀ
@@ -47,6 +46,9 @@ public class Utente implements UserDetails {
 
     @JsonIgnore
     private String password;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
     private Ruolo ruolo;

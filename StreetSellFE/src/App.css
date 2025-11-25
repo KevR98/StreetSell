@@ -32,3 +32,7 @@ body {
   /* Opzionale: assicura che il colore copra sempre tutta l'altezza */
   min-height: 100vh;
 }
+
+.color {
+  color: #fa8229;
+}

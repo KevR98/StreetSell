@@ -1,5 +1,7 @@
 package kevinramil.StreetSell.Services;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import kevinramil.StreetSell.Entities.Utente;
 import kevinramil.StreetSell.Exceptions.BadRequestException;
 import kevinramil.StreetSell.Exceptions.NotFoundException;
@@ -10,8 +12,11 @@ import kevinramil.StreetSell.Repositories.UtenteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -20,9 +25,42 @@ public class UtenteService {
 
     @Autowired
     private UtenteRepository utenteRepository;
-
     @Autowired
     private ProdottoRepository prodottoRepository;
+    @Autowired
+    private Cloudinary cloudinary;
+
+    @Transactional
+    public Utente uploadAvatar(MultipartFile file, Utente utenteCorrente) throws IOException {
+        if (file.isEmpty()) {
+            throw new BadRequestException("Il file è vuoto o non è stato caricato.");
+        }
+
+        try {
+            // 1. Prepara le opzioni per l'upload
+            Map<String, Object> options = ObjectUtils.asMap(
+                    "folder", "streetsell/avatars", // Cartella su Cloudinary
+                    "public_id", "user_" + utenteCorrente.getId().toString(), // ID pubblico univoco
+                    "overwrite", true // Sovrascrive se l'utente ha già una foto con lo stesso ID
+            );
+
+            // 2. Upload del file. Cloudinary accetta direttamente i bytes del file.
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
+
+            // 3. Ottieni l'URL sicuro dal risultato
+            String avatarUrl = (String) uploadResult.get("secure_url");
+
+            // 4. Aggiorna l'entità utente con il nuovo URL
+            utenteCorrente.setAvatarUrl(avatarUrl);
+
+            // 5. Salva e restituisce l'utente aggiornato
+            return utenteRepository.save(utenteCorrente);
+
+        } catch (IOException e) {
+            // Rilancia l'eccezione come IOException affinché il Controller possa gestirla
+            throw new IOException("Errore durante l'upload su Cloudinary: " + e.getMessage(), e);
+        }
+    }
 
     public List<Utente> findAllActive() {
         // Filtra la lista per restituire solo gli utenti attivi.

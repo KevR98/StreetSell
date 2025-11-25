@@ -20,7 +20,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,5 +137,17 @@ public class UtenteController {
     @GetMapping("/cerca")
     public List<Utente> cercaUtenti(@RequestParam String q) {
         return utenteRepository.findByUsernameContainingIgnoreCase(q);
+    }
+
+    // Per avatar
+    @PatchMapping("/me/avatar")
+    public Utente uploadAvatar(@RequestParam("avatar") MultipartFile file,
+                               @AuthenticationPrincipal Utente utenteCorrente) {
+        try {
+            return utenteService.uploadAvatar(file, utenteCorrente);
+        } catch (IOException e) {
+            // Gestisci l'errore di I/O (es. logga e lancia un'eccezione interna o BAD_REQUEST)
+            throw new RuntimeException("Errore durante il caricamento del file", e);
+        }
     }
 }

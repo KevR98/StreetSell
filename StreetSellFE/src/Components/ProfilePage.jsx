@@ -5,15 +5,10 @@ import LoadingSpinner from './LoadingSpinner';
 import BackButton from './BackButton';
 import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
-import {
-  FaMapMarkerAlt,
-  FaEnvelopeOpenText,
-  FaPen,
-  FaCheckCircle,
-  FaStar,
-} from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPen, FaStar } from 'react-icons/fa';
 import { BsBoxSeamFill, BsStarHalf } from 'react-icons/bs';
 import ProductCard from './ProductCard';
+import avatar from '../assets/streetsell-profile-pic.png';
 
 // Endpoint pubblico per recuperare i dati utente
 const PUBLIC_USER_ENDPOINT = 'http://localhost:8888/utenti';
@@ -211,68 +206,102 @@ function ProfilePage() {
     ? `${mainAddress.citta}, ${mainAddress.nazione}`
     : locationFallback;
 
+  const displayAvatarUrl = user.avatarUrl || avatar;
+
   return (
     <Container className='my-5'>
       <BackButton />
 
-      <Row className='mb-4 align-items-center'>
-        <Col xs={12} md={8}>
-          <h1 className='fw-bold mb-0'>{profileTitle}</h1>
-
-          <div className='d-flex align-items-center mt-1'>
-            {isLoadingRating ? (
-              <Spinner animation='border' size='sm' className='text-primary' />
-            ) : reviewCount > 0 ? (
-              <>
-                {[...Array(5)].map((_, i) => (
-                  <FaStar
-                    key={i}
-                    size={18}
-                    color={
-                      i < Math.round(averageRating) ? '#ffc107' : '#e4e5e9'
-                    }
-                    className='me-1'
-                  />
-                ))}
-                <span className='ms-2 small text-muted'>
-                  ({averageRating.toFixed(1)}/5) - {reviewCount} recensioni
-                </span>
-              </>
-            ) : (
-              <p className='text-muted small mb-0'>
-                Nessuna recensione ancora.
-              </p>
-            )}
+      <Row className='mb-4'>
+        {/* COLONNA AVATAR (md=3) */}
+        <Col
+          xs={12}
+          md={3}
+          className='d-flex justify-content-center justify-content-md-start mb-4'
+        >
+          <div className='ms-5'>
+            <img
+              src={displayAvatarUrl}
+              alt={`${user.username} Avatar`}
+              className='rounded-circle border border-3 border-secondary'
+              style={{ width: '200px', height: '200px', objectFit: 'cover' }}
+            />
           </div>
         </Col>
 
-        {isViewingOwnProfile && (
-          <Col
-            xs={12}
-            md={4}
-            className='d-flex justify-content-start justify-content-md-end mt-3 mt-md-0'
-          >
-            <Button
-              variant='outline-secondary'
-              as={Link}
-              to='/profilo/gestione'
-            >
-              <FaPen className='me-2' /> Modifica Profilo
-            </Button>
-          </Col>
-        )}
-      </Row>
+        {/* COLONNA DETTAGLI PRINCIPALI (md=9) */}
+        <Col xs={12} md={8}>
+          <Row className='align-items-center'>
+            {/* USERNAME E RATING (md=8) */}
+            <Col xs={12} md={8}>
+              <div className='mt-4'>
+                <h1 className='fw-bold mb-0 color'>{profileTitle}</h1>
 
-      {/* ✅ SEZIONE INFORMAZIONI MODIFICATA E RIDOTTA */}
-      <Row className='mb-4'>
-        <Col xs={12} md={6}>
-          <h5 className='fw-bold mb-3'>Informazioni:</h5>
-          <ul className='list-unstyled small'>
-            <li className='d-flex align-items-center'>
-              <FaMapMarkerAlt className='me-2 text-primary' />
-              <span>{cityAndCountry}</span>
-            </li>
-          </ul>
+                <div className='d-flex align-items-center mt-1'>
+                  {isLoadingRating ? (
+                    <Spinner
+                      animation='border'
+                      size='sm'
+                      className='text-primary'
+                    />
+                  ) : reviewCount > 0 ? (
+                    <>
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar
+                          key={i}
+                          size={18}
+                          color={
+                            i < Math.round(averageRating)
+                              ? '#ffc107'
+                              : '#e4e5e9'
+                          }
+                          className='me-1'
+                        />
+                      ))}
+                      <span className='ms-2 small text-muted'>
+                        ({averageRating.toFixed(1)}/5) - {reviewCount}{' '}
+                        recensioni
+                      </span>
+                    </>
+                  ) : (
+                    <p className='text-muted small mb-0'>
+                      Nessuna recensione ancora.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Col>
+
+            {/* MODIFICA PROFILO BUTTON (md=4) */}
+            {isViewingOwnProfile && (
+              <Col
+                xs={12}
+                md={4}
+                className='d-flex justify-content-start justify-content-md-end mt-3 mt-md-0'
+              >
+                <Button
+                  variant='outline-secondary'
+                  as={Link}
+                  to='/profilo/gestione'
+                >
+                  <FaPen className='me-2' /> Modifica Profilo
+                </Button>
+              </Col>
+            )}
+          </Row>
+
+          {/* INFORMAZIONI DI BASE (Sotto il Rating/Button) */}
+          <Row className='mt-4'>
+            <Col xs={12} md={6}>
+              <h5 className='fw-bold mb-3 color'>Informazioni:</h5>
+              <ul className='list-unstyled small'>
+                <li className='d-flex align-items-center'>
+                  <FaMapMarkerAlt className='me-2 text-primary' />
+                  <span>{cityAndCountry}</span>
+                </li>
+              </ul>
+            </Col>
+          </Row>
         </Col>
       </Row>
 
@@ -307,7 +336,7 @@ function ProfilePage() {
 
           {activeView === 'annunci' && (
             <div id='products-list'>
-              <h2 className='mb-4'>
+              <h2 className='mb-4 color'>
                 {isViewingOwnProfile
                   ? 'I Miei Annunci Attivi'
                   : `Annunci di ${user.username}`}

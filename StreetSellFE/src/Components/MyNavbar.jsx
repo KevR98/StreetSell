@@ -10,13 +10,13 @@ import {
   InputGroup,
 } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
 import logo from '../assets/streetsell-logo.png';
+import avatar from '../assets/streetsell-profile-pic.png';
 import {
   BsBoxArrowRight,
   BsFillTagFill,
-  BsBoxSeamFill,
   BsPersonFill,
   BsController,
   BsSearch,
@@ -26,6 +26,7 @@ import { FaBoxOpen } from 'react-icons/fa';
 import { useState } from 'react';
 
 function MyNavbar() {
+  const location = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -34,13 +35,31 @@ function MyNavbar() {
   const [searchType, setSearchType] = useState('prodotti');
 
   const token = localStorage.getItem('accessToken');
+
   const username = useSelector((state) => state.auth.user?.username);
   const ruolo = useSelector((state) => state.auth.user?.ruolo);
 
   const isLoggedInAndLoaded = token && username;
   const isAdmin = ruolo === 'ADMIN';
-  const dropdownTitle = isAdmin ? 'Ciao, ADMIN' : `Ciao, ${username}`;
   const isLoadingUserData = token && !username;
+
+  const avatarToDisplay = avatar;
+
+  const dropdownTitle = (
+    <div className='d-flex align-items-center'>
+      <img
+        src={avatarToDisplay}
+        alt={`${username} Avatar`}
+        className='rounded-circle me-2'
+        style={{
+          width: '32px',
+          height: '32px',
+          objectFit: 'cover',
+        }}
+      />
+      {isAdmin && <span>ADMIN</span>}
+    </div>
+  );
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -75,7 +94,7 @@ function MyNavbar() {
         <Navbar.Toggle aria-controls='basic-navbar-nav' />
         <Navbar.Collapse id='basic-navbar-nav'>
           <Nav>
-            <Nav.Link as={Link} to='/'>
+            <Nav.Link as={Link} to='/' active={location.pathname === '/'}>
               Home
             </Nav.Link>
           </Nav>
@@ -125,66 +144,67 @@ function MyNavbar() {
                 Login
               </Nav.Link>
             )}
+            <div className='d-flex align-items-center'>
+              <Notification />
 
-            <Notification />
+              {isLoadingUserData && (
+                <Nav.Item className='d-flex align-items-center'>
+                  <Spinner animation='border' size='sm' className='me-2' />
+                </Nav.Item>
+              )}
 
-            {isLoadingUserData && (
-              <Nav.Item className='d-flex align-items-center'>
-                <Spinner animation='border' size='sm' className='me-2' />
-              </Nav.Item>
-            )}
-
-            {isLoggedInAndLoaded && (
-              <NavDropdown
-                title={dropdownTitle}
-                id='basic-nav-dropdown'
-                align='end'
-                className='no-caret'
-              >
-                {isAdmin && (
-                  <NavDropdown.Item as={Link} to='/admin/dashboard'>
-                    <BsController style={{ marginRight: '8px' }} />
-                    Pannello Admin
+              {isLoggedInAndLoaded && (
+                <NavDropdown
+                  title={dropdownTitle}
+                  id='basic-nav-dropdown'
+                  align='end'
+                  className='no-caret'
+                >
+                  {isAdmin && (
+                    <NavDropdown.Item as={Link} to='/admin/dashboard'>
+                      <BsController style={{ marginRight: '8px' }} />
+                      Pannello Admin
+                    </NavDropdown.Item>
+                  )}
+                  <NavDropdown.Item
+                    as={Link}
+                    to='/me'
+                    className='d-flex align-items-center'
+                  >
+                    <BsPersonFill style={{ marginRight: '8px' }} />
+                    Il Mio Profilo
                   </NavDropdown.Item>
-                )}
-                <NavDropdown.Item
-                  as={Link}
-                  to='/me'
-                  className='d-flex align-items-center'
-                >
-                  <BsPersonFill style={{ marginRight: '8px' }} />
-                  Il Mio Profilo
-                </NavDropdown.Item>
 
-                <NavDropdown.Item
-                  as={Link}
-                  to='/ordini/gestione'
-                  className='d-flex align-items-center'
-                >
-                  <FaBoxOpen style={{ marginRight: '8px' }} />
-                  Ordini
-                </NavDropdown.Item>
+                  <NavDropdown.Item
+                    as={Link}
+                    to='/ordini/gestione'
+                    className='d-flex align-items-center'
+                  >
+                    <FaBoxOpen style={{ marginRight: '8px' }} />
+                    Ordini
+                  </NavDropdown.Item>
 
-                <NavDropdown.Item
-                  as={Link}
-                  to='/crea-prodotto'
-                  className='d-flex align-items-center'
-                >
-                  <BsFillTagFill style={{ marginRight: '8px' }} />
-                  Vendi
-                </NavDropdown.Item>
+                  <NavDropdown.Item
+                    as={Link}
+                    to='/crea-prodotto'
+                    className='d-flex align-items-center'
+                  >
+                    <BsFillTagFill style={{ marginRight: '8px' }} />
+                    Vendi
+                  </NavDropdown.Item>
 
-                <NavDropdown.Divider />
+                  <NavDropdown.Divider />
 
-                <NavDropdown.Item
-                  onClick={handleLogout}
-                  className='d-flex align-items-center text-danger'
-                >
-                  <BsBoxArrowRight style={{ marginRight: '8px' }} />
-                  Logout
-                </NavDropdown.Item>
-              </NavDropdown>
-            )}
+                  <NavDropdown.Item
+                    onClick={handleLogout}
+                    className='d-flex align-items-center text-danger'
+                  >
+                    <BsBoxArrowRight style={{ marginRight: '8px' }} />
+                    Logout
+                  </NavDropdown.Item>
+                </NavDropdown>
+              )}
+            </div>
           </Nav>
         </Navbar.Collapse>
       </Container>
