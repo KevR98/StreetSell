@@ -10,6 +10,7 @@ import {
   ListGroup,
   Nav,
   Badge,
+  InputGroup,
 } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import {
@@ -19,6 +20,8 @@ import {
   FaBoxOpen,
   FaKey,
   FaExclamationTriangle,
+  FaEyeSlash,
+  FaEye,
 } from 'react-icons/fa'; // Per il redirect dopo delete
 import LoadingSpinner from './LoadingSpinner';
 import BackButton from './BackButton';
@@ -37,6 +40,9 @@ function DetailsProfile() {
   const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'account', 'shipping'
 
   const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -71,6 +77,7 @@ function DetailsProfile() {
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
     newPassword: '',
+    confirmNewPassword: '',
   });
 
   // 4. Indirizzi
@@ -370,39 +377,104 @@ function DetailsProfile() {
           Sicurezza
         </h6>
         <Form onSubmit={handleChangePassword} className='mb-5'>
+          {/* Vecchia Password (con toggle) */}
           <Form.Group className='mb-3'>
             <Form.Label>Vecchia Password</Form.Label>
-            <Form.Control
-              type='password'
-              value={passwordData.oldPassword}
-              onChange={(e) =>
-                setPasswordData({
-                  ...passwordData,
-                  oldPassword: e.target.value,
-                })
-              }
-            />
+            <InputGroup>
+              <Form.Control
+                // Usa lo stato specifico per il tipo
+                type={showOldPass ? 'text' : 'password'}
+                value={passwordData.oldPassword}
+                onChange={(e) =>
+                  setPasswordData({
+                    ...passwordData,
+                    oldPassword: e.target.value,
+                  })
+                }
+                required
+              />
+              <Button
+                variant='outline-secondary'
+                onClick={() => setShowOldPass(!showOldPass)} // Toggle specifico
+              >
+                {showOldPass ? <FaEyeSlash /> : <FaEye />}
+              </Button>
+            </InputGroup>
           </Form.Group>
+
+          {/* Nuova Password (con toggle) */}
           <Form.Group className='mb-3'>
             <Form.Label>Nuova Password</Form.Label>
-            <Form.Control
-              type='password'
-              value={passwordData.newPassword}
-              onChange={(e) =>
-                setPasswordData({
-                  ...passwordData,
-                  newPassword: e.target.value,
-                })
-              }
-            />
+            <InputGroup>
+              <Form.Control
+                // Usa lo stato specifico per il tipo
+                type={showNewPass ? 'text' : 'password'}
+                value={passwordData.newPassword}
+                onChange={(e) =>
+                  setPasswordData({
+                    ...passwordData,
+                    newPassword: e.target.value,
+                  })
+                }
+                required
+              />
+              <Button
+                variant='outline-secondary'
+                onClick={() => setShowNewPass(!showNewPass)} // Toggle specifico
+              >
+                {showNewPass ? <FaEyeSlash /> : <FaEye />}
+              </Button>
+            </InputGroup>
           </Form.Group>
+
+          {/* Conferma Nuova Password (con toggle) */}
+          <Form.Group className='mb-4'>
+            <Form.Label>Conferma Nuova Password</Form.Label>
+            <InputGroup>
+              <Form.Control
+                // Usa lo stato specifico per il tipo
+                type={showConfirmPass ? 'text' : 'password'}
+                value={passwordData.confirmNewPassword}
+                onChange={(e) =>
+                  setPasswordData({
+                    ...passwordData,
+                    confirmNewPassword: e.target.value,
+                  })
+                }
+                required
+              />
+              <Button
+                variant='outline-secondary'
+                onClick={() => setShowConfirmPass(!showConfirmPass)} // Toggle specifico
+              >
+                {showConfirmPass ? <FaEyeSlash /> : <FaEye />}
+              </Button>
+            </InputGroup>
+            {/* Aggiungi qui un messaggio di errore se le password non corrispondono */}
+            {passwordData.newPassword !== passwordData.confirmNewPassword &&
+              passwordData.confirmNewPassword.length > 0 && (
+                <Form.Text className='text-danger'>
+                  Le password non corrispondono.
+                </Form.Text>
+              )}
+          </Form.Group>
+
           <Button
             variant='outline-dark'
             size='sm'
             type='submit'
-            disabled={isLoading}
+            disabled={
+              isLoading ||
+              passwordData.newPassword !== passwordData.confirmNewPassword
+            }
           >
-            <FaKey className='me-2' /> Cambia Password
+            {isLoading ? (
+              <LoadingSpinner size='sm' />
+            ) : (
+              <>
+                <FaKey className='me-2' /> Cambia Password
+              </>
+            )}
           </Button>
         </Form>
 
