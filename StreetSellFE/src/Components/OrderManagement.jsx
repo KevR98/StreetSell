@@ -34,6 +34,7 @@ function OrderManagementPage() {
   const token = localStorage.getItem('accessToken');
   const currentUser = useSelector((state) => state.auth.user);
   const currentUserId = currentUser?.id; // ID dell'utente loggato
+  const [reviewedOrderIds, setReviewedOrderIds] = useState(new Set());
 
   // STATI PER LA RECENSIONE
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -77,6 +78,17 @@ function OrderManagementPage() {
   // FUNZIONE CHIAMATA DOPO IL SUBMIT DELLA RECENSIONE
   const handleReviewSuccess = () => {
     setShowReviewModal(false);
+
+    if (selectedOrderId) {
+      setReviewedOrderIds((prevSet) => {
+        const newSet = new Set(prevSet);
+        newSet.add(selectedOrderId);
+        return newSet;
+      });
+    }
+    setOrders((prevOrders) =>
+      prevOrders.filter((order) => order.id !== selectedOrderId)
+    );
     // Ricarichiamo gli ordini per nascondere il pulsante Recensione
     fetchOrders();
   };
@@ -203,13 +215,28 @@ function OrderManagementPage() {
     if (!isUserBuyer) return false;
 
     const status = order.statoOrdine;
-    // COMPRATORE: Mostra CONFERMATO/IN_ATTESA (annulla), SPEDITO (conferma), e COMPLETATO (recensione)
-    return (
+
+    // 1. Se l'ordine è attivo (non ancora completato), mostralo sempre
+    if (
       status === 'CONFERMATO' ||
       status === 'IN_ATTESA' ||
-      status === 'SPEDITO' ||
-      status === 'COMPLETATO'
-    );
+      status === 'SPEDITO'
+    ) {
+      return true;
+    }
+
+    // 2. Se l'ordine è COMPLETATO, mostralo SOLO se NON è stato ancora recensito
+    if (status === 'COMPLETATO') {
+      // Verifica se il backend dice che c'è già una recensione
+      const haRecensioneBackend = !!order.recensione;
+      // Verifica se l'abbiamo appena recensito noi in questa sessione
+      const haRecensioneLocale = reviewedOrderIds.has(order.id);
+
+      // Mostra la riga solo se NON c'è recensione (né dal backend né locale)
+      return !haRecensioneBackend && !haRecensioneLocale;
+    }
+
+    return false;
   });
 
   // Helper per mappare le righe della tabella
