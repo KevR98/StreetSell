@@ -8,255 +8,554 @@ import {
   Col,
   Alert,
   ListGroup,
+  Nav,
+  Badge,
 } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
-import { FaMapMarkerAlt, FaTrash, FaCheckCircle, FaStar } from 'react-icons/fa';
+import {
+  FaTrash,
+  FaUser,
+  FaCog,
+  FaBoxOpen,
+  FaKey,
+  FaExclamationTriangle,
+} from 'react-icons/fa'; // Per il redirect dopo delete
 import LoadingSpinner from './LoadingSpinner';
-import ErrorAlert from './ErrorAlert';
 import BackButton from './BackButton';
 import Indirizzo from './Indirizzo';
 
-const endpointUtenti = 'http://localhost:8888/utenti/me';
-const endpointIndirizzi = 'http://localhost:8888/indirizzi';
+// --- ENDPOINTS ---
+const ENDPOINT_ME = 'http://localhost:8888/utenti/me';
+const ENDPOINT_PASSWORD = 'http://localhost:8888/utenti/me/password'; // Ipotetico endpoint cambio pass
+const ENDPOINT_INDIRIZZI = 'http://localhost:8888/indirizzi';
 
 function DetailsProfile() {
-  const currentUser = useSelector((state) => state.auth.user);
   const token = localStorage.getItem('accessToken');
+  const currentUser = useSelector((state) => state.auth.user);
 
-  // Stati per dati personali (nome, cognome)
-  const [formData, setFormData] = useState({
-    nome: currentUser?.nome || '', // Assumi che questi campi siano nell'oggetto utente
+  // --- STATO NAVIGAZIONE ---
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'account', 'shipping'
+
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      setProfileData({
+        username: currentUser.username || '',
+        citta: currentUser.citta || '',
+        nazione: currentUser.nazione || '',
+      });
+
+      setAccountData({
+        nome: currentUser.nome || '',
+        cognome: currentUser.cognome || '',
+      });
+    }
+  }, [currentUser]);
+
+  // --- STATI DATI ---
+  // 1. Dettagli Profilo (Username, Città, Nazione)
+  const [profileData, setProfileData] = useState({
+    username: currentUser?.username || '',
+    citta: currentUser?.citta || '',
+    nazione: currentUser?.nazione || '',
+  });
+
+  // 2. Impostazioni Account (Nome, Cognome)
+  const [accountData, setAccountData] = useState({
+    nome: currentUser?.nome || '',
     cognome: currentUser?.cognome || '',
   });
-  const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
-  const [detailMessage, setDetailMessage] = useState(null); // Messaggio di successo/errore
 
-  // Stati per indirizzi
+  // 3. Cambio Password
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+  });
+
+  // 4. Indirizzi
   const [addresses, setAddresses] = useState([]);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
-  const [errorAddresses, setErrorAddresses] = useState(null);
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [isAddingNewAddr, setIsAddingNewAddr] = useState(false);
 
-  // Funzione per caricare gli indirizzi (la stessa usata in Order.jsx)
+  // --- STATI UI (Loading/Errori/Successi) ---
+  const [isLoading, setIsLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', message: '' }); // type: 'success' | 'danger'
+
+  // --- EFFETTI ---
+  useEffect(() => {
+    if (activeTab === 'shipping') {
+      fetchUserAddresses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // --- FUNZIONI DI FETCH ---
   const fetchUserAddresses = () => {
-    if (!token) return;
-
     setLoadingAddresses(true);
-    setErrorAddresses(null);
-
-    fetch(endpointIndirizzi, {
+    fetch(ENDPOINT_INDIRIZZI, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => {
-        if (!res.ok) throw new Error('Impossibile caricare gli indirizzi.');
-        return res.json();
-      })
-      .then(setAddresses)
-      .catch((err) => {
-        console.error(err);
-        setErrorAddresses(err.message);
-      })
+      .then((res) => res.json())
+      .then((data) => setAddresses(data))
+      .catch((err) => console.error(err))
       .finally(() => setLoadingAddresses(false));
   };
 
-  // Funzione per eliminare un indirizzo
-  const handleDeleteAddress = (id) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo indirizzo?'))
-      return;
+  // --- GESTORI SUBMIT ---
 
-    fetch(`${endpointIndirizzi}/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Eliminazione fallita.');
-        // Aggiorna la lista nel frontend
-        fetchUserAddresses();
-      })
-      .catch((err) => {
-        alert(`Errore: ${err.message}`);
-      });
+  // 1. Aggiorna Username e Posizione
+  const handleUpdateProfile = (e) => {
+    e.preventDefault();
+    submitUpdate(profileData, 'Profilo aggiornato con successo!');
   };
 
-  // Funzione per aggiornare Nome/Cognome (Richiede un endpoint PUT /utenti/me)
-  const handleUpdateDetails = (e) => {
+  // 2. Aggiorna Nome e Cognome
+  const handleUpdateAccountInfo = (e) => {
     e.preventDefault();
-    setIsUpdatingDetails(true);
-    setDetailMessage(null);
+    submitUpdate(accountData, 'Informazioni account aggiornate!');
+  };
 
-    fetch(endpointUtenti, {
+  // Helper generico per chiamate PUT a /utenti/me
+  const submitUpdate = (payload, successMsg) => {
+    setIsLoading(true);
+    setFeedback({ type: '', message: '' });
+
+    fetch(ENDPOINT_ME, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     })
-      .then((res) => {
-        if (!res.ok)
-          return res.json().then((err) => {
-            throw new Error(err.message || 'Aggiornamento fallito.');
-          });
+      .then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Errore aggiornamento');
+        }
         return res.json();
       })
-      // eslint-disable-next-line no-unused-vars
-      .then((updatedUser) => {
-        setDetailMessage({
-          variant: 'success',
-          text: 'Dettagli aggiornati con successo!',
-        });
+      .then(() => {
+        setFeedback({ type: 'success', message: successMsg });
+        // Qui dovresti fare un dispatch per aggiornare Redux se necessario
+        setIsEditingUsername(false);
       })
       .catch((err) => {
-        setDetailMessage({ variant: 'danger', text: `Errore: ${err.message}` });
+        setFeedback({ type: 'danger', message: err.message });
       })
-      .finally(() => setIsUpdatingDetails(false));
+      .finally(() => setIsLoading(false));
   };
 
-  useEffect(() => {
-    fetchUserAddresses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  // 3. Cambio Password
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setFeedback({ type: '', message: '' });
 
-  if (!currentUser)
-    return <Alert variant='danger'>Accesso Negato. Effettua il login.</Alert>;
+    fetch(ENDPOINT_PASSWORD, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(passwordData),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Impossibile cambiare password');
+        setFeedback({
+          type: 'success',
+          message: 'Password cambiata con successo!',
+        });
+        setPasswordData({ oldPassword: '', newPassword: '' });
+      })
+      .catch((err) => {
+        setFeedback({ type: 'danger', message: err.message });
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  // 4. Elimina Account
+  const handleDeleteAccount = () => {
+    if (
+      window.confirm(
+        'SEI SICURO? Questa azione è irreversibile e cancellerà il tuo account.'
+      )
+    ) {
+      fetch(ENDPOINT_ME, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Errore cancellazione account');
+          alert('Account eliminato. Verrai reindirizzato.');
+          localStorage.clear();
+          window.location.href = '/login'; // O usa navigate
+        })
+        .catch((err) => alert(err.message));
+    }
+  };
+
+  // 5. Elimina Indirizzo
+  const handleDeleteAddress = (id) => {
+    if (!window.confirm('Eliminare questo indirizzo?')) return;
+    fetch(`${ENDPOINT_INDIRIZZI}/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(() => fetchUserAddresses());
+  };
+
+  // --- RENDER COMPONENTI ---
+
+  const renderFeedback = () => {
+    if (!feedback.message) return null;
+    return (
+      <Alert
+        variant={feedback.type}
+        onClose={() => setFeedback({ type: '', message: '' })}
+        dismissible
+      >
+        {feedback.message}
+      </Alert>
+    );
+  };
+
+  // CONTENUTO: TAB PROFILO
+  const renderProfileTab = () => (
+    <Card className='shadow-sm border-0'>
+      <Card.Body className='p-4'>
+        <h4 className='mb-4'>Dettagli Profilo</h4>
+        {renderFeedback()}
+
+        <Form onSubmit={handleUpdateProfile}>
+          {/* 1. USERNAME (Layout come da immagine) */}
+          <div className='d-flex justify-content-between align-items-center mb-2'>
+            <h5 className='m-0'>Username</h5>
+            {/* Il bottone Modifica appare solo se non siamo già in modalità modifica */}
+            {!isEditingUsername && (
+              <Button
+                variant='outline-secondary'
+                onClick={() => setIsEditingUsername(true)}
+              >
+                Modifica username
+              </Button>
+            )}
+          </div>
+
+          {/* 1b. Visualizzazione/Modifica dell'Username */}
+          {isEditingUsername ? (
+            // Modalità MODIFICA: Mostra il Form.Control e il bottone Annulla
+            <div className='d-flex gap-2 align-items-center mb-4'>
+              <Form.Control
+                type='text'
+                value={profileData.username}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, username: e.target.value })
+                }
+                required
+              />
+              <Button
+                variant='link'
+                size='sm'
+                onClick={() => setIsEditingUsername(false)}
+                className='text-danger p-0'
+              >
+                Annulla
+              </Button>
+            </div>
+          ) : (
+            // Modalità VISUALIZZAZIONE: Mostra solo il valore
+            <Alert variant='light' className='py-2 mb-4 fw-bold'>
+              {profileData.username}
+            </Alert>
+          )}
+
+          <hr className='my-4' />
+
+          {/* 2. POSIZIONE (Città, Nazione) - Resta invariata */}
+          <h5 className='mb-3'>Posizione</h5>
+
+          <Row>
+            <Col md={6}>
+              <Form.Group className='mb-3'>
+                <Form.Label>Città</Form.Label>
+                <Form.Control
+                  type='text'
+                  value={profileData.citta}
+                  placeholder='Es. Milano'
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, citta: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className='mb-3'>
+                <Form.Label>Nazione</Form.Label>
+                <Form.Control
+                  type='text'
+                  value={profileData.nazione}
+                  placeholder='Es. Italia'
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, nazione: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* 3. BOTTONE DI SALVATAGGIO FINALE */}
+          <div className='text-end mt-4'>
+            <Button variant='primary' type='submit' disabled={isLoading}>
+              {isLoading ? <LoadingSpinner size='sm' /> : 'Salva Modifiche'}
+            </Button>
+          </div>
+        </Form>
+      </Card.Body>
+    </Card>
+  );
+
+  // CONTENUTO: TAB ACCOUNT
+  const renderAccountTab = () => (
+    <Card className='shadow-sm border-0'>
+      <Card.Body className='p-4'>
+        <h4 className='mb-4'>Impostazioni dell'Account</h4>
+        {renderFeedback()}
+
+        {/* Sezione Anagrafica */}
+        <h6 className='text-muted text-uppercase small ls-1 mb-3'>
+          Anagrafica
+        </h6>
+        <Form onSubmit={handleUpdateAccountInfo} className='mb-5'>
+          <Row>
+            <Col md={6}>
+              <Form.Group className='mb-3'>
+                <Form.Label>Nome</Form.Label>
+                <Form.Control
+                  type='text'
+                  value={accountData.nome}
+                  onChange={(e) =>
+                    setAccountData({ ...accountData, nome: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className='mb-3'>
+                <Form.Label>Cognome</Form.Label>
+                <Form.Control
+                  type='text'
+                  value={accountData.cognome}
+                  onChange={(e) =>
+                    setAccountData({ ...accountData, cognome: e.target.value })
+                  }
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+          <Button
+            variant='outline-primary'
+            size='sm'
+            type='submit'
+            disabled={isLoading}
+          >
+            Aggiorna
+          </Button>
+        </Form>
+
+        <hr />
+
+        {/* Sezione Password */}
+        <h6 className='text-muted text-uppercase small ls-1 mb-3 mt-4'>
+          Sicurezza
+        </h6>
+        <Form onSubmit={handleChangePassword} className='mb-5'>
+          <Form.Group className='mb-3'>
+            <Form.Label>Vecchia Password</Form.Label>
+            <Form.Control
+              type='password'
+              value={passwordData.oldPassword}
+              onChange={(e) =>
+                setPasswordData({
+                  ...passwordData,
+                  oldPassword: e.target.value,
+                })
+              }
+            />
+          </Form.Group>
+          <Form.Group className='mb-3'>
+            <Form.Label>Nuova Password</Form.Label>
+            <Form.Control
+              type='password'
+              value={passwordData.newPassword}
+              onChange={(e) =>
+                setPasswordData({
+                  ...passwordData,
+                  newPassword: e.target.value,
+                })
+              }
+            />
+          </Form.Group>
+          <Button
+            variant='outline-dark'
+            size='sm'
+            type='submit'
+            disabled={isLoading}
+          >
+            <FaKey className='me-2' /> Cambia Password
+          </Button>
+        </Form>
+
+        <hr />
+
+        {/* Zona Pericolo */}
+        <div className='bg-danger-subtle p-3 rounded border border-danger'>
+          <h6 className='text-danger fw-bold'>
+            <FaExclamationTriangle /> Zona Pericolo
+          </h6>
+          <p className='small text-muted mb-2'>
+            Una volta cancellato l'account, non è possibile tornare indietro.
+          </p>
+          <Button variant='danger' size='sm' onClick={handleDeleteAccount}>
+            Elimina Account
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+
+  // CONTENUTO: TAB SPEDIZIONE
+  const renderShippingTab = () => (
+    <Card className='shadow-sm border-0'>
+      <Card.Body className='p-4'>
+        <div className='d-flex justify-content-between align-items-center mb-4'>
+          <h4 className='m-0'>Indirizzi di Spedizione</h4>
+          {!isAddingNewAddr && (
+            <Button
+              variant='success'
+              size='sm'
+              onClick={() => setIsAddingNewAddr(true)}
+            >
+              + Aggiungi Nuovo
+            </Button>
+          )}
+        </div>
+
+        {loadingAddresses && <LoadingSpinner />}
+
+        {isAddingNewAddr ? (
+          <div className='bg-light p-3 rounded'>
+            <h5>Nuovo Indirizzo</h5>
+            <Indirizzo
+              token={token}
+              onAddressAdded={() => {
+                fetchUserAddresses();
+                setIsAddingNewAddr(false);
+              }}
+              onCancel={() => setIsAddingNewAddr(false)}
+            />
+          </div>
+        ) : (
+          <ListGroup variant='flush'>
+            {addresses.length > 0 ? (
+              addresses.map((addr) => (
+                <ListGroup.Item
+                  key={addr.id}
+                  className='d-flex justify-content-between align-items-center py-3'
+                >
+                  <div>
+                    <div className='fw-bold'>
+                      {addr.via}, {addr.civico}
+                    </div>
+                    <div className='text-muted small'>
+                      {addr.cap} {addr.citta} ({addr.provincia}), {addr.nazione}
+                    </div>
+                    {addr.isDefault && (
+                      <Badge bg='success' className='mt-1'>
+                        Predefinito
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant='outline-danger'
+                    size='sm'
+                    onClick={() => handleDeleteAddress(addr.id)}
+                  >
+                    <FaTrash />
+                  </Button>
+                </ListGroup.Item>
+              ))
+            ) : (
+              <Alert variant='info'>
+                Non hai ancora salvato nessun indirizzo.
+              </Alert>
+            )}
+          </ListGroup>
+        )}
+      </Card.Body>
+    </Card>
+  );
+
+  if (!currentUser) return <Alert variant='danger'>Accesso Negato.</Alert>;
 
   return (
     <Container className='my-5'>
       <BackButton />
-      <h1 className='mb-4'>⚙️ Gestione Profilo</h1>
+      <h2 className='mb-4 fw-bold'>Impostazioni</h2>
 
       <Row>
-        {/* DATI PERSONALI (Nome, Cognome) */}
-        <Col md={5} className='mb-4'>
-          <Card className='shadow-sm'>
-            <Card.Header as='h5' className='bg-info text-white'>
-              Dati Personali
-            </Card.Header>
-            <Card.Body>
-              <Form onSubmit={handleUpdateDetails}>
-                <Form.Group className='mb-3'>
-                  <Form.Label>Nome</Form.Label>
-                  <Form.Control
-                    type='text'
-                    name='nome'
-                    value={formData.nome}
-                    onChange={(e) =>
-                      setFormData({ ...formData, nome: e.target.value })
-                    }
-                    required
-                  />
-                </Form.Group>
-                <Form.Group className='mb-3'>
-                  <Form.Label>Cognome</Form.Label>
-                  <Form.Control
-                    type='text'
-                    name='cognome'
-                    value={formData.cognome}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cognome: e.target.value })
-                    }
-                    required
-                  />
-                </Form.Group>
-                <div className='text-end'>
-                  {detailMessage && (
-                    <Alert variant={detailMessage.variant} className='mt-3'>
-                      {detailMessage.text}
-                    </Alert>
-                  )}
-                  <Button
-                    variant='primary'
-                    type='submit'
-                    disabled={isUpdatingDetails}
-                  >
-                    {isUpdatingDetails ? (
-                      <LoadingSpinner size='sm' />
-                    ) : (
-                      'Salva Modifiche'
-                    )}
-                  </Button>
-                </div>
-              </Form>
+        {/* COLONNA SINISTRA: NAVIGAZIONE */}
+        <Col md={3} className='mb-4'>
+          <Card className='shadow-sm border-0'>
+            <Card.Body className='p-2'>
+              <Nav
+                variant='pills'
+                className='flex-column gap-1'
+                activeKey={activeTab}
+              >
+                <Nav.Link
+                  eventKey='profile'
+                  onClick={() => setActiveTab('profile')}
+                  className={
+                    activeTab === 'profile'
+                      ? 'bg-primary text-white fw-bold'
+                      : 'text-dark'
+                  }
+                >
+                  <FaUser className='me-2' /> Dettagli Profilo
+                </Nav.Link>
+                <Nav.Link
+                  eventKey='account'
+                  onClick={() => setActiveTab('account')}
+                  className={
+                    activeTab === 'account'
+                      ? 'bg-primary text-white fw-bold'
+                      : 'text-dark'
+                  }
+                >
+                  <FaCog className='me-2' /> Impostazioni Account
+                </Nav.Link>
+                <Nav.Link
+                  eventKey='shipping'
+                  onClick={() => setActiveTab('shipping')}
+                  className={
+                    activeTab === 'shipping'
+                      ? 'bg-primary text-white fw-bold'
+                      : 'text-dark'
+                  }
+                >
+                  <FaBoxOpen className='me-2' /> Spedizione
+                </Nav.Link>
+              </Nav>
             </Card.Body>
           </Card>
         </Col>
 
-        {/* INDIRIZZI DI SPEDIZIONE */}
-        <Col md={7} className='mb-4'>
-          <Card className='shadow-sm'>
-            <Card.Header as='h5' className='bg-info text-white'>
-              <FaMapMarkerAlt className='me-2' /> Indirizzi di Spedizione
-            </Card.Header>
-            <Card.Body>
-              {errorAddresses && <ErrorAlert message={errorAddresses} />}
-              {loadingAddresses ? (
-                <LoadingSpinner />
-              ) : (
-                <>
-                  {/* Lista Indirizzi Esistenti */}
-                  <ListGroup className='mb-3'>
-                    {addresses.length > 0 ? (
-                      addresses.map((addr) => (
-                        <ListGroup.Item
-                          key={addr.id}
-                          className='d-flex justify-content-between align-items-center'
-                        >
-                          <div>
-                            {addr.via}, {addr.cap} {addr.citta} (
-                            {addr.provincia}) - {addr.nazione}
-                            {/* Supponiamo che l'indirizzo default abbia un flag isDefault: true */}
-                            {addr.isDefault && (
-                              <Badge bg='success' className='ms-2'>
-                                Predefinito
-                              </Badge>
-                            )}
-                          </div>
-                          <div>
-                            {/* Bottone per impostare come predefinito (logica da implementare nel BE) */}
-                            <Button
-                              variant='danger'
-                              size='sm'
-                              onClick={() => handleDeleteAddress(addr.id)}
-                            >
-                              <FaTrash />
-                            </Button>
-                          </div>
-                        </ListGroup.Item>
-                      ))
-                    ) : (
-                      <Alert variant='secondary'>
-                        Nessun indirizzo salvato.
-                      </Alert>
-                    )}
-                  </ListGroup>
-
-                  {/* Form di Aggiunta Nuovo Indirizzo */}
-                  {isAddingNew ? (
-                    <Card className='p-3 bg-light'>
-                      <h5>Aggiungi Nuovo Indirizzo</h5>
-                      <Indirizzo
-                        onAddressAdded={() => {
-                          fetchUserAddresses(); // Ricarica la lista dopo l'aggiunta
-                          setIsAddingNew(false);
-                        }}
-                        onCancel={() => setIsAddingNew(false)}
-                        token={token}
-                      />
-                    </Card>
-                  ) : (
-                    <div className='text-end'>
-                      <Button
-                        variant='outline-info'
-                        onClick={() => setIsAddingNew(true)}
-                      >
-                        + Aggiungi Nuovo Indirizzo
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-            </Card.Body>
-          </Card>
+        {/* COLONNA DESTRA: CONTENUTO DINAMICO */}
+        <Col md={9}>
+          {activeTab === 'profile' && renderProfileTab()}
+          {activeTab === 'account' && renderAccountTab()}
+          {activeTab === 'shipping' && renderShippingTab()}
         </Col>
       </Row>
     </Container>
