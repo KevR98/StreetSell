@@ -86,9 +86,6 @@ function OrderManagementPage() {
         return newSet;
       });
     }
-    setOrders((prevOrders) =>
-      prevOrders.filter((order) => order.id !== selectedOrderId)
-    );
     // Ricarichiamo gli ordini per nascondere il pulsante Recensione
     fetchOrders();
   };
