@@ -26,11 +26,22 @@
 }
 
 body {
-  /* Grigio chiaro standard di Bootstrap (o usa #e9ecef per uno più scuro) */
-  background-image: url(./assets/streetsell-background.png);
-
-  /* Opzionale: assicura che il colore copra sempre tutta l'altezza */
+  /* Proprietà che hai già: */
+  background-color: #e3e8f1;
+  /* background-image: url(./assets/streetsell-background.png); */
   min-height: 100vh;
+
+  /* ✅ NUOVE PROPRIETÀ FONDAMENTALI: */
+
+  /* 1. Assicura che l'immagine copra sempre l'intero contenitore */
+  background-size: cover;
+
+  /* 2. Impedisce che l'immagine si sposti o si 'stacchi' durante lo scorrimento */
+  background-attachment: fixed;
+
+  /* 3. Assicura che l'immagine non si ripeta e sia centrata */
+  background-repeat: no-repeat;
+  background-position: center center;
 }
 
 .color {
@@ -41,9 +52,15 @@ body {
 
 /* Navbar */
 @media (max-width: 576px) {
+  /* Assicurati che il padding del body sia disattivato se stai usando il contenitore interno */
   body {
-    /* Altezza approssimativa della barra fissa (circa 50-60px) */
-    padding-bottom: 65px;
+    padding-bottom: 0 !important;
+  }
+
+  /* ✅ NUOVA REGOLA: Applica margine AL CONTENUTO per spingerlo sopra la barra fissa */
+  /* Questa classe è usata dal div che contiene le routes in App.jsx */
+  .flex-grow-1 {
+    margin-bottom: 65px; /* Prova con 65px, se non basta, aumenta a 75px */
   }
 }
 

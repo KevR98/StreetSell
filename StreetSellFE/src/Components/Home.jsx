@@ -10,38 +10,30 @@ function Home() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Resetta lo stato di errore all'inizio del fetch
     setError(null);
     setIsLoading(true);
 
-    // Avvia la catena fetch
     fetch(endpoint)
       .then((res) => {
-        // Controlla lo status HTTP
         if (!res.ok) {
           throw new Error(
             `Errore HTTP ${res.status}: Impossibile caricare gli annunci.`
           );
         }
-        // Converte la risposta in JSON e passa al prossimo .then()
         return res.json();
       })
       .then((data) => {
-        // Estrai la lista di prodotti dal campo 'content' di Spring Page (essenziale!)
         if (data && data.content) {
           setProdotti(data.content);
         } else {
-          // Caso di fallback se l'endpoint non usa la paginazione
           setProdotti(data);
         }
       })
       .catch((err) => {
-        // Gestisce qualsiasi errore (di rete o lanciato da throw new Error)
         console.error('Errore nel caricamento degli annunci:', err);
         setError(err.message);
       })
       .finally(() => {
-        // Esegue questo blocco alla fine, che la chiamata sia andata bene o male
         setIsLoading(false);
       });
   }, []);
@@ -70,15 +62,20 @@ function Home() {
     );
   }
 
-  // --- RENDERING FINALE (Il Loop) ---
+  // --- RENDERING FINALE ---
   return (
     <Container className='my-5'>
       <h1 className='mb-4 text-center'>Novità</h1>
 
-      <Row xs={1} md={2} lg={3} xl={4} className='g-4'>
+      {/* ✅ MODIFICA QUI:
+        xs={2} -> 2 colonne su Mobile (Extra Small e Small)
+        md={3} -> 3 colonne su Tablet (Medium)
+        lg={4} -> 4 colonne su Desktop (Large)
+        xl={5} -> 5 colonne su Schermi molto grandi (Extra Large)
+      */}
+      <Row xs={2} md={3} lg={4} xl={5} className='g-3'>
         {prodotti.map((singoloProdotto) => (
           <Col key={singoloProdotto.id}>
-            {/* Passa il singolo prodotto alla Card */}
             <ProductCard prodotto={singoloProdotto} />
           </Col>
         ))}
