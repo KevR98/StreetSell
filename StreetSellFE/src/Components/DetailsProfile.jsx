@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Card,
@@ -14,12 +14,11 @@ import { FaUser, FaCog, FaBoxOpen } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 import BackButton from './BackButton';
 
-// ✅ IMPORT NUOVE COMPONENTI
+// IMPORT NUOVE COMPONENTI
 import EditProfilePage from './EditProfilePage';
 import SettingsPage from './SettingsPage';
 import SettingsAddress from './SettingsAddress';
 
-// ✅ NUOVO COLORE BRANDING (Mantenuto qui per la Navigazione)
 const BRAND_COLOR = '#fa8229';
 
 // Endpoints
@@ -64,10 +63,8 @@ function DetailsProfile() {
   const [isAddingNewAddr, setIsAddingNewAddr] = useState(false);
   // --- FINE STATI ---
 
-  // --- EFFETTI E FUNZIONI (Devono rimanere qui per accedere a tutti gli stati e dispatch) ---
-
+  // --- EFFETTI E FUNZIONI ---
   useEffect(() => {
-    /* ... Logica di sincronizzazione currentUser ... */
     if (currentUser) {
       setProfileData((prev) => ({
         ...prev,
@@ -91,7 +88,6 @@ function DetailsProfile() {
   }, [activeTab]);
 
   const fetchUserAddresses = () => {
-    /* ... Logica fetch indirizzi ... */
     setLoadingAddresses(true);
     fetch(ENDPOINT_INDIRIZZI, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
@@ -101,7 +97,6 @@ function DetailsProfile() {
   };
 
   const submitTextUpdate = (payload, successMsg) => {
-    /* ... Logica PUT /me ... */
     setIsLoading(true);
     setFeedback({ type: '', message: '' });
     fetch(ENDPOINT_ME, {
@@ -128,7 +123,6 @@ function DetailsProfile() {
   };
 
   const handleUploadAvatar = async () => {
-    /* ... Logica PATCH /avatar ... */
     if (!selectedFile) return;
     setIsLoading(true);
     setFeedback({ type: '', message: '' });
@@ -158,7 +152,6 @@ function DetailsProfile() {
   };
 
   const handleDeleteAvatar = async () => {
-    /* ... Logica DELETE /avatar ... */
     if (!window.confirm('Vuoi davvero rimuovere la foto profilo?')) return;
     setIsLoading(true);
     setFeedback({ type: '', message: '' });
@@ -187,7 +180,6 @@ function DetailsProfile() {
   };
 
   const renderFeedback = () => {
-    /* ... Logica Alert Feedback ... */
     if (!feedback || !feedback.message) return null;
     return (
       <Alert
@@ -201,7 +193,6 @@ function DetailsProfile() {
   };
 
   const handleChangePassword = (e) => {
-    /* ... Logica Cambio Password ... */
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
       setFeedback({
@@ -237,19 +228,16 @@ function DetailsProfile() {
   };
 
   const handleUpdateAccountInfo = (e) => {
-    /* ... Logica Aggiorna Nome/Cognome ... */
     e.preventDefault();
     submitTextUpdate(accountData, 'Informazioni account aggiornate!');
   };
 
   const handleUpdateProfile = (e) => {
-    /* ... Logica Aggiorna Username/Posizione ... */
     e.preventDefault();
     submitTextUpdate(profileData, 'Dettagli profilo aggiornati con successo!');
   };
 
   const handleDeleteAccount = () => {
-    /* ... Logica Disattivazione Account ... */
     if (window.confirm('SEI SICURO? Azione irreversibile.')) {
       fetch(ENDPOINT_ME, {
         method: 'DELETE',
@@ -266,7 +254,6 @@ function DetailsProfile() {
   };
 
   const handleDeleteAddress = (id) => {
-    /* ... Logica Delete Indirizzo ... */
     if (!window.confirm('Eliminare indirizzo?')) return;
     fetch(`${ENDPOINT_INDIRIZZI}/${id}`, {
       method: 'DELETE',
@@ -279,59 +266,69 @@ function DetailsProfile() {
   return (
     <Container className='my-5'>
       <BackButton />
-      <h2 className='mb-4 fw-bold'>Impostazioni</h2>
+      <h2 className='mb-3 fs-3 fs-md-2 fw-bold'>Impostazioni</h2>
+
       <Row>
-        <Col md={3} className='mb-4'>
+        {/* === COLONNA NAVIGAZIONE (XS=12, MD=3) === */}
+        <Col xs={12} md={3} className='mb-4'>
           <Card className='border-0' style={{ background: 'transparent' }}>
-            <Card.Body className='p-2'>
+            <Card.Body className='p-0 p-md-2'>
+              {/* ✅ MODIFICA: flex-column SEMPRE (uno sotto l'altro) */}
               <Nav
                 variant='pills'
-                className='flex-column gap-1'
+                className='flex-column gap-2 mb-3 mb-md-0'
                 activeKey={activeTab}
               >
                 {/* Nav Link: Dettagli Profilo */}
                 <Nav.Link
                   eventKey='profile'
                   onClick={() => setActiveTab('profile')}
-                  className={
-                    activeTab === 'profile' ? 'text-white fw-bold' : 'text-dark'
-                  }
+                  // ✅ w-100 per occupare tutta la larghezza su mobile
+                  className={`w-100 text-start ${
+                    activeTab === 'profile'
+                      ? 'text-white fw-bold fs-7-custom'
+                      : 'text-dark fs-7-custom'
+                  }`}
                   style={
                     activeTab === 'profile'
                       ? { backgroundColor: BRAND_COLOR }
-                      : {}
+                      : { backgroundColor: 'white', border: '1px solid #eee' } // Aggiunto bordo leggero per distinzione
                   }
                 >
                   <FaUser className='me-2' /> Dettagli Profilo
                 </Nav.Link>
+
                 {/* Nav Link: Impostazioni Account */}
                 <Nav.Link
                   eventKey='account'
                   onClick={() => setActiveTab('account')}
-                  className={
-                    activeTab === 'account' ? 'text-white fw-bold' : 'text-dark'
-                  }
+                  className={`w-100 text-start ${
+                    activeTab === 'account'
+                      ? 'text-white fw-bold fs-7-custom'
+                      : 'text-dark fs-7-custom'
+                  }`}
                   style={
                     activeTab === 'account'
                       ? { backgroundColor: BRAND_COLOR }
-                      : {}
+                      : { backgroundColor: 'white', border: '1px solid #eee' }
                   }
                 >
                   <FaCog className='me-2' /> Impostazioni Account
                 </Nav.Link>
+
                 {/* Nav Link: Spedizione */}
                 <Nav.Link
                   eventKey='shipping'
                   onClick={() => setActiveTab('shipping')}
-                  className={
+                  className={`w-100 text-start ${
                     activeTab === 'shipping'
-                      ? 'text-white fw-bold'
-                      : 'text-dark'
-                  }
+                      ? 'text-white fw-bold fs-7-custom'
+                      : 'text-dark fs-7-custom'
+                  }`}
                   style={
                     activeTab === 'shipping'
                       ? { backgroundColor: BRAND_COLOR }
-                      : {}
+                      : { backgroundColor: 'white', border: '1px solid #eee' }
                   }
                 >
                   <FaBoxOpen className='me-2' /> Spedizione
@@ -340,8 +337,9 @@ function DetailsProfile() {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={9}>
-          {/* VISTE DEL CONTENUTO */}
+
+        {/* === COLONNA CONTENUTO (XS=12, MD=9) === */}
+        <Col xs={12} md={9}>
           {activeTab === 'profile' && (
             <EditProfilePage
               profileData={profileData}

@@ -9,7 +9,6 @@ import { FaMapMarkerAlt, FaPen, FaStar } from 'react-icons/fa';
 import { BsBoxSeamFill, BsStarHalf } from 'react-icons/bs';
 import ProductCard from './ProductCard';
 
-// ✅ RINOMINATO PER CHIAREZZA
 import avatarDefault from '../assets/streetsell-profile-pic.png';
 
 // Endpoint pubblico per recuperare i dati utente
@@ -25,9 +24,8 @@ const RATING_ENDPOINT = 'http://localhost:8888/utenti';
 // NUOVO ENDPOINT INDIRIZZI
 const ADDRESSES_ENDPOINT = 'http://localhost:8888/indirizzi';
 
-// ✅ BRAND COLOR
 const BRAND_COLOR = '#fa8229';
-const BRAND_HOVER_FILL = '#fff3e0'; // Sfondo molto chiaro per l'effetto hover outline
+const BRAND_HOVER_FILL = '#fff3e0';
 
 function ProfilePage() {
   const currentUser = useSelector((state) => state.auth.user);
@@ -53,7 +51,7 @@ function ProfilePage() {
 
   const [myAddresses, setMyAddresses] = useState([]);
 
-  // ✅ STATI HOVER PER BOTTONI
+  // STATI HOVER PER BOTTONI
   const [hoverModifica, setHoverModifica] = useState(false);
   const [hoverAnnunci, setHoverAnnunci] = useState(false);
   const [hoverRecensioni, setHoverRecensioni] = useState(false);
@@ -172,7 +170,7 @@ function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userToDisplay, activeView, fetchProducts, fetchRating]);
 
-  // ✅ FUNZIONE PER CALCOLARE LO STILE DEL BOTTONE IN BASE ALLO STATO
+  // FUNZIONE PER CALCOLARE LO STILE DEL BOTTONE IN BASE ALLO STATO
   const getButtonStyle = (isActive, isHovering) => {
     if (isActive) {
       // Stile Attivo (Arancione Pieno)
@@ -180,7 +178,6 @@ function ProfilePage() {
         backgroundColor: BRAND_COLOR,
         borderColor: BRAND_COLOR,
         color: 'white',
-        // Hover per stato attivo (leggermente più scuro, opzionale)
         opacity: isHovering ? 0.9 : 1,
       };
     } else {
@@ -188,7 +185,6 @@ function ProfilePage() {
       return {
         borderColor: BRAND_COLOR,
         color: BRAND_COLOR,
-        // Sfondo trasparente che viene sovrascritto dall'hover
         backgroundColor: isHovering ? BRAND_HOVER_FILL : 'transparent',
       };
     }
@@ -233,7 +229,7 @@ function ProfilePage() {
     ? `${mainAddress.citta}, ${mainAddress.nazione}`
     : locationFallback;
 
-  // ✅ CORREZIONE LOGICA AVATAR:
+  // CORREZIONE LOGICA AVATAR:
   const hasValidAvatar =
     user.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const displayAvatarUrl = hasValidAvatar ? user.avatarUrl : avatarDefault;
@@ -242,37 +238,48 @@ function ProfilePage() {
     <Container className='my-5'>
       <BackButton />
 
-      <Row className='mb-4'>
-        {/* COLONNA AVATAR (md=3) */}
+      {/* ✅ MODIFICA LAYOUT PER 1440px: 
+         - Aggiunto justify-content-md-center per centrare tutto il blocco se vuoi,
+           oppure lascialo standard.
+         - Usiamo gap-4 o gap-md-5 per gestire la distanza precisa tra avatar e testo
+           senza dipendere dalla griglia larga.
+      */}
+      <Row className='mb-4 justify-content-md-center'>
+        {/* ✅ COLONNA AVATAR: md="auto" 
+            La colonna si restringe esattamente alla larghezza dell'immagine (200px).
+            Niente più spazio vuoto enorme a destra dell'avatar.
+        */}
         <Col
           xs={12}
-          md={3}
-          className='d-flex justify-content-center justify-content-md-start mb-4'
+          md='auto'
+          className='d-flex justify-content-center justify-content-md-start mb-4 mb-md-0'
         >
-          <div className='ms-5'>
+          {/* ✅ RIMOSSO ms-lg-4 per evitare margine sinistro indesiderato */}
+          <div className=''>
             <img
               src={displayAvatarUrl}
               alt={`${user.username} Avatar`}
-              className='rounded-circle border-0'
-              style={{ width: '200px', height: '200px', objectFit: 'cover' }}
+              className='rounded-circle border-0 avatar-responsive'
             />
           </div>
         </Col>
 
-        {/* COLONNA DETTAGLI PRINCIPALI (md=9) */}
-        <Col xs={12} md={8}>
+        {/* ✅ COLONNA DETTAGLI: md={true} (o semplicemente Col)
+            Prende tutto lo spazio rimanente subito dopo l'avatar.
+            Aggiunto ps-md-4 per dare un po' di respiro (padding left) dall'avatar.
+        */}
+        <Col xs={12} md={true} className='ps-md-4'>
           <Row className='align-items-center'>
-            {/* USERNAME E RATING (md=8) */}
+            {/* USERNAME E RATING */}
             <Col xs={12} md={8}>
-              <div className='mt-4'>
-                <h1 className='fw-bold mb-0'>{profileTitle}</h1>
+              <div className='mt-2 mt-md-4'>
+                <h1 className='fw-bold mb-0 fs-2 fs-md-1'>{profileTitle}</h1>
 
                 <div className='d-flex align-items-center mt-1'>
                   {isLoadingRating ? (
                     <Spinner
                       animation='border'
                       size='sm'
-                      // ✅ BRAND COLOR SPINNER
                       style={{ color: BRAND_COLOR }}
                     />
                   ) : reviewCount > 0 ? (
@@ -280,22 +287,22 @@ function ProfilePage() {
                       {[...Array(5)].map((_, i) => (
                         <FaStar
                           key={i}
-                          size={18}
+                          size={16}
                           color={
                             i < Math.round(averageRating)
-                              ? '#ffc107' // Giallo standard per le stelle
+                              ? '#ffc107'
                               : '#e4e5e9'
                           }
                           className='me-1'
                         />
                       ))}
-                      <span className='ms-2 small text-muted'>
+                      <span className='ms-2 small text-muted fs-7-custom fs-md-6'>
                         ({averageRating.toFixed(1)}/5) - {reviewCount}{' '}
                         recensioni
                       </span>
                     </>
                   ) : (
-                    <p className='text-muted small mb-0'>
+                    <p className='text-muted small mb-0 fs-7-custom fs-md-6'>
                       Nessuna recensione ancora.
                     </p>
                   )}
@@ -303,21 +310,20 @@ function ProfilePage() {
               </div>
             </Col>
 
-            {/* MODIFICA PROFILO BUTTON (md=4) */}
+            {/* MODIFICA PROFILO BUTTON */}
             {isViewingOwnProfile && (
               <Col
                 xs={12}
-                md={4}
+                md={4} // Aumentato un po' lo spazio per il bottone
                 className='d-flex justify-content-start justify-content-md-end mt-3 mt-md-0'
               >
                 <Button
-                  // ✅ Tolgo variant per il controllo manuale
                   as={Link}
                   to='/profilo/gestione'
-                  // ✅ Controllo Hover
                   onMouseEnter={() => setHoverModifica(true)}
                   onMouseLeave={() => setHoverModifica(false)}
                   style={getButtonStyle(false, hoverModifica)}
+                  size='sm'
                 >
                   <FaPen className='me-2' /> Modifica Profilo
                 </Button>
@@ -325,18 +331,19 @@ function ProfilePage() {
             )}
           </Row>
 
-          {/* INFORMAZIONI DI BASE (Sotto il Rating/Button) */}
-          <Row className='mt-4'>
-            <Col xs={12} md={6}>
-              <h5 className='fw-bold mb-3'>Informazioni:</h5>
+          {/* INFORMAZIONI DI BASE */}
+          <Row className='mt-3 mt-md-4'>
+            <Col xs={12} md={8}>
+              <h5 className='fw-bold mb-2 mb-md-3 fs-6 fs-md-5'>
+                Informazioni:
+              </h5>
               <ul className='list-unstyled small'>
                 <li className='d-flex align-items-center'>
-                  {/* ✅ BRAND COLOR ICONA */}
                   <FaMapMarkerAlt
                     className='me-2'
                     style={{ color: BRAND_COLOR }}
                   />
-                  <span>{cityAndCountry}</span>
+                  <span className='fs-7-custom fs-md-6'>{cityAndCountry}</span>
                 </li>
               </ul>
             </Col>
@@ -347,13 +354,13 @@ function ProfilePage() {
       <hr />
 
       <Row className='mb-5'>
-        <Col xs={12} className='d-flex gap-3'>
+        <Col xs={12} className='d-flex gap-2 flex-wrap'>
           <Button
             onClick={() => setActiveView('annunci')}
-            // ✅ Controllo Hover
             onMouseEnter={() => setHoverAnnunci(true)}
             onMouseLeave={() => setHoverAnnunci(false)}
             style={getButtonStyle(activeView === 'annunci', hoverAnnunci)}
+            size='sm'
           >
             <BsBoxSeamFill className='me-2' /> Annunci in Vendita
             {isLoadingProducts && (
@@ -363,10 +370,10 @@ function ProfilePage() {
 
           <Button
             onClick={() => setActiveView('recensioni')}
-            // ✅ Controllo Hover
             onMouseEnter={() => setHoverRecensioni(true)}
             onMouseLeave={() => setHoverRecensioni(false)}
             style={getButtonStyle(activeView === 'recensioni', hoverRecensioni)}
+            size='sm'
           >
             <BsStarHalf className='me-2' /> Recensioni Ricevute
           </Button>
@@ -379,7 +386,7 @@ function ProfilePage() {
 
           {activeView === 'annunci' && (
             <div id='products-list'>
-              <h2 className='mb-4'>
+              <h2 className='mb-4 fs-4 fs-md-3'>
                 {isViewingOwnProfile
                   ? 'I Miei Annunci Attivi'
                   : `Annunci di ${user.username}`}
@@ -387,7 +394,7 @@ function ProfilePage() {
               {isLoadingProducts ? (
                 <LoadingSpinner />
               ) : productsToDisplay.length === 0 ? (
-                <Alert variant='info'>
+                <Alert variant='info' className='fs-7-custom fs-md-6'>
                   {isViewingOwnProfile
                     ? 'Non hai prodotti attivi in vendita.'
                     : `${user.username} non ha prodotti attivi in vendita.`}

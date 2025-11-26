@@ -35,28 +35,31 @@ function SettingsPage({
     color: '#495057',
   };
 
-  // Stile base per il bottone outline del Brand (per eliminare il grigio di default)
+  // Stile base per il bottone outline del Brand
   const brandOutlineStyle = {
     backgroundColor: 'transparent',
     borderColor: BRAND_COLOR,
     color: BRAND_COLOR,
-    // Aggiungiamo un hover/active effect più neutro (opzionale, ma mantiene la coerenza)
     transition: 'background-color 0.2s',
   };
 
   return (
     <Card className='border-0' style={{ background: 'transparent' }}>
-      <Card.Body className='p-4'>
-        <h4 className='mb-4'>Impostazioni dell'Account</h4>
+      <Card.Body className='p-2 p-md-4'>
+        {/* Titolo Principale */}
+        <h4 className='mb-4 fs-4 fs-md-3'>Impostazioni dell'Account</h4>
+
         {renderFeedback()}
-        <h6 className='text-muted text-uppercase small ls-1 mb-3'>
+
+        {/* Sezione Anagrafica */}
+        <h6 className='text-muted text-uppercase small ls-1 mb-3 fs-7-custom fs-md-6'>
           Anagrafica
         </h6>
         <Form onSubmit={handleUpdateAccountInfo} className='mb-5'>
           <Row>
             <Col md={6}>
               <Form.Group className='mb-3'>
-                <Form.Label>Nome</Form.Label>
+                <Form.Label className='fs-7-custom fs-md-6'>Nome</Form.Label>
                 <Form.Control
                   type='text'
                   value={accountData.nome}
@@ -64,12 +67,13 @@ function SettingsPage({
                     setAccountData({ ...accountData, nome: e.target.value })
                   }
                   style={inputStyle}
+                  className='fs-7-custom fs-md-6'
                 />
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group className='mb-3'>
-                <Form.Label>Cognome</Form.Label>
+                <Form.Label className='fs-7-custom fs-md-6'>Cognome</Form.Label>
                 <Form.Control
                   type='text'
                   value={accountData.cognome}
@@ -77,27 +81,34 @@ function SettingsPage({
                     setAccountData({ ...accountData, cognome: e.target.value })
                   }
                   style={inputStyle}
+                  className='fs-7-custom fs-md-6'
                 />
               </Form.Group>
             </Col>
           </Row>
           <Button
-            // ✅ RIMOSSO variant='outline-secondary' per evitare CSS di hover di default
-            size='sm'
+            size='sm' // Lasciamo small come base, è elegante per le impostazioni
             type='submit'
             disabled={isLoading}
-            style={brandOutlineStyle} // Utilizza lo stile custom
+            style={brandOutlineStyle}
+            // Aggiungiamo classe per font size
+            className='fs-7-custom fs-md-6'
           >
             Aggiorna
           </Button>
         </Form>
+
         <hr />
-        <h6 className='text-muted text-uppercase small ls-1 mb-3 mt-4'>
+
+        {/* Sezione Sicurezza */}
+        <h6 className='text-muted text-uppercase small ls-1 mb-3 mt-4 fs-7-custom fs-md-6'>
           Sicurezza
         </h6>
         <Form onSubmit={handleChangePassword} className='mb-5'>
           <Form.Group className='mb-3'>
-            <Form.Label>Vecchia Password</Form.Label>
+            <Form.Label className='fs-7-custom fs-md-6'>
+              Vecchia Password
+            </Form.Label>
             <InputGroup>
               <Form.Control
                 type={showOldPass ? 'text' : 'password'}
@@ -110,18 +121,23 @@ function SettingsPage({
                 }
                 required
                 style={inputStyle}
+                className='fs-7-custom fs-md-6'
               />
               <Button
                 variant='outline-secondary'
                 onClick={() => setShowOldPass(!showOldPass)}
                 style={eyeButtonStyle}
+                className='d-flex align-items-center'
               >
                 {showOldPass ? <FaEyeSlash /> : <FaEye />}
               </Button>
             </InputGroup>
           </Form.Group>
+
           <Form.Group className='mb-3'>
-            <Form.Label>Nuova Password</Form.Label>
+            <Form.Label className='fs-7-custom fs-md-6'>
+              Nuova Password
+            </Form.Label>
             <InputGroup>
               <Form.Control
                 type={showNewPass ? 'text' : 'password'}
@@ -134,18 +150,23 @@ function SettingsPage({
                 }
                 required
                 style={inputStyle}
+                className='fs-7-custom fs-md-6'
               />
               <Button
                 variant='outline-secondary'
                 onClick={() => setShowNewPass(!showNewPass)}
                 style={eyeButtonStyle}
+                className='d-flex align-items-center'
               >
                 {showNewPass ? <FaEyeSlash /> : <FaEye />}
               </Button>
             </InputGroup>
           </Form.Group>
+
           <Form.Group className='mb-4'>
-            <Form.Label>Conferma Nuova Password</Form.Label>
+            <Form.Label className='fs-7-custom fs-md-6'>
+              Conferma Nuova Password
+            </Form.Label>
             <InputGroup>
               <Form.Control
                 type={showConfirmPass ? 'text' : 'password'}
@@ -158,31 +179,34 @@ function SettingsPage({
                 }
                 required
                 style={inputStyle}
+                className='fs-7-custom fs-md-6'
               />
               <Button
                 variant='outline-secondary'
                 onClick={() => setShowConfirmPass(!showConfirmPass)}
                 style={eyeButtonStyle}
+                className='d-flex align-items-center'
               >
                 {showConfirmPass ? <FaEyeSlash /> : <FaEye />}
               </Button>
             </InputGroup>
             {passwordData.newPassword !== passwordData.confirmNewPassword &&
               passwordData.confirmNewPassword.length > 0 && (
-                <Form.Text className='text-danger'>
+                <Form.Text className='text-danger fs-8-custom'>
                   Le password non corrispondono.
                 </Form.Text>
               )}
           </Form.Group>
+
           <Button
-            // ✅ RIMOSSO variant='outline-dark' per evitare CSS di hover di default
             size='sm'
             type='submit'
             disabled={
               isLoading ||
               passwordData.newPassword !== passwordData.confirmNewPassword
             }
-            style={brandOutlineStyle} // Utilizza lo stile custom
+            style={brandOutlineStyle}
+            className='fs-7-custom fs-md-6'
           >
             {isLoading ? (
               <LoadingSpinner size='sm' />
@@ -193,15 +217,23 @@ function SettingsPage({
             )}
           </Button>
         </Form>
+
         <hr />
+
+        {/* Zona Pericolo */}
         <div className='bg-danger-subtle p-3 rounded border border-danger'>
-          <h6 className='text-danger fw-bold'>
-            <FaExclamationTriangle /> Zona Pericolo
+          <h6 className='text-danger fw-bold fs-7-custom fs-md-6'>
+            <FaExclamationTriangle className='me-1' /> Zona Pericolo
           </h6>
-          <p className='small text-muted mb-2'>
+          <p className='small text-muted mb-2 fs-7-custom'>
             Una volta cancellato l'account, non è possibile tornare indietro.
           </p>
-          <Button variant='danger' size='sm' onClick={handleDeleteAccount}>
+          <Button
+            variant='danger'
+            size='sm'
+            onClick={handleDeleteAccount}
+            className='fs-7-custom'
+          >
             Elimina Account
           </Button>
         </div>

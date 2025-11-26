@@ -164,3 +164,26 @@ body {
     padding-bottom: 35px !important;
   }
 }
+
+/* Profile Page */
+.avatar-responsive {
+  width: 200px;
+  height: 200px;
+  object-fit: cover; /* Assicura che l'immagine non si deformi */
+}
+
+/* Tablet (Medium - il punto critico) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .avatar-responsive {
+    width: 150px; /* Riduciamo un po' per evitare sovrapposizioni */
+    height: 150px;
+  }
+}
+
+/* Mobile (Small/Extra Small) */
+@media (max-width: 767px) {
+  .avatar-responsive {
+    width: 120px;
+    height: 120px;
+  }
+}
