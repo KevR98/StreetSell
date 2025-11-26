@@ -29,7 +29,7 @@ import { FaBoxOpen } from 'react-icons/fa';
 
 const brandColor = '#fa8229';
 
-// COMPONENTE CUSTOM TOGGLE (per rimuovere freccia avatar e gestire il layout mobile)
+// COMPONENTE CUSTOM TOGGLE
 const MobileNavToggle = React.forwardRef(({ children, onClick }, ref) => (
   <div
     ref={ref}
@@ -54,9 +54,9 @@ function MyNavbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // STATI PER LA RICERCA
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState('prodotti');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const token = localStorage.getItem('accessToken');
   const user = useSelector((state) => state.auth.user);
@@ -71,7 +71,6 @@ function MyNavbar() {
     user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
-  // Avatar per desktop
   const dropdownTitle = (
     <div className='d-flex align-items-center justify-content-center'>
       <img
@@ -99,10 +98,16 @@ function MyNavbar() {
     if (query.trim() !== '') {
       navigate(`/cerca?q=${query}&type=${searchType}`);
       setQuery('');
+      setShowMobileSearch(false);
     }
   };
 
   const handleMobileNavClick = (to) => {
+    if (to.includes('/cerca') && to.length < 8) {
+      setShowMobileSearch(true);
+      return;
+    }
+
     if (
       !isLoggedInAndLoaded &&
       (to === '/me' || to === '/crea-prodotto' || to === '/ordini/gestione')
@@ -113,23 +118,83 @@ function MyNavbar() {
     }
   };
 
-  // ✅ DEFINIZIONE LINK MOBILE
   const mobileLinks = [
     { to: '/', icon: <BsHouseDoorFill size={20} />, label: 'Home' },
     {
-      to: '/cerca?q=&type=prodotti',
+      to: '/cerca',
       icon: <BsSearch size={20} />,
       label: 'Cerca',
     },
     { to: '/crea-prodotto', icon: <BsFillTagFill size={20} />, label: 'Vendi' },
-    // Flag speciale per Notifiche
     { label: 'Notifiche', isNotification: true },
     { to: '/me', icon: <BsPersonFill size={20} />, label: 'Profilo' },
   ];
 
+  // ✅ COMPONENTE PER LA BARRA DI RICERCA MOBILE (Overlay) AGGIORNATO
+  const MobileSearchOverlay = () => {
+    if (!showMobileSearch) return null;
+
+    return (
+      <Navbar
+        fixed='top'
+        className='bg-dark d-flex d-sm-none shadow align-items-center'
+        data-bs-theme='dark'
+        style={{ padding: '0.5rem 1rem', zIndex: 1040 }}
+      >
+        <Form
+          className='d-flex flex-grow-1 align-items-center'
+          onSubmit={handleSearchSubmit}
+        >
+          <InputGroup className='w-100'>
+            <Form.Select
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value)}
+              style={{
+                maxWidth: '110px',
+                backgroundColor: '#212529',
+                color: '#f8f9fa',
+                border: '1px solid #495057',
+              }}
+            >
+              <option value='prodotti'>Prodotti</option>
+              <option value='utenti'>Utenti</option>
+            </Form.Select>
+
+            <FormControl
+              type='search'
+              placeholder='Cerca...'
+              aria-label='Search'
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+
+            <Button
+              type='submit'
+              style={{
+                backgroundColor: brandColor,
+                borderColor: brandColor,
+              }}
+            >
+              <BsSearch />
+            </Button>
+          </InputGroup>
+        </Form>
+        <Button
+          variant='link'
+          className='text-white ms-2 p-0 text-nowrap align-self-center' // ✅ AGGIUNTO align-self-center
+          onClick={() => setShowMobileSearch(false)}
+        >
+          Chiudi
+        </Button>
+      </Navbar>
+    );
+  };
+
   return (
     <>
-      {/* 1. NAVBAR DESKTOP (Invariata) */}
+      <MobileSearchOverlay />
+
+      {/* 1. NAVBAR DESKTOP */}
       <Navbar
         className='bg-dark mb-0 d-none d-sm-flex'
         data-bs-theme='dark'
@@ -302,11 +367,26 @@ function MyNavbar() {
         data-bs-theme='dark'
         style={{ padding: 0 }}
       >
+        {/* BLOCCO STILE PER IL RESET CSS AGGRESSIVO */}
+        <style type='text/css'>
+          {`
+            .mobile-notification-reset .nav-link,
+            .mobile-notification-reset .dropdown-toggle {
+              padding: 0 !important;
+              margin: 0 !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              line-height: 1 !important;
+            }
+          `}
+        </style>
+
         <Nav className='w-100 d-flex justify-content-around align-items-center'>
           {mobileLinks.map((link, index) => {
             const isActive = location.pathname === link.to;
 
-            // ✅ CASO SPECIALE: NOTIFICHE
+            // CASO SPECIALE: NOTIFICHE
             if (link.isNotification) {
               return (
                 <div
@@ -320,81 +400,24 @@ function MyNavbar() {
                     height: '100%',
                   }}
                 >
-                  {/*
-                      🔥 STILE CSS "MAGICO" PER RIMUOVERE IL PADDING DEFAULT DI BOOTSTRAP
-                      Questo sovrascrive il padding del Nav.Link interno a Notification
-                  */}
-                  <style type='text/css'>
-                    {`
-                      .mobile-notification-reset .nav-link {
-                        padding: 0 !important;
-                        color: white !important;
-                      }
-                      .mobile-notification-reset .nav-link svg {
-                        /* Assicura che l'icona interna abbia dimensione controllata */
-                        width: 20px;
-                        height: 20px;
-                      }
-                    `}
-                  </style>
-
-                  {/* Wrapper per centrare l'icona */}
+                  {/* Icona Wrapper: Diamo l'altezza fissa e la classe di reset */}
                   <div
                     className='d-flex align-items-center justify-content-center w-100 mobile-notification-reset'
                     style={{
-                      height: '24px', // Fissa l'altezza per allinearla alle altre icone
-                      marginBottom: '2px',
-                    }}
-                  >
-                    <Notification />
-                  </div>
-
-                  {/* Scritta centrata */}
-                  <small
-                    className='d-block w-100 text-center'
-                    style={{
-                      fontSize: '0.65rem',
-                      lineHeight: '1',
-                      color: 'white',
-                    }}
-                  >
-                    {link.label}
-                  </small>
-                </div>
-              );
-            }
-
-            // ✅ CASO SPECIALE: PROFILO LOGGATO (Dropup)
-            if (link.isNotification) {
-              return (
-                <div
-                  key={index}
-                  className='dropup text-center d-flex flex-column align-items-center justify-content-center mobile-nav-item'
-                  style={{
-                    padding: '0.4rem 0',
-                    flex: 1,
-                    minWidth: 'auto',
-                    color: 'white',
-                    height: '100%',
-                  }}
-                >
-                  <div
-                    className='d-flex align-items-center justify-content-center w-100'
-                    style={{
                       height: '24px',
-                      marginBottom: '2px',
                     }}
                   >
-                    {/* 👇 AGGIUNGI isMobile={true} QUI! 👇 */}
                     <Notification isMobile={true} />
                   </div>
 
+                  {/* Scritta: Blocchiamo la centratura al 100% dello slot */}
                   <small
                     className='d-block w-100 text-center'
                     style={{
-                      fontSize: '0.65rem',
+                      fontSize: '0.60rem',
                       lineHeight: '1',
                       color: 'white',
+                      marginTop: '2px',
                     }}
                   >
                     {link.label}
@@ -403,7 +426,70 @@ function MyNavbar() {
               );
             }
 
-            // LINK STANDARD
+            // CASO SPECIALE: PROFILO LOGGATO (Dropup)
+            if (link.label === 'Profilo' && isLoggedInAndLoaded) {
+              return (
+                <Dropdown
+                  key={link.to}
+                  drop='up'
+                  align='end'
+                  style={{ flex: 1 }}
+                  className='d-flex justify-content-center'
+                >
+                  <Dropdown.Toggle as={MobileNavToggle}>
+                    <img
+                      src={avatarToDisplay}
+                      alt='Me'
+                      className='rounded-circle'
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        objectFit: 'cover',
+                        border: isActive
+                          ? `2px solid ${brandColor}`
+                          : '1px solid #999',
+                      }}
+                    />
+                    <small
+                      style={{
+                        fontSize: '0.60rem',
+                        color: isActive ? brandColor : 'white',
+                        marginTop: '2px',
+                        lineHeight: '1',
+                      }}
+                    >
+                      {link.label}
+                    </small>
+                  </Dropdown.Toggle>
+
+                  <Dropdown.Menu className='mb-3 shadow border-0'>
+                    {isAdmin && (
+                      <Dropdown.Item as={Link} to='/admin/dashboard'>
+                        <BsController className='me-2' /> Admin
+                      </Dropdown.Item>
+                    )}
+                    <Dropdown.Item as={Link} to='/me'>
+                      <BsPersonFill className='me-2' /> Il Mio Profilo
+                    </Dropdown.Item>
+                    <Dropdown.Item as={Link} to='/ordini/gestione'>
+                      <FaBoxOpen className='me-2' /> Ordini
+                    </Dropdown.Item>
+                    <Dropdown.Item as={Link} to='/crea-prodotto'>
+                      <BsFillTagFill className='me-2' /> Vendi
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={handleLogout}
+                      className='text-danger'
+                    >
+                      <BsBoxArrowRight className='me-2' /> Logout
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              );
+            }
+
+            // LINK STANDARD (Home, Cerca, Vendi)
             return (
               <Nav.Link
                 key={link.to}
@@ -417,21 +503,19 @@ function MyNavbar() {
                   color: 'white',
                 }}
               >
-                {/* Icona */}
                 <span
                   className='d-flex align-items-center justify-content-center'
                   style={{
                     color: isActive ? brandColor : 'white',
-                    height: '24px', // Altezza fissa per l'icona
+                    height: '24px',
                     marginBottom: '2px',
                   }}
                 >
                   {link.icon}
                 </span>
-                {/* Testo */}
                 <small
                   style={{
-                    fontSize: '0.65rem',
+                    fontSize: '0.60rem',
                     lineHeight: '1',
                     marginTop: '0px',
                   }}
