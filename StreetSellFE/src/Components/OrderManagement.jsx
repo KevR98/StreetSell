@@ -26,9 +26,7 @@ import ErrorAlert from './ErrorAlert';
 import BackButton from './BackButton';
 import ReviewModal from './ReviewModal';
 
-// ENDPOINT UNIFICATO per recuperare tutte le task da fare
 const ENDPOINT_FETCH_TASK = 'http://localhost:8888/ordini/gestione';
-// ENDPOINT BASE per l'aggiornamento dello stato (PUT /ordini/{id}/stato)
 const ENDPOINT_STATO_UPDATE_BASE = 'http://localhost:8888/ordini';
 
 function OrderManagementPage() {
@@ -40,15 +38,14 @@ function OrderManagementPage() {
   const currentUserId = currentUser?.id;
 
   // STATI PER I FILTRI
-  const [salesFilter, setSalesFilter] = useState('ALL'); // ALL, ACTIVE, COMPLETED, CANCELLED
-  const [purchasesFilter, setPurchasesFilter] = useState('ALL'); // ALL, ACTIVE, COMPLETED, CANCELLED, TO_REVIEW
+  const [salesFilter, setSalesFilter] = useState('ALL');
+  const [purchasesFilter, setPurchasesFilter] = useState('ALL');
 
   // STATI PER LA RECENSIONE
   const [reviewedOrderIds, setReviewedOrderIds] = useState(new Set());
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-  // Funzione per recuperare gli ordini
   const fetchOrders = () => {
     if (!token || !currentUser) {
       setError('Autenticazione richiesta.');
@@ -63,8 +60,7 @@ function OrderManagementPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
-        if (res.status === 401)
-          throw new Error('Non autorizzato. Effettua il login.');
+        if (res.status === 401) throw new Error('Non autorizzato.');
         if (!res.ok) throw new Error('Errore nel caricamento delle task.');
         return res.json();
       })
@@ -77,17 +73,13 @@ function OrderManagementPage() {
       .finally(() => setIsLoading(false));
   };
 
-  // APRIRE IL MODAL
   const handleOpenReviewModal = (orderId) => {
     setSelectedOrderId(orderId);
     setShowReviewModal(true);
   };
 
-  // SUBMIT RECENSIONE SUCCESS
   const handleReviewSuccess = () => {
     setShowReviewModal(false);
-
-    // Aggiorniamo il Set locale
     if (selectedOrderId) {
       setReviewedOrderIds((prevSet) => {
         const newSet = new Set(prevSet);
@@ -98,7 +90,6 @@ function OrderManagementPage() {
     fetchOrders();
   };
 
-  // AGGIORNAMENTO STATO
   const handleUpdateStatus = (orderId, currentStatus) => {
     let newStatus;
     let actionMessage;
@@ -137,13 +128,8 @@ function OrderManagementPage() {
       });
   };
 
-  // ANNULLAMENTO ORDINE
   const handleCancelOrder = (orderId) => {
-    if (
-      window.confirm(
-        'Sei sicuro di voler ANNULLARE questo ordine? Operazione irreversibile.'
-      )
-    ) {
+    if (window.confirm('Sei sicuro di voler ANNULLARE questo ordine?')) {
       fetch(`${ENDPOINT_STATO_UPDATE_BASE}/${orderId}/stato`, {
         method: 'PUT',
         headers: {
@@ -169,20 +155,15 @@ function OrderManagementPage() {
   }, [token, currentUser]);
 
   // --- LOGICA DI FILTRAGGIO ---
-
-  // 1. Filtraggio VENDITE (Sales)
   const filteredSales = orders.filter((order) => {
-    // Deve essere una mia vendita
     if (order.venditore?.id !== currentUserId) return false;
-
     const s = order.statoOrdine;
-
     switch (salesFilter) {
-      case 'ACTIVE': // In corso
+      case 'ACTIVE':
         return s === 'CONFERMATO' || s === 'SPEDITO';
-      case 'COMPLETED': // Completati
+      case 'COMPLETED':
         return s === 'COMPLETATO';
-      case 'CANCELLED': // Annullati
+      case 'CANCELLED':
         return s === 'ANNULLATO';
       case 'ALL':
       default:
@@ -190,24 +171,18 @@ function OrderManagementPage() {
     }
   });
 
-  // 2. Filtraggio ACQUISTI (Purchases)
   const filteredPurchases = orders.filter((order) => {
-    // Deve essere un mio acquisto
     if (order.compratore?.id !== currentUserId) return false;
-
     const s = order.statoOrdine;
-
     switch (purchasesFilter) {
-      case 'ACTIVE': // In corso
+      case 'ACTIVE':
         return s === 'CONFERMATO' || s === 'IN_ATTESA' || s === 'SPEDITO';
-      case 'COMPLETED': // Completati (Storico)
+      case 'COMPLETED':
         return s === 'COMPLETATO';
-      case 'CANCELLED': // Annullati
+      case 'CANCELLED':
         return s === 'ANNULLATO';
       case 'TO_REVIEW': {
-        // Da Recensire
         if (s !== 'COMPLETATO') return false;
-        // Logica recensione (Backend + Locale)
         const haRecensioneBackend = !!order.recensione;
         const haRecensioneLocale = reviewedOrderIds.has(order.id);
         return !haRecensioneBackend && !haRecensioneLocale;
@@ -218,7 +193,6 @@ function OrderManagementPage() {
     }
   });
 
-  // --- HELPER PER ETICHETTE DROPDOWN ---
   const getSalesLabel = () => {
     switch (salesFilter) {
       case 'ACTIVE':
@@ -256,7 +230,6 @@ function OrderManagementPage() {
       const isTaskSpedire = isUserVendor && order.statoOrdine === 'CONFERMATO';
       const isTaskConfermare = isUserBuyer && order.statoOrdine === 'SPEDITO';
 
-      // Controllo recensione per mostrare il BOTTONE (indipendente dal filtro lista)
       const hasReview = !!order.recensione || reviewedOrderIds.has(order.id);
       const isTaskRecensione =
         isUserBuyer && order.statoOrdine === 'COMPLETATO' && !hasReview;
@@ -268,7 +241,6 @@ function OrderManagementPage() {
       const isCancelled = order.statoOrdine === 'ANNULLATO';
       const isCompleted = order.statoOrdine === 'COMPLETATO';
 
-      // Colori Badge
       let relationshipColor = 'secondary';
       let taskText = 'STORICO';
 
@@ -292,74 +264,109 @@ function OrderManagementPage() {
         taskText = 'IN ATTESA';
       }
 
+      const counterpartyName = isSalesTable
+        ? order.compratore?.username || 'N/D'
+        : order.venditore?.username || 'N/D';
+
       return (
         <tr key={order.id}>
-          <td>{order.id.substring(0, 8)}...</td>
-          <td>
-            <Badge bg={relationshipColor}>{order.statoOrdine}</Badge>
+          {/* ID: Nascosto su mobile */}
+          <td className='d-none d-md-table-cell align-middle'>
+            {order.id.substring(0, 8)}...
           </td>
-          <td>
+
+          {/* STATO + INFO Compact */}
+          <td className='align-middle'>
+            <Badge bg={relationshipColor} className='fs-7-custom'>
+              {order.statoOrdine}
+            </Badge>
+            <div className='d-md-none mt-1 text-muted fs-8-custom fw-bold'>
+              {taskText}
+            </div>
+          </td>
+
+          {/* INFO: Nascosto su mobile */}
+          <td className='d-none d-md-table-cell align-middle'>
             <Badge bg={relationshipColor} className='fw-bold'>
               {taskText}
             </Badge>
           </td>
-          <td>
-            <Link to={`/prodotto/${order.prodotto?.id}`} target='_blank'>
+
+          {/* PRODOTTO + Controparte Compact */}
+          <td className='align-middle'>
+            <Link
+              to={`/prodotto/${order.prodotto?.id}`}
+              target='_blank'
+              className='fw-bold text-decoration-none'
+            >
               {order.prodotto?.titolo || 'Prodotto Eliminato'}
             </Link>
+            <div className='d-md-none small text-muted mt-1'>
+              {isSalesTable ? 'Compratore: ' : 'Venditore: '} {counterpartyName}
+            </div>
           </td>
 
-          <td>
-            {isSalesTable
-              ? order.compratore?.username || 'N/D'
-              : order.venditore?.username || 'N/D'}
+          {/* CONTROPARTE: Nascosto su mobile */}
+          <td className='d-none d-md-table-cell align-middle'>
+            {counterpartyName}
           </td>
 
-          <td>
-            {isTaskSpedire && (
-              <Button
-                variant='success'
-                size='sm'
-                className='me-1'
-                onClick={() => handleUpdateStatus(order.id, order.statoOrdine)}
-              >
-                <FaTruck /> Spedisci
-              </Button>
-            )}
+          {/* AZIONI: Impilate su mobile */}
+          <td className='align-middle'>
+            <div className='d-flex flex-column flex-md-row gap-1'>
+              {isTaskSpedire && (
+                <Button
+                  variant='success'
+                  size='sm'
+                  onClick={() =>
+                    handleUpdateStatus(order.id, order.statoOrdine)
+                  }
+                  className='d-flex align-items-center justify-content-center'
+                >
+                  <FaTruck className='me-1' />{' '}
+                  <span className='d-none d-md-inline'>Spedisci</span>
+                </Button>
+              )}
 
-            {isTaskConfermare && (
-              <Button
-                variant='primary'
-                size='sm'
-                className='me-1'
-                onClick={() => handleUpdateStatus(order.id, order.statoOrdine)}
-              >
-                <FaCheckCircle /> Arrivato
-              </Button>
-            )}
+              {isTaskConfermare && (
+                <Button
+                  variant='primary'
+                  size='sm'
+                  onClick={() =>
+                    handleUpdateStatus(order.id, order.statoOrdine)
+                  }
+                  className='d-flex align-items-center justify-content-center'
+                >
+                  <FaCheckCircle className='me-1' />{' '}
+                  <span className='d-none d-md-inline'>Arrivato</span>
+                </Button>
+              )}
 
-            {isTaskRecensione && (
-              <Button
-                variant='info'
-                size='sm'
-                className='me-1'
-                onClick={() => handleOpenReviewModal(order.id)}
-              >
-                <FaStar /> Feedback
-              </Button>
-            )}
+              {isTaskRecensione && (
+                <Button
+                  variant='info'
+                  size='sm'
+                  onClick={() => handleOpenReviewModal(order.id)}
+                  className='d-flex align-items-center justify-content-center'
+                >
+                  <FaStar className='me-1' />{' '}
+                  <span className='d-none d-md-inline'>Feedback</span>
+                </Button>
+              )}
 
-            {canCancel && (
-              <Button
-                variant='danger'
-                size='sm'
-                onClick={() => handleCancelOrder(order.id)}
-              >
-                <FaTimesCircle /> Annulla
-              </Button>
-            )}
+              {canCancel && (
+                <Button
+                  variant='danger'
+                  size='sm'
+                  onClick={() => handleCancelOrder(order.id)}
+                  className='d-flex align-items-center justify-content-center'
+                >
+                  <FaTimesCircle className='me-1' />{' '}
+                  <span className='d-none d-md-inline'>Annulla</span>
+                </Button>
+              )}
+            </div>
 
-            {/* Se non ci sono azioni e l'ordine è completato/annullato, mostriamo un placeholder o vuoto */}
             {!isTaskSpedire &&
               !isTaskConfermare &&
               !isTaskRecensione &&
@@ -382,68 +389,71 @@ function OrderManagementPage() {
   return (
     <Container className='my-5'>
       <BackButton />
-      <h1 className='mb-4'>
+      <h2 className='mb-4 fs-3 fs-md-1 fw-bold'>
         <FaBoxOpen className='me-2' /> Gestione Ordini
-      </h1>
+      </h2>
 
       <Row>
         {/* --- SEZIONE VENDITE --- */}
         <Col md={12} className='mb-5'>
-          <div className='d-flex justify-content-between align-items-center mb-3'>
-            <div>
-              <h2 className='m-0'></h2>
-              <p className='text-muted m-0'>Gestisci gli ordini ricevuti.</p>
-            </div>
+          {/* ✅ USO LA GRID SYSTEM (Row/Col) per layout preciso */}
+          <Row className='align-items-center mb-3 g-2'>
+            {/* Titolo: Occupata tutto su mobile, metà su desktop */}
+            <Col xs={12} md={6}>
+              <h3 className='m-0 fs-4 fs-md-2'>Le Tue Vendite</h3>
+              <p className='text-muted m-0 small'>
+                Gestisci gli ordini ricevuti.
+              </p>
+            </Col>
 
-            <DropdownButton
-              as={ButtonGroup}
-              variant='light'
-              className='text-dark p-0 border-0'
-              title={
-                <>
-                  <FaFilter className='me-2' /> {getSalesLabel()}
-                </>
-              }
-              id='sales-dropdown'
-              align='end'
-            >
-              <Dropdown.Item
-                active={salesFilter === 'ALL'}
-                onClick={() => setSalesFilter('ALL')}
-              >
-                Tutte le Vendite
-              </Dropdown.Item>
-              <Dropdown.Divider />
-              <Dropdown.Item
-                active={salesFilter === 'ACTIVE'}
-                onClick={() => setSalesFilter('ACTIVE')}
-              >
-                In Corso (Da Spedire)
-              </Dropdown.Item>
-              <Dropdown.Item
-                active={salesFilter === 'COMPLETED'}
-                onClick={() => setSalesFilter('COMPLETED')}
-              >
-                Completati
-              </Dropdown.Item>
-              <Dropdown.Item
-                active={salesFilter === 'CANCELLED'}
-                onClick={() => setSalesFilter('CANCELLED')}
-              >
-                Annullati
-              </Dropdown.Item>
-            </DropdownButton>
-          </div>
+            {/* Bottone: Occupata tutto su mobile, metà su desktop (spinto a destra con text-md-end) */}
+            <Col xs={12} md={6} className='text-md-end'>
+              <div className='d-grid d-md-inline-block'>
+                <DropdownButton
+                  as={ButtonGroup}
+                  variant='light'
+                  className='text-dark p-0 border border-secondary-subtle'
+                  title={
+                    <>
+                      <FaFilter className='me-2' /> {getSalesLabel()}
+                    </>
+                  }
+                  id='sales-dropdown'
+                  align='end'
+                >
+                  <Dropdown.Item onClick={() => setSalesFilter('ALL')}>
+                    Tutte
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={() => setSalesFilter('ACTIVE')}>
+                    In Corso
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => setSalesFilter('COMPLETED')}>
+                    Completati
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={() => setSalesFilter('CANCELLED')}>
+                    Annullati
+                  </Dropdown.Item>
+                </DropdownButton>
+              </div>
+            </Col>
+          </Row>
 
-          <Table striped bordered hover responsive className='shadow-sm'>
+          <Table
+            striped
+            bordered
+            hover
+            responsive
+            className='shadow-sm align-middle'
+          >
             <thead className='table-light'>
               <tr>
-                <th>ID</th>
+                <th className='d-none d-md-table-cell'>ID</th>
                 <th>Stato</th>
-                <th>Info</th>
+                <th className='d-none d-md-table-cell'>Info</th>
                 <th>Prodotto</th>
-                <th>Compratore</th>
-                <th>Azioni</th>
+                <th className='d-none d-md-table-cell'>Compratore</th>
+                <th style={{ minWidth: '80px' }}>Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -468,69 +478,69 @@ function OrderManagementPage() {
 
         {/* --- SEZIONE ACQUISTI --- */}
         <Col md={12} className='mt-4'>
-          <div className='d-flex justify-content-between align-items-center mb-3'>
-            <div>
-              <h2 className='m-0'>I Tuoi Acquisti</h2>
-              <p className='text-muted m-0'>
-                Traccia e gestisci i tuoi ordini.
-              </p>
-            </div>
+          {/* ✅ HEADER ACQUISTI (Stesso Pattern Grid) */}
+          <Row className='align-items-center mb-3 g-2'>
+            <Col xs={12} md={6}>
+              <h3 className='m-0 fs-4 fs-md-2'>I Tuoi Acquisti</h3>
+              <p className='text-muted m-0 small'>Traccia i tuoi ordini.</p>
+            </Col>
 
-            <DropdownButton
-              as={ButtonGroup}
-              variant='light'
-              className='text-dark p-0 border-0'
-              title={
-                <>
-                  <FaFilter className='me-2' /> {getPurchasesLabel()}
-                </>
-              }
-              id='purchases-dropdown'
-              align='end'
-            >
-              <Dropdown.Item
-                active={purchasesFilter === 'ALL'}
-                onClick={() => setPurchasesFilter('ALL')}
-              >
-                Tutti gli Acquisti
-              </Dropdown.Item>
-              <Dropdown.Divider />
-              <Dropdown.Item
-                active={purchasesFilter === 'ACTIVE'}
-                onClick={() => setPurchasesFilter('ACTIVE')}
-              >
-                In Corso
-              </Dropdown.Item>
-              <Dropdown.Item
-                active={purchasesFilter === 'TO_REVIEW'}
-                onClick={() => setPurchasesFilter('TO_REVIEW')}
-              >
-                Da Recensire
-              </Dropdown.Item>
-              <Dropdown.Item
-                active={purchasesFilter === 'COMPLETED'}
-                onClick={() => setPurchasesFilter('COMPLETED')}
-              >
-                Completati
-              </Dropdown.Item>
-              <Dropdown.Item
-                active={purchasesFilter === 'CANCELLED'}
-                onClick={() => setPurchasesFilter('CANCELLED')}
-              >
-                Annullati
-              </Dropdown.Item>
-            </DropdownButton>
-          </div>
+            <Col xs={12} md={6} className='text-md-end'>
+              <div className='d-grid d-md-inline-block'>
+                <DropdownButton
+                  as={ButtonGroup}
+                  variant='light'
+                  className='text-dark p-0 border border-secondary-subtle'
+                  title={
+                    <>
+                      <FaFilter className='me-2' /> {getPurchasesLabel()}
+                    </>
+                  }
+                  id='purchases-dropdown'
+                  align='end'
+                >
+                  <Dropdown.Item onClick={() => setPurchasesFilter('ALL')}>
+                    Tutti
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={() => setPurchasesFilter('ACTIVE')}>
+                    In Corso
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => setPurchasesFilter('TO_REVIEW')}
+                  >
+                    Da Recensire
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => setPurchasesFilter('COMPLETED')}
+                  >
+                    Completati
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => setPurchasesFilter('CANCELLED')}
+                  >
+                    Annullati
+                  </Dropdown.Item>
+                </DropdownButton>
+              </div>
+            </Col>
+          </Row>
 
-          <Table striped bordered hover responsive className='shadow-sm'>
+          <Table
+            striped
+            bordered
+            hover
+            responsive
+            className='shadow-sm align-middle'
+          >
             <thead className='table-light'>
               <tr>
-                <th>ID</th>
+                <th className='d-none d-md-table-cell'>ID</th>
                 <th>Stato</th>
-                <th>Info</th>
+                <th className='d-none d-md-table-cell'>Info</th>
                 <th>Prodotto</th>
-                <th>Venditore</th>
-                <th>Azioni</th>
+                <th className='d-none d-md-table-cell'>Venditore</th>
+                <th style={{ minWidth: '80px' }}>Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -550,7 +560,6 @@ function OrderManagementPage() {
         </Col>
       </Row>
 
-      {/* MODALE DI RECENSIONE */}
       <ReviewModal
         show={showReviewModal}
         handleClose={() => setShowReviewModal(false)}
