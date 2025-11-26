@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { NavDropdown, Badge, Spinner, Button } from 'react-bootstrap';
+import React, { useEffect, useState, useCallback } from 'react'; // Aggiungi React
+import { NavDropdown, Badge, Spinner, Button, Dropdown } from 'react-bootstrap'; // Aggiungi Dropdown
 import {
   FaTruck,
   FaShoppingCart,
@@ -14,82 +14,79 @@ const MANAGEMENT_ENDPOINT = 'http://localhost:8888/ordini/gestione';
 const STORAGE_KEY = 'hidden_notification_ids';
 const POLLING_INTERVAL = 30000;
 
-function Notification() {
+// ✅ TOGGLE CUSTOM PER MOBILE (Rimuove stili default link/padding)
+const MobileNotificationToggle = React.forwardRef(
+  ({ children, onClick }, ref) => (
+    <div
+      ref={ref}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(e);
+      }}
+      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+    >
+      {children}
+    </div>
+  )
+);
+
+function Notification({ isMobile = false }) {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Inizializza vuoto
   const [hiddenIds, setHiddenIds] = useState(new Set());
-
-  // Impedisce il salvataggio finché non abbiamo caricato i dati
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
   const currentUser = useSelector((state) => state.auth.user);
   const token = localStorage.getItem('accessToken');
 
-  // Funzione helper per ottenere la chiave specifica per l'utente
   const getStorageKey = useCallback((userId) => {
     return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY;
   }, []);
 
-  // HIDE NOTIFICATION
   const hideNotification = useCallback((id) => {
     setHiddenIds((prevIds) => new Set(prevIds).add(id));
   }, []);
 
-  // CLEAR ALL NOTIFICATIONS
   const clearAllNotifications = useCallback(() => {
     const currentVisibleIds = notifications.map((n) => n.id);
     setHiddenIds((prevIds) => new Set([...prevIds, ...currentVisibleIds]));
   }, [notifications]);
 
-  // Esegue solo all'avvio o cambio utente
   useEffect(() => {
     if (currentUser && currentUser.id) {
       try {
         const key = getStorageKey(currentUser.id);
         const storedData = localStorage.getItem(key);
-
         if (storedData) {
-          // Se troviamo dati, li impostiamo
           setHiddenIds(new Set(JSON.parse(storedData)));
         } else {
-          // Se non ci sono dati, resettiamo
           setHiddenIds(new Set());
         }
-      } catch (e) {
-        console.error('Errore nel caricamento della chiave utente:', e);
+      } catch {
         setHiddenIds(new Set());
       } finally {
-        // Diciamo all'app che abbiamo finito di caricare
         setIsStorageLoaded(true);
       }
     } else {
-      // Logout
       setHiddenIds(new Set());
       setIsStorageLoaded(false);
     }
   }, [currentUser, getStorageKey]);
 
-  // Protetto dal flag isStorageLoaded
   useEffect(() => {
-    // Questo previene la sovrascrittura con array vuoto al refresh
     if (!currentUser || !isStorageLoaded) return;
-
     try {
       const idsArray = Array.from(hiddenIds);
       const key = getStorageKey(currentUser.id);
       localStorage.setItem(key, JSON.stringify(idsArray));
     } catch (e) {
-      console.error('Errore nel salvataggio in localStorage:', e);
+      console.error('Errore localStorage:', e);
     }
-  }, [hiddenIds, currentUser, getStorageKey, isStorageLoaded]); // Dipende anche da isStorageLoaded
+  }, [hiddenIds, currentUser, getStorageKey, isStorageLoaded]);
 
-  // FETCH NOTIFICA
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true);
     let allNotifications = [];
-
     const headers = { Authorization: `Bearer ${token}` };
     const currentUserId = currentUser?.id;
 
@@ -100,21 +97,16 @@ function Notification() {
 
     try {
       const resManagement = await fetch(MANAGEMENT_ENDPOINT, { headers });
-
-      if (!resManagement.ok) {
-        throw new Error('Errore nel caricamento delle task unificate.');
-      }
-
+      if (!resManagement.ok) throw new Error('Errore fetch');
       const ordiniGestione = await resManagement.json();
 
       if (Array.isArray(ordiniGestione)) {
         ordiniGestione.forEach((order) => {
           const isUserVendor = order.venditore?.id === currentUserId;
           const isUserBuyer = order.compratore?.id === currentUserId;
-
-          const compratoreUsername = order.compratore?.username || 'Un utente';
-          const venditoreUsername = order.venditore?.username || 'Il venditore';
-          const prodottoTitolo = order.prodotto?.titolo || 'Prodotto N/D';
+          const compratore = order.compratore?.username || 'Utente';
+          const venditore = order.venditore?.username || 'Venditore';
+          const prodotto = order.prodotto?.titolo || 'Prodotto';
 
           if (isUserVendor) {
             if (
@@ -124,7 +116,7 @@ function Notification() {
               allNotifications.push({
                 id: order.id,
                 type: 'VENDITORE_ACQUISTO',
-                message: `🎉 ${compratoreUsername} ha comprato: ${prodottoTitolo}. Spedisci subito!`,
+                message: `🎉 ${compratore} ha comprato: ${prodotto}.`,
                 date: new Date(order.dataOrdine),
                 prodottoId: order.prodotto?.id,
               });
@@ -132,7 +124,7 @@ function Notification() {
               allNotifications.push({
                 id: order.id + '-annull',
                 type: 'VENDITORE_ANNULLATO',
-                message: `❌ Attenzione! ${compratoreUsername} ha annullato l'ordine per ${prodottoTitolo}.`,
+                message: `❌ ${compratore} ha annullato per ${prodotto}.`,
                 date: new Date(order.dataOrdine),
                 prodottoId: order.prodotto?.id,
               });
@@ -140,66 +132,52 @@ function Notification() {
               allNotifications.push({
                 id: order.id + '-vend-comp',
                 type: 'VENDITORE_COMPLETATO',
-                message: `🎉 ${compratoreUsername} ha confermato la ricezione di ${prodottoTitolo}. Ordine Completato!`,
+                message: `🎉 Ordine completato per ${prodotto}!`,
                 date: new Date(order.dataOrdine),
                 prodottoId: order.prodotto?.id,
               });
             }
           }
 
-          if (isUserBuyer) {
-            if (order.statoOrdine === 'SPEDITO') {
-              allNotifications.push({
-                id: order.id + '-comp',
-                type: 'COMPRATORE_SPEDITO',
-                message: `🚚 Ottime notizie! ${venditoreUsername} ha spedito il tuo ordine: ${prodottoTitolo}.`,
-                date: new Date(order.dataOrdine),
-                prodottoId: order.prodotto?.id,
-              });
-            }
+          if (isUserBuyer && order.statoOrdine === 'SPEDITO') {
+            allNotifications.push({
+              id: order.id + '-comp',
+              type: 'COMPRATORE_SPEDITO',
+              message: `🚚 ${venditore} ha spedito ${prodotto}.`,
+              date: new Date(order.dataOrdine),
+              prodottoId: order.prodotto?.id,
+            });
           }
         });
       }
-
       allNotifications.sort((a, b) => b.date.getTime() - a.date.getTime());
       setNotifications(allNotifications);
-    } catch (error) {
-      console.error('Errore fetch notifiche:', error);
+    } catch {
       setNotifications([]);
     } finally {
       setIsLoading(false);
     }
   }, [token, currentUser]);
 
-  // POLLING
   useEffect(() => {
-    if (!token || !currentUser) {
-      setNotifications([]);
-      setHiddenIds(new Set());
-      setIsStorageLoaded(false); // Reset flag
-      localStorage.removeItem(getStorageKey(currentUser?.id));
-      setIsLoading(false);
-      return;
-    }
-
+    if (!token || !currentUser) return;
     fetchNotifications();
     const intervalId = setInterval(fetchNotifications, POLLING_INTERVAL);
-
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, currentUser, fetchNotifications]);
 
   if (!currentUser || !token) return null;
 
-  // FILTRAGGIO VISIVO
   const visibleNotifications = notifications.filter(
     (n) => !hiddenIds.has(n.id)
   );
   const totalCount = visibleNotifications.length;
 
+  // ✅ TITOLO (Icona + Badge)
+  // Se è mobile, rimuovo il margine a destra dell'icona (me-2) per centrarla
   const titleContent = (
     <div className='d-flex align-items-center position-relative'>
-      <FaBell size={20} className='me-2' />
+      <FaBell size={20} className={isMobile ? '' : 'me-2'} />
       {totalCount > 0 && (
         <Badge
           bg='danger'
@@ -216,21 +194,16 @@ function Notification() {
     </div>
   );
 
-  return (
-    <NavDropdown
-      title={titleContent}
-      id='notifications-dropdown'
-      align='end'
-      className='me-3 no-caret'
-    >
-      {isLoading && <NavDropdown.ItemText>Caricamento...</NavDropdown.ItemText>}
-
+  // ✅ CONTENUTO DEL MENU (Estratto per riusarlo)
+  const renderDropdownItems = () => (
+    <>
+      {isLoading && <Dropdown.ItemText>Caricamento...</Dropdown.ItemText>}
       {!isLoading && visibleNotifications.length === 0 && (
-        <NavDropdown.ItemText>Nessuna notifica in attesa.</NavDropdown.ItemText>
+        <Dropdown.ItemText>Nessuna notifica.</Dropdown.ItemText>
       )}
 
       {visibleNotifications.slice(0, 5).map((notif) => (
-        <NavDropdown.Item
+        <Dropdown.Item
           key={notif.id}
           as={notif.type.endsWith('_ANNULLATO') ? 'div' : Link}
           to={
@@ -240,7 +213,8 @@ function Notification() {
               ? '/ordini/gestione'
               : `/prodotto/${notif.prodottoId}`
           }
-          className='small position-relative d-flex align-items-center dropdown-item-custom'
+          className='small position-relative d-flex align-items-center'
+          style={{ whiteSpace: 'normal', minWidth: '280px' }} // Fix per testo lungo
           onClick={
             notif.type.endsWith('_ANNULLATO')
               ? (e) => e.preventDefault()
@@ -269,37 +243,60 @@ function Notification() {
           <Button
             variant='link'
             size='sm'
-            className='p-0 ms-auto text-muted btn-close-notif'
+            className='p-0 ms-auto text-muted'
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               hideNotification(notif.id);
             }}
-            style={{
-              visibility: 'hidden',
-            }}
           >
             &times;
           </Button>
-        </NavDropdown.Item>
+        </Dropdown.Item>
       ))}
 
-      {visibleNotifications.length > 0 && <NavDropdown.Divider />}
+      {visibleNotifications.length > 0 && <Dropdown.Divider />}
 
       {visibleNotifications.length > 0 && (
-        <NavDropdown.ItemText className='text-center d-flex justify-content-between align-items-center p-2'>
+        <Dropdown.ItemText className='text-center d-flex justify-content-between align-items-center p-2'>
           <Button
             variant='outline-secondary'
             size='sm'
             onClick={clearAllNotifications}
           >
-            ❌ Cancella Tutte ({totalCount})
+            Cancella
           </Button>
           <Link to='/ordini/gestione' className='btn btn-link btn-sm'>
-            Vedi Gestione
+            Gestione
           </Link>
-        </NavDropdown.ItemText>
+        </Dropdown.ItemText>
       )}
+    </>
+  );
+
+  // 📱 RENDER MOBILE: Usa Dropdown "pulito" (niente stili NavLink)
+  if (isMobile) {
+    return (
+      <Dropdown drop='up' align='end'>
+        <Dropdown.Toggle as={MobileNotificationToggle}>
+          {titleContent}
+        </Dropdown.Toggle>
+        <Dropdown.Menu className='shadow border-0'>
+          {renderDropdownItems()}
+        </Dropdown.Menu>
+      </Dropdown>
+    );
+  }
+
+  // 💻 RENDER DESKTOP: Usa NavDropdown standard (con margini e caret)
+  return (
+    <NavDropdown
+      title={titleContent}
+      id='notifications-dropdown'
+      align='end'
+      className='me-3 no-caret'
+    >
+      {renderDropdownItems()}
     </NavDropdown>
   );
 }

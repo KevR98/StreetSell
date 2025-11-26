@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Button,
   Container,
@@ -8,6 +9,7 @@ import {
   Form,
   FormControl,
   InputGroup,
+  Dropdown,
 } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -20,13 +22,32 @@ import {
   BsPersonFill,
   BsController,
   BsSearch,
-  BsHouseDoorFill, // ✅ NUOVA ICONA HOME
+  BsHouseDoorFill,
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
-import { useState } from 'react';
 
 const brandColor = '#fa8229';
+
+// COMPONENTE CUSTOM TOGGLE (per rimuovere freccia avatar e gestire il layout mobile)
+const MobileNavToggle = React.forwardRef(({ children, onClick }, ref) => (
+  <div
+    ref={ref}
+    onClick={(e) => {
+      e.preventDefault();
+      onClick(e);
+    }}
+    className='d-flex flex-column align-items-center justify-content-center text-white w-100'
+    style={{
+      cursor: 'pointer',
+      padding: '0.4rem 0',
+      border: 'none',
+      background: 'transparent',
+    }}
+  >
+    {children}
+  </div>
+));
 
 function MyNavbar() {
   const location = useLocation();
@@ -50,6 +71,7 @@ function MyNavbar() {
     user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
+  // Avatar per desktop
   const dropdownTitle = (
     <div className='d-flex align-items-center justify-content-center'>
       <img
@@ -80,9 +102,7 @@ function MyNavbar() {
     }
   };
 
-  // ✅ FUNZIONE PER NAVIGAZIONE MOBILE (Gestisce login/logout)
   const handleMobileNavClick = (to) => {
-    // Se l'utente non è loggato e tenta di andare a /me, reindirizza al login
     if (
       !isLoggedInAndLoaded &&
       (to === '/me' || to === '/crea-prodotto' || to === '/ordini/gestione')
@@ -102,13 +122,14 @@ function MyNavbar() {
       label: 'Cerca',
     },
     { to: '/crea-prodotto', icon: <BsFillTagFill size={20} />, label: 'Vendi' },
-    { to: '/ordini/gestione', icon: <FaBoxOpen size={20} />, label: 'Ordini' },
+    // Flag speciale per Notifiche
+    { label: 'Notifiche', isNotification: true },
     { to: '/me', icon: <BsPersonFill size={20} />, label: 'Profilo' },
   ];
 
   return (
     <>
-      {/* 1. NAVBAR DESKTOP (Mostrata da SM in su) */}
+      {/* 1. NAVBAR DESKTOP (Invariata) */}
       <Navbar
         className='bg-dark mb-0 d-none d-sm-flex'
         data-bs-theme='dark'
@@ -171,18 +192,15 @@ function MyNavbar() {
           </div>
 
           <Nav className='ms-auto flex-shrink-0'>
-            {/* gap-3 distanzia le "scatole" tra loro */}
             <div
               className='d-flex align-items-center gap-3'
               style={{ height: '40px' }}
             >
-              {/* 1. ICONA HOME */}
               <Nav.Item className='d-none d-sm-flex align-items-center h-100 mx-3'>
                 <Nav.Link
                   as={Link}
                   to='/'
                   active={location.pathname === '/'}
-                  // py-0 rimuove il padding verticale di Bootstrap che disallinea le cose
                   className='d-flex align-items-center justify-content-center py-0 px-2'
                   style={{ height: '100%' }}
                 >
@@ -196,13 +214,10 @@ function MyNavbar() {
                 </Nav.Link>
               </Nav.Item>
 
-              {/* 2. NOTIFICA */}
-              {/* Avvolgiamo Notification in un contenitore identico agli altri */}
               <div className='d-flex align-items-center justify-content-center h-100'>
                 <Notification />
               </div>
 
-              {/* 3. SPINNER (Opzionale) */}
               {isLoadingUserData && (
                 <div className='d-flex align-items-center h-100'>
                   <Spinner
@@ -213,13 +228,12 @@ function MyNavbar() {
                 </div>
               )}
 
-              {/* 4. DROPDOWN UTENTE / AVATAR */}
               {isLoggedInAndLoaded && (
                 <NavDropdown
                   title={dropdownTitle}
                   id='basic-nav-dropdown'
                   align='end'
-                  className='no-caret d-flex align-items-center h-100' // Fondamentale: d-flex align-items-center qui
+                  className='no-caret d-flex align-items-center h-100'
                   style={{ margin: 0, padding: 0 }}
                 >
                   {isAdmin && (
@@ -267,7 +281,6 @@ function MyNavbar() {
                 </NavDropdown>
               )}
 
-              {/* 5. LINK LOGIN */}
               {!token && !isLoadingUserData && (
                 <Nav.Link
                   as={Link}
@@ -282,26 +295,121 @@ function MyNavbar() {
         </Container>
       </Navbar>
 
-      {/* 2. NAVBAR MOBILE FISSA IN BASSO (Mostrata solo su schermi XS/SM) */}
+      {/* 2. NAVBAR MOBILE */}
       <Navbar
         fixed='bottom'
         className='bg-dark d-flex d-sm-none'
         data-bs-theme='dark'
+        style={{ padding: 0 }}
       >
-        <Nav className='w-100 d-flex justify-content-around'>
-          {mobileLinks.map((link) => {
-            // Calcola se il link è attivo, riutilizzando la logica esistente
-            const isActive =
-              location.pathname === link.to ||
-              (link.label === 'Cerca' &&
-                location.pathname.startsWith('/cerca'));
+        <Nav className='w-100 d-flex justify-content-around align-items-center'>
+          {mobileLinks.map((link, index) => {
+            const isActive = location.pathname === link.to;
 
+            // ✅ CASO SPECIALE: NOTIFICHE
+            if (link.isNotification) {
+              return (
+                <div
+                  key={index}
+                  className='dropup text-center d-flex flex-column align-items-center justify-content-center mobile-nav-item'
+                  style={{
+                    padding: '0.4rem 0',
+                    flex: 1,
+                    minWidth: 'auto',
+                    color: 'white',
+                    height: '100%',
+                  }}
+                >
+                  {/*
+                      🔥 STILE CSS "MAGICO" PER RIMUOVERE IL PADDING DEFAULT DI BOOTSTRAP
+                      Questo sovrascrive il padding del Nav.Link interno a Notification
+                  */}
+                  <style type='text/css'>
+                    {`
+                      .mobile-notification-reset .nav-link {
+                        padding: 0 !important;
+                        color: white !important;
+                      }
+                      .mobile-notification-reset .nav-link svg {
+                        /* Assicura che l'icona interna abbia dimensione controllata */
+                        width: 20px;
+                        height: 20px;
+                      }
+                    `}
+                  </style>
+
+                  {/* Wrapper per centrare l'icona */}
+                  <div
+                    className='d-flex align-items-center justify-content-center w-100 mobile-notification-reset'
+                    style={{
+                      height: '24px', // Fissa l'altezza per allinearla alle altre icone
+                      marginBottom: '2px',
+                    }}
+                  >
+                    <Notification />
+                  </div>
+
+                  {/* Scritta centrata */}
+                  <small
+                    className='d-block w-100 text-center'
+                    style={{
+                      fontSize: '0.65rem',
+                      lineHeight: '1',
+                      color: 'white',
+                    }}
+                  >
+                    {link.label}
+                  </small>
+                </div>
+              );
+            }
+
+            // ✅ CASO SPECIALE: PROFILO LOGGATO (Dropup)
+            if (link.isNotification) {
+              return (
+                <div
+                  key={index}
+                  className='dropup text-center d-flex flex-column align-items-center justify-content-center mobile-nav-item'
+                  style={{
+                    padding: '0.4rem 0',
+                    flex: 1,
+                    minWidth: 'auto',
+                    color: 'white',
+                    height: '100%',
+                  }}
+                >
+                  <div
+                    className='d-flex align-items-center justify-content-center w-100'
+                    style={{
+                      height: '24px',
+                      marginBottom: '2px',
+                    }}
+                  >
+                    {/* 👇 AGGIUNGI isMobile={true} QUI! 👇 */}
+                    <Notification isMobile={true} />
+                  </div>
+
+                  <small
+                    className='d-block w-100 text-center'
+                    style={{
+                      fontSize: '0.65rem',
+                      lineHeight: '1',
+                      color: 'white',
+                    }}
+                  >
+                    {link.label}
+                  </small>
+                </div>
+              );
+            }
+
+            // LINK STANDARD
             return (
               <Nav.Link
                 key={link.to}
                 onClick={() => handleMobileNavClick(link.to)}
                 active={isActive}
-                className={`text-center d-flex flex-column align-items-center mobile-nav-item`}
+                className={`text-center d-flex flex-column align-items-center justify-content-center mobile-nav-item`}
                 style={{
                   padding: '0.4rem 0',
                   flex: 1,
@@ -309,14 +417,27 @@ function MyNavbar() {
                   color: 'white',
                 }}
               >
+                {/* Icona */}
                 <span
+                  className='d-flex align-items-center justify-content-center'
                   style={{
-                    color: isActive ? brandColor : 'white', // Usa brandColor quando attivo
+                    color: isActive ? brandColor : 'white',
+                    height: '24px', // Altezza fissa per l'icona
+                    marginBottom: '2px',
                   }}
                 >
                   {link.icon}
                 </span>
-                <small style={{ fontSize: '0.65rem' }}>{link.label}</small>
+                {/* Testo */}
+                <small
+                  style={{
+                    fontSize: '0.65rem',
+                    lineHeight: '1',
+                    marginTop: '0px',
+                  }}
+                >
+                  {link.label}
+                </small>
               </Nav.Link>
             );
           })}
