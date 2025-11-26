@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { NavDropdown, Badge, Spinner, Button } from 'react-bootstrap';
 import {
   FaTruck,
-  FaBoxOpen,
   FaShoppingCart,
   FaBell,
   FaTimesCircle,

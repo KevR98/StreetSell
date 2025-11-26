@@ -36,3 +36,26 @@ body {
 .color {
   color: #fa8229;
 }
+
+/* Responsive */
+
+/* Navbar */
+@media (max-width: 576px) {
+  body {
+    /* Altezza approssimativa della barra fissa (circa 50-60px) */
+    padding-bottom: 65px;
+  }
+}
+
+@media (max-width: 576px) {
+  .logo-responsive {
+    /* L'altezza di default era 40px, la riduciamo a 30px */
+    height: 30px !important;
+    width: auto; /* Mantieni le proporzioni */
+  }
+}
+
+/* Footer */
+.fs-7 {
+  font-size: 0.85rem !important;
+}

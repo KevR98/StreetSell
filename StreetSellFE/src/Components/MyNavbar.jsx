@@ -13,13 +13,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../Redux/Action';
 import logo from '../assets/streetsell-logo.png';
-import avatarDefault from '../assets/streetsell-profile-pic.png'; // Rinomino per chiarezza
+import avatarDefault from '../assets/streetsell-profile-pic.png';
 import {
   BsBoxArrowRight,
   BsFillTagFill,
   BsPersonFill,
   BsController,
   BsSearch,
+  BsHouseDoorFill, // ✅ NUOVA ICONA HOME
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
@@ -37,8 +38,6 @@ function MyNavbar() {
   const [searchType, setSearchType] = useState('prodotti');
 
   const token = localStorage.getItem('accessToken');
-
-  // Recuperiamo tutto l'oggetto user per sicurezza
   const user = useSelector((state) => state.auth.user);
   const username = user?.username;
   const ruolo = user?.ruolo;
@@ -47,27 +46,23 @@ function MyNavbar() {
   const isAdmin = ruolo === 'ADMIN';
   const isLoadingUserData = token && !username;
 
-  // ✅ CORREZIONE LOGICA AVATAR
-  // Se l'URL è nullo, vuoto o è la stringa "default" (il nostro trucco), usa l'immagine locale
   const hasValidAvatar =
     user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
-  // ✅ CORREZIONE TITOLO DROPDOWN (SOLO FOTO)
   const dropdownTitle = (
     <div className='d-flex align-items-center justify-content-center'>
       <img
         src={avatarToDisplay}
-        alt='Profilo' // Tolto username dall'alt per evitare che esca testo in caso di errore
-        className='rounded-circle' // Tolto 'me-2' perché non c'è testo a fianco
+        alt='Profilo'
+        className='rounded-circle'
         style={{
           width: '32px',
           height: '32px',
           objectFit: 'cover',
-          border: '1px solid #444', // Opzionale: bordo sottile per stacco
+          border: '1px solid #444',
         }}
       />
-      {/* Rimosso lo span ADMIN come richiesto ("solo il profilo") */}
     </div>
   );
 
@@ -77,7 +72,6 @@ function MyNavbar() {
     navigate('/login');
   };
 
-  // GESTIONE INVIO RICERCA
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (query.trim() !== '') {
@@ -86,92 +80,147 @@ function MyNavbar() {
     }
   };
 
+  // ✅ FUNZIONE PER NAVIGAZIONE MOBILE (Gestisce login/logout)
+  const handleMobileNavClick = (to) => {
+    // Se l'utente non è loggato e tenta di andare a /me, reindirizza al login
+    if (
+      !isLoggedInAndLoaded &&
+      (to === '/me' || to === '/crea-prodotto' || to === '/ordini/gestione')
+    ) {
+      navigate('/login');
+    } else {
+      navigate(to);
+    }
+  };
+
+  // ✅ DEFINIZIONE LINK MOBILE
+  const mobileLinks = [
+    { to: '/', icon: <BsHouseDoorFill size={20} />, label: 'Home' },
+    {
+      to: '/cerca?q=&type=prodotti',
+      icon: <BsSearch size={20} />,
+      label: 'Cerca',
+    },
+    { to: '/crea-prodotto', icon: <BsFillTagFill size={20} />, label: 'Vendi' },
+    { to: '/ordini/gestione', icon: <FaBoxOpen size={20} />, label: 'Ordini' },
+    { to: '/me', icon: <BsPersonFill size={20} />, label: 'Profilo' },
+  ];
+
   return (
-    <Navbar expand='lg' className='bg-dark' data-bs-theme='dark' sticky='top'>
-      <Container>
-        <Link
-          to='/'
-          className='d-flex align-items-center text-decoration-none me-3'
-        >
-          <img
-            src={logo}
-            alt='StreetSell Logo'
-            height='40'
-            style={{ objectFit: 'contain', display: 'block' }}
-          />
-        </Link>
-        <Navbar.Toggle aria-controls='basic-navbar-nav' />
-        <Navbar.Collapse id='basic-navbar-nav'>
-          <Nav>
-            <Nav.Link as={Link} to='/' active={location.pathname === '/'}>
-              Home
-            </Nav.Link>
-          </Nav>
-
-          <Form
-            className='d-flex flex-grow-1 mx-4'
-            onSubmit={handleSearchSubmit}
+    <>
+      {/* 1. NAVBAR DESKTOP (Mostrata da SM in su) */}
+      <Navbar
+        className='bg-dark mb-0 d-none d-sm-flex'
+        data-bs-theme='dark'
+        sticky='top'
+      >
+        <Container>
+          <Link
+            to='/'
+            className='d-flex align-items-center text-decoration-none me-2 me-sm-3'
           >
-            <InputGroup>
-              <Form.Select
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value)}
-                style={{
-                  maxWidth: '110px',
-                  backgroundColor: '#212529',
-                  color: '#f8f9fa',
-                  border: '1px solid #495057',
-                }}
-              >
-                <option value='prodotti'>Prodotti</option>
-                <option value='utenti'>Utenti</option>
-              </Form.Select>
+            <img
+              src={logo}
+              alt='StreetSell Logo'
+              height='40'
+              className='logo-responsive'
+              style={{ objectFit: 'contain', display: 'block' }}
+            />
+          </Link>
 
-              <FormControl
-                type='search'
-                placeholder={
-                  searchType === 'prodotti'
-                    ? 'Cerca un prodotto...'
-                    : 'Cerca un utente...'
-                }
-                aria-label='Search'
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+          <div className='d-flex flex-grow-1 align-items-center'>
+            <Form
+              className='d-flex flex-grow-1 mx-2 search-bar-responsive'
+              onSubmit={handleSearchSubmit}
+            >
+              <InputGroup>
+                <Form.Select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value)}
+                  className='d-none d-sm-block'
+                  style={{
+                    maxWidth: '110px',
+                    backgroundColor: '#212529',
+                    color: '#f8f9fa',
+                    border: '1px solid #495057',
+                  }}
+                >
+                  <option value='prodotti'>Prodotti</option>
+                  <option value='utenti'>Utenti</option>
+                </Form.Select>
 
-              <Button
-                type='submit'
-                style={{
-                  backgroundColor: brandColor,
-                  borderColor: brandColor,
-                }}
-              >
-                <BsSearch />
-              </Button>
-            </InputGroup>
-          </Form>
+                <FormControl
+                  type='search'
+                  placeholder='Cerca...'
+                  aria-label='Search'
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
 
-          <Nav className='ms-auto'>
-            {!token && !isLoadingUserData && (
-              <Nav.Link as={Link} to='/login'>
-                Login
-              </Nav.Link>
-            )}
-            <div className='d-flex align-items-center'>
-              <Notification />
+                <Button
+                  type='submit'
+                  style={{
+                    backgroundColor: brandColor,
+                    borderColor: brandColor,
+                  }}
+                >
+                  <BsSearch />
+                </Button>
+              </InputGroup>
+            </Form>
+          </div>
 
+          <Nav className='ms-auto flex-shrink-0'>
+            {/* gap-3 distanzia le "scatole" tra loro */}
+            <div
+              className='d-flex align-items-center gap-3'
+              style={{ height: '40px' }}
+            >
+              {/* 1. ICONA HOME */}
+              <Nav.Item className='d-none d-sm-flex align-items-center h-100 mx-3'>
+                <Nav.Link
+                  as={Link}
+                  to='/'
+                  active={location.pathname === '/'}
+                  // py-0 rimuove il padding verticale di Bootstrap che disallinea le cose
+                  className='d-flex align-items-center justify-content-center py-0 px-2'
+                  style={{ height: '100%' }}
+                >
+                  <BsHouseDoorFill
+                    style={{
+                      fontSize: '1.4rem',
+                      color: 'white',
+                      lineHeight: 1,
+                    }}
+                  />
+                </Nav.Link>
+              </Nav.Item>
+
+              {/* 2. NOTIFICA */}
+              {/* Avvolgiamo Notification in un contenitore identico agli altri */}
+              <div className='d-flex align-items-center justify-content-center h-100'>
+                <Notification />
+              </div>
+
+              {/* 3. SPINNER (Opzionale) */}
               {isLoadingUserData && (
-                <Nav.Item className='d-flex align-items-center'>
-                  <Spinner animation='border' size='sm' className='me-2' />
-                </Nav.Item>
+                <div className='d-flex align-items-center h-100'>
+                  <Spinner
+                    animation='border'
+                    size='sm'
+                    className='text-light'
+                  />
+                </div>
               )}
 
+              {/* 4. DROPDOWN UTENTE / AVATAR */}
               {isLoggedInAndLoaded && (
                 <NavDropdown
                   title={dropdownTitle}
                   id='basic-nav-dropdown'
                   align='end'
-                  className='no-caret' // Assicurati di avere CSS per nascondere la freccia se non la vuoi
+                  className='no-caret d-flex align-items-center h-100' // Fondamentale: d-flex align-items-center qui
+                  style={{ margin: 0, padding: 0 }}
                 >
                   {isAdmin && (
                     <NavDropdown.Item as={Link} to='/admin/dashboard'>
@@ -217,11 +266,63 @@ function MyNavbar() {
                   </NavDropdown.Item>
                 </NavDropdown>
               )}
+
+              {/* 5. LINK LOGIN */}
+              {!token && !isLoadingUserData && (
+                <Nav.Link
+                  as={Link}
+                  to='/login'
+                  className='d-none d-sm-flex align-items-center h-100 py-0'
+                >
+                  Login
+                </Nav.Link>
+              )}
             </div>
           </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+        </Container>
+      </Navbar>
+
+      {/* 2. NAVBAR MOBILE FISSA IN BASSO (Mostrata solo su schermi XS/SM) */}
+      <Navbar
+        fixed='bottom'
+        className='bg-dark d-flex d-sm-none'
+        data-bs-theme='dark'
+      >
+        <Nav className='w-100 d-flex justify-content-around'>
+          {mobileLinks.map((link) => {
+            // Calcola se il link è attivo, riutilizzando la logica esistente
+            const isActive =
+              location.pathname === link.to ||
+              (link.label === 'Cerca' &&
+                location.pathname.startsWith('/cerca'));
+
+            return (
+              <Nav.Link
+                key={link.to}
+                onClick={() => handleMobileNavClick(link.to)}
+                active={isActive}
+                className={`text-center d-flex flex-column align-items-center mobile-nav-item`}
+                style={{
+                  padding: '0.4rem 0',
+                  flex: 1,
+                  minWidth: 'auto',
+                  color: 'white',
+                }}
+              >
+                <span
+                  style={{
+                    color: isActive ? brandColor : 'white', // Usa brandColor quando attivo
+                  }}
+                >
+                  {link.icon}
+                </span>
+                <small style={{ fontSize: '0.65rem' }}>{link.label}</small>
+              </Nav.Link>
+            );
+          })}
+        </Nav>
+      </Navbar>
+    </>
   );
 }
 
