@@ -12,14 +12,15 @@ const ORDER_MANAGEMENT_ROUTE = '/ordini/gestione';
 
 const brandColor = '#fa8229';
 
-function Order({ prodottoId }) {
+// ✅ MODIFICATO: Accetta className, size e style
+function Order({ prodottoId, size, className, style }) {
   const [showModal, setShowModal] = useState(false);
   const [userAddresses, setUserAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
 
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [errorAddresses, setErrorAddresses] = useState(null);
-  const [isProcessingOrder, setIsProcessingOrder] = useState(false); // Per il pulsante Acquista
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
   const currentUser = useSelector((state) => state.auth.user);
   const token = localStorage.getItem('accessToken');
@@ -28,7 +29,7 @@ function Order({ prodottoId }) {
   // FUNZIONE PER CARICARE GLI INDIRIZZI
   const fetchUserAddresses = () => {
     if (!token) {
-      setErrorAddresses('Token non disponibile. Effettua il login.');
+      setErrorAddresses('Token non disponibile.');
       return;
     }
 
@@ -43,7 +44,7 @@ function Order({ prodottoId }) {
       .then((res) => {
         if (!res.ok) {
           throw new Error(
-            `Errore HTTP ${res.status}: Impossibile caricare gli indirizzi.`
+            `Errore HTTP ${res.status}: Caricamento indirizzi fallito.`
           );
         }
         return res.json();
@@ -51,11 +52,10 @@ function Order({ prodottoId }) {
       .then((data) => {
         setUserAddresses(data);
         if (data.length > 0) {
-          setSelectedAddressId(data[0].id); // Seleziona il primo di default
+          setSelectedAddressId(data[0].id);
         }
       })
       .catch((err) => {
-        console.error('Errore nel caricamento degli indirizzi:', err.message);
         setErrorAddresses(err.message);
       })
       .finally(() => {
@@ -65,7 +65,6 @@ function Order({ prodottoId }) {
 
   // FETCH DEGLI INDIRIZZI AL MONTAGGIO DEL COMPONENTE
   useEffect(() => {
-    // Carica gli indirizzi solo se l'utente è loggato e non stiamo già caricando
     if (currentUser && !userAddresses.length) {
       fetchUserAddresses();
     }
@@ -98,11 +97,9 @@ function Order({ prodottoId }) {
         if (res.ok) {
           return res.json();
         } else {
-          // Gestione degli errori dal backend (es. Prodotto non disponibile)
           return res.json().then((errData) => {
             throw new Error(
-              errData.message ||
-                'Acquisto fallito: Errore di validazione o disponibilità.'
+              errData.message || 'Acquisto fallito: Errore di validazione.'
             );
           });
         }
@@ -110,7 +107,6 @@ function Order({ prodottoId }) {
       .then((newOrder) => {
         alert(`Ordine creato con successo! Stato: ${newOrder.statoOrdine}`);
         setShowModal(false);
-        // Reindirizzamento a una pagina di successo o alla lista ordini
         navigate(ORDER_MANAGEMENT_ROUTE);
       })
       .catch((err) => {
@@ -128,8 +124,8 @@ function Order({ prodottoId }) {
     return (
       <Button
         variant='success'
-        size='lg'
-        className='w-100'
+        size={size || 'lg'}
+        className={className || 'w-100'}
         as={Link}
         to='/login'
       >
@@ -139,7 +135,6 @@ function Order({ prodottoId }) {
   }
 
   if (errorAddresses) {
-    // Mostra il componente riutilizzabile ErrorAlert
     return <ErrorAlert message={errorAddresses} />;
   }
 
@@ -147,11 +142,16 @@ function Order({ prodottoId }) {
   return (
     <>
       <Button
-        style={{ backgroundColor: brandColor, borderColor: brandColor }}
-        size='lg'
-        className='w-100'
-        onClick={() => setShowModal(true)} // Apre il modal
-        disabled={loadingAddresses || isProcessingOrder} // Disabilita durante il caricamento
+        style={{
+          ...style,
+          backgroundColor: brandColor,
+          borderColor: brandColor,
+        }}
+        // ✅ FONDAMENTALE: Passiamo size, className e style ricevuti
+        size={size}
+        className={className}
+        onClick={() => setShowModal(true)}
+        disabled={loadingAddresses || isProcessingOrder}
       >
         {loadingAddresses ? (
           <LoadingSpinner size='sm' />
@@ -164,7 +164,6 @@ function Order({ prodottoId }) {
         )}
       </Button>
 
-      {/* Il Modal viene renderizzato ma è visibile solo se showModal è true */}
       <PurchaseModal
         show={showModal}
         handleClose={() => setShowModal(false)}
@@ -173,8 +172,8 @@ function Order({ prodottoId }) {
         onSelectAddress={setSelectedAddressId}
         onConfirmPurchase={handlePurchase}
         isProcessing={isProcessingOrder}
-        onFetchAddresses={fetchUserAddresses} // Permette al modal di ricaricare la lista
-        token={token} // Passa il token per l'API POST del form
+        onFetchAddresses={fetchUserAddresses}
+        token={token}
       />
     </>
   );

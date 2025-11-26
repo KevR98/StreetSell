@@ -9,8 +9,7 @@ import {
   Carousel,
   Modal,
   Badge,
-  Alert, // Aggiunto Alert
-  Card, // Aggiunto Card per la visualizzazione
+  Alert,
 } from 'react-bootstrap';
 import BackButton from './BackButton';
 import LoadingSpinner from './LoadingSpinner';
@@ -32,18 +31,14 @@ function Details() {
   const token = localStorage.getItem('accessToken');
   const navigate = useNavigate();
 
-  // Stati del Modal Carosello
   const [showModal, setShowModal] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
 
-  // STATO PER GLI ALTRI ANNUNCI
   const [otherProducts, setOtherProducts] = useState([]);
   const [isLoadingOther, setIsLoadingOther] = useState(false);
-
-  // Conteggio totale prima del filtro (incluso il prodotto corrente)
   const [totalSellerProductsCount, setTotalSellerProductsCount] = useState(0);
 
-  // UNZIONE FETCH PER GLI ALTRI ANNUNCI
+  // Logica fetch
   const fetchOtherProducts = (sellerId) => {
     setIsLoadingOther(true);
     fetch(`${userProductsEndpoint}/${sellerId}`)
@@ -58,11 +53,7 @@ function Details() {
       })
       .then((data) => {
         const rawData = Array.isArray(data) ? data : [];
-
-        // IMPOSTA IL CONTEGGIO TOTALE PRIMA DEL FILTRO
         setTotalSellerProductsCount(rawData.length);
-
-        // Filtra il prodotto corrente dalla lista e limita a 4
         const filteredData = rawData
           .filter((p) => p.id !== prodottoId)
           .slice(0, 4);
@@ -72,12 +63,11 @@ function Details() {
       .catch((err) => {
         console.error('Errore nel caricamento degli altri prodotti:', err);
         setOtherProducts([]);
-        setTotalSellerProductsCount(0); // Resetta il conteggio in caso di errore
+        setTotalSellerProductsCount(0);
       })
       .finally(() => setIsLoadingOther(false));
   };
 
-  // Logica fetch principale
   useEffect(() => {
     fetch(endpoint + '/' + prodottoId)
       .then((res) => {
@@ -92,11 +82,9 @@ function Details() {
         setError(false);
         setProdotto(prodottoDetail);
 
-        // Dopo aver caricato il prodotto, se ha un venditore, carichiamo gli altri annunci
         if (prodottoDetail.venditore && prodottoDetail.venditore.id) {
           fetchOtherProducts(prodottoDetail.venditore.id);
         } else {
-          // Se non c'è venditore, forziamo il reset dei conteggi
           setTotalSellerProductsCount(0);
         }
       })
@@ -168,7 +156,7 @@ function Details() {
   const canBuy =
     !isOwner && !isAdmin && prodotto.statoProdotto === 'DISPONIBILE';
 
-  // Logica per le immagini (miniatura e fallback)
+  // Logica per le immagini
   const immaginiCarousel =
     prodotto.immagini && prodotto.immagini.length > 0
       ? prodotto.immagini
@@ -194,216 +182,280 @@ function Details() {
 
   const venditoreUsername = prodotto.venditore?.username || 'questo venditore';
 
-  return (
-    <Container className='my-5'>
-      <BackButton />
+  // Funzione per rendering Bottoni di Azione (Affiancati e Uniformi)
+  const renderActionButtons = (isFixedMobile = false) => {
+    const buttonClass = isFixedMobile ? 'btn-sm' : 'btn-lg';
+    const fontClass = isFixedMobile ? 'fs-7-custom' : ''; // ✅ Classe Font Ridotta
 
-      <Row>
-        {/* COLONNA 1 (md=6): GRIGLIA IMMAGINI */}
-        <Col
-          md={6}
-          className='d-flex flex-wrap gap-2'
-          style={{ backgroundColor: 'transparent' }}
-        >
-          {visibleImages.map((img, index) => {
-            const isLarge = index === 0;
-            const smallImageHeight = '196px';
-
-            const sizeStyle = {
-              width: isLarge ? '100%' : 'calc(50% - 8px)',
-              height: isLarge ? '400px' : smallImageHeight,
-              overflow: 'hidden',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              position: 'relative',
-            };
-
-            const showOverlay = index === 2 && remainingImagesCount > 0;
-
-            const clickHandler = showOverlay
-              ? () => handleShowModal(index)
-              : () => handleShowModal(index);
-
-            return (
-              <div
-                key={img.id || index}
-                style={sizeStyle}
-                onClick={clickHandler}
-              >
-                <img
-                  src={img.url}
-                  alt={`${prodotto.titolo} - ${index}`}
-                  className='w-100 h-100'
-                  style={{ objectFit: 'cover' }}
-                />
-
-                {/* Badge per le immagini rimanenti */}
-                {showOverlay && (
-                  <div
-                    className='position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center'
-                    style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                      zIndex: 10,
-                    }}
-                  >
-                    <Badge
-                      bg='light'
-                      text='dark'
-                      style={{
-                        fontSize: '1.2em',
-                        padding: '10px 15px',
-                        opacity: 0.9,
-                      }}
-                    >
-                      +{remainingImagesCount} altre
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </Col>
-
-        <Col md={6} className='pt-4 pt-md-0'>
-          {/* TITOLO E PREZZO */}
-          <h3 className='mb-2 fw-bold'>{prodotto.titolo}</h3>
-
-          <p className='fw-bold mb-3' style={{ fontSize: '1.8rem' }}>
-            € {prodotto.prezzo.toFixed(2)}
-          </p>
-
-          <hr className='my-3' />
-
-          {/* TABELLA DETTAGLI CHIAVE */}
-          <h4 className='mb-3'>Dettagli Prodotto</h4>
-          <Row className='mb-4 small'>
-            <Col xs={4} className='fw-bold'>
-              Condizione:
-            </Col>
-            <Col xs={8}>{prodotto.condizione}</Col>
-
-            <Col xs={4} className='fw-bold'>
-              Venditore:
-            </Col>
-            <Col xs={8}>
-              {prodotto.venditore ? (
-                <Link to={`/utenti/${prodotto.venditore.id}`}>
-                  {prodotto.venditore.username}
-                </Link>
-              ) : (
-                'N/D'
-              )}
-            </Col>
-
-            <Col xs={4} className='fw-bold'>
-              Categoria:
-            </Col>
-            <Col xs={8}>{prodotto.categoria || 'N/D'}</Col>
-          </Row>
-
-          {/* DESCRIZIONE */}
-          <h4 className='mb-2'>Descrizione</h4>
-          <p className='small text-muted mb-4'>{prodotto.descrizione}</p>
-
-          <hr className='my-3' />
-
-          {/* BOTTONI DI AZIONE (ACQUISTA/MODIFICA) */}
-          {canModerate ? (
-            <div className='d-flex gap-3'>
-              <Link
-                to={`/modifica-prodotto/${prodotto.id}`}
-                className='btn btn-warning btn-lg flex-grow-1'
-              >
-                ✏️ Modifica Annuncio
-              </Link>
-              <Button
-                variant='danger'
-                size='lg'
-                className='flex-grow-1'
-                onClick={handleDelete}
-              >
-                🗑️ Elimina Annuncio
-              </Button>
-            </div>
-          ) : canBuy ? (
-            <div className='d-flex flex-column gap-2'>
-              <Order prodottoId={prodotto.id} />
-              <Button
-                style={{
-                  color: brandColor,
-                  backgroundColor: 'transparent',
-                  borderColor: brandColor,
-                }}
-                size='lg'
-                className='w-100'
-              >
-                Fai un'offerta
-              </Button>
-            </div>
-          ) : (
-            <Button variant='secondary' size='lg' className='w-100' disabled>
-              Non Disponibile / Venduto
-            </Button>
-          )}
-        </Col>
-      </Row>
-
-      {/* ALTRI ANNUNCI DEL VENDITORE */}
-      {totalSellerProductsCount > 0 && !isOwner && (
-        <div className='mt-5'>
-          <h4 className='mb-3'>Altri annunci di {venditoreUsername}</h4>
-          <hr />
-
-          {isLoadingOther ? (
-            <LoadingSpinner size='sm' />
-          ) : otherProducts.length > 0 ? (
-            <Row className='g-4'>
-              {otherProducts.map((otherProdotto) => (
-                <Col md={3} sm={6} xs={12} key={otherProdotto.id}>
-                  <ProductCard prodotto={otherProdotto} />
-                </Col>
-              ))}
-            </Row>
-          ) : totalSellerProductsCount === 1 ? (
-            // SOLO QUESTO PRODOTTO IN VENDITA
-            <Alert variant='info'>
-              Il venditore ({venditoreUsername}) ha solo questo annuncio attivo
-              in vendita al momento.
-            </Alert>
-          ) : (
-            // NESSUN PRODOTTO (dovrebbe essere coperto dal count > 0)
-            <Alert variant='info'>
-              Nessun altro annuncio disponibile da questo venditore.
-            </Alert>
-          )}
-        </div>
-      )}
-
-      {/* MODAL CAROUSELLO (NON MODIFICATO) */}
-      <Modal show={showModal} onHide={handleCloseModal} size='xl' centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Immagini Prodotto</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className='p-0'>
-          <Carousel
-            activeIndex={modalIndex}
-            onSelect={(idx) => setModalIndex(idx)}
-            interval={null}
+    if (canModerate) {
+      return (
+        <div className={`d-flex gap-3 ${isFixedMobile ? 'w-100' : ''}`}>
+          <Link
+            to={`/modifica-prodotto/${prodotto.id}`}
+            className={`btn btn-warning ${buttonClass} flex-grow-1 ${fontClass}`}
           >
-            {immaginiCarousel.map((img, index) => (
-              <Carousel.Item key={img.id || index}>
-                <img
-                  className='d-block w-100'
-                  src={img.url}
-                  alt={`${prodotto.titolo} - ${index}`}
-                  style={{ maxHeight: '80vh', objectFit: 'contain' }}
-                />
-              </Carousel.Item>
-            ))}
-          </Carousel>
-        </Modal.Body>
-      </Modal>
-    </Container>
+            ✏️ Modifica Annuncio
+          </Link>
+          <Button
+            variant='danger'
+            size={buttonClass}
+            className={`flex-grow-1 ${fontClass}`}
+            onClick={handleDelete}
+          >
+            🗑️ Elimina Annuncio
+          </Button>
+        </div>
+      );
+    }
+
+    if (canBuy) {
+      return (
+        <div className={`d-flex gap-2 ${isFixedMobile ? 'w-100' : ''}`}>
+          {/* Order deve ricevere la classe per forzare l'uniformità (es. btn-sm) */}
+          <Order
+            prodottoId={prodotto.id}
+            className={`flex-grow-1 ${buttonClass} ${fontClass}`}
+          />
+          <Button
+            style={{
+              color: brandColor,
+              backgroundColor: 'transparent',
+              borderColor: brandColor,
+            }}
+            size={buttonClass}
+            className={`flex-grow-1 ${fontClass}`}
+          >
+            Fai un'offerta
+          </Button>
+        </div>
+      );
+    }
+
+    if (!canBuy && !canModerate && !isFixedMobile) {
+      return (
+        <Button
+          variant='secondary'
+          size={buttonClass}
+          className='w-100'
+          disabled
+        >
+          Non Disponibile / Venduto
+        </Button>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <>
+      {/* Contenitore principale */}
+      <Container className='my-5 details-responsive-container'>
+        <BackButton />
+
+        <Row>
+          {/* CAROUSEL MOBILE (Visibile solo su XS/SM) */}
+          <Col xs={12} className='d-block d-md-none mb-3'>
+            <Carousel
+              activeIndex={modalIndex}
+              onSelect={setModalIndex}
+              interval={null}
+              touch={true}
+              controls={true}
+              indicators={true}
+              className='mobile-carousel-height'
+            >
+              {immaginiCarousel.map((img, index) => (
+                <Carousel.Item key={img.id || index}>
+                  <img
+                    className='d-block w-100'
+                    src={img.url}
+                    alt={`${prodotto.titolo} - ${index}`}
+                    onClick={() => handleShowModal(index)}
+                    style={{
+                      objectFit: 'cover',
+                      height: '100%',
+                      borderRadius: '8px',
+                    }}
+                  />
+                </Carousel.Item>
+              ))}
+            </Carousel>
+          </Col>
+
+          {/* COLONNA 1 (md=6): GRIGLIA IMMAGINI (Visibile solo da MD in su) */}
+          <Col md={6} className='d-none d-md-flex flex-column gap-2'>
+            <div className='d-flex flex-wrap gap-2'>
+              {visibleImages.map((img, index) => {
+                const isLarge = index === 0;
+
+                const wrapperClasses = isLarge
+                  ? 'details-img-large'
+                  : 'details-img-small';
+                const sizeClasses = isLarge ? 'w-100' : 'w-100 w-md-50';
+
+                const showOverlay = index === 2 && remainingImagesCount > 0;
+                const clickHandler = () => handleShowModal(index);
+
+                return (
+                  <div
+                    key={img.id || index}
+                    className={`position-relative cursor-pointer ${wrapperClasses} ${sizeClasses}`}
+                    onClick={clickHandler}
+                    style={{ overflow: 'hidden', borderRadius: '8px' }}
+                  >
+                    <img
+                      src={img.url}
+                      alt={`${prodotto.titolo} - ${index}`}
+                      className='w-100 h-100'
+                      style={{ objectFit: 'cover' }}
+                    />
+
+                    {showOverlay && (
+                      <div
+                        className='position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center'
+                        style={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                          zIndex: 10,
+                        }}
+                      >
+                        <Badge
+                          bg='light'
+                          text='dark'
+                          className='fs-6 fs-md-5'
+                          style={{
+                            padding: '10px 15px',
+                            opacity: 0.9,
+                          }}
+                        >
+                          +{remainingImagesCount} altre
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Col>
+
+          {/* COLONNA 2 (md=6): DETTAGLI */}
+          <Col md={6} className='pt-4 pt-md-0'>
+            {/* TITOLO E PREZZO */}
+            <h3 className='mb-2 fw-bold fs-3 fs-md-1'>{prodotto.titolo}</h3>
+            <p
+              className='fw-bold mb-3 fs-4 fs-md-2'
+              style={{ color: brandColor }}
+            >
+              € {prodotto.prezzo.toFixed(2)}
+            </p>
+
+            <hr className='my-3' />
+
+            {/* TABELLA DETTAGLI CHIAVE */}
+            <h4 className='mb-3 fs-6 fs-md-5'>Dettagli Prodotto</h4>
+            <Row className='mb-4 fs-7-custom fs-md-6'>
+              <Col xs={4} className='fw-bold'>
+                Condizione:
+              </Col>
+              <Col xs={8}>{prodotto.condizione}</Col>
+              <Col xs={4} className='fw-bold'>
+                Venditore:
+              </Col>
+              <Col xs={8}>
+                {prodotto.venditore ? (
+                  <Link to={`/utenti/${prodotto.venditore.id}`}>
+                    {prodotto.venditore.username}
+                  </Link>
+                ) : (
+                  'N/D'
+                )}
+              </Col>
+              <Col xs={4} className='fw-bold'>
+                Categoria:
+              </Col>
+              <Col xs={8}>{prodotto.categoria || 'N/D'}</Col>
+            </Row>
+
+            {/* DESCRIZIONE */}
+            <h4 className='mb-2 fs-6 fs-md-5'>Descrizione</h4>
+            <p className='small text-muted mb-4 fs-7-custom fs-md-6'>
+              {prodotto.descrizione}
+            </p>
+
+            <hr className='d-sm-block d-none' />
+            {/* BOTTONI DI AZIONE (VISIBILI SOLO SU DESKTOP/COLONNA) */}
+            <div className='d-none d-md-block'>{renderActionButtons()}</div>
+          </Col>
+        </Row>
+
+        <hr className='d-block d-sm-none' />
+
+        {/* ALTRI ANNUNCI DEL VENDITORE */}
+        {totalSellerProductsCount > 0 && !isOwner && (
+          <div className='mt-5'>
+            <h4 className='mb-3 fs-5 fs-md-4'>
+              Altri annunci di {venditoreUsername}
+            </h4>
+            <hr className='d-sm-block d-none' />
+
+            {isLoadingOther ? (
+              <LoadingSpinner size='sm' />
+            ) : otherProducts.length > 0 ? (
+              <Row className='g-4' xs={2} sm={2} md={4} lg={4}>
+                {otherProducts.map((otherProdotto) => (
+                  <Col key={otherProdotto.id}>
+                    <ProductCard prodotto={otherProdotto} />
+                  </Col>
+                ))}
+              </Row>
+            ) : totalSellerProductsCount === 1 ? (
+              <Alert variant='info'>
+                Il venditore ({venditoreUsername}) ha solo questo annuncio
+                attivo in vendita al momento.
+              </Alert>
+            ) : (
+              <Alert variant='info'>
+                Nessun altro annuncio disponibile da questo venditore.
+              </Alert>
+            )}
+          </div>
+        )}
+
+        {/* MODAL CAROUSELLO (Lasciato invariato) */}
+        <Modal show={showModal} onHide={handleCloseModal} size='xl' centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Immagini Prodotto</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className='p-0'>
+            <Carousel
+              activeIndex={modalIndex}
+              onSelect={(idx) => setModalIndex(idx)}
+              interval={null}
+            >
+              {immaginiCarousel.map((img, index) => (
+                <Carousel.Item key={img.id || index}>
+                  <img
+                    className='d-block w-100'
+                    src={img.url}
+                    alt={`${prodotto.titolo} - ${index}`}
+                    style={{ maxHeight: '80vh', objectFit: 'contain' }}
+                  />
+                </Carousel.Item>
+              ))}
+            </Carousel>
+          </Modal.Body>
+        </Modal>
+      </Container>
+
+      {/* === BARRA DI AZIONE FISSA IN BASSO (MOBILE) === */}
+      {(canBuy || canModerate) && (
+        <footer className='fixed-bottom bg-white border-top shadow-lg z-3 d-md-none mobile-action-bar'>
+          <Container fluid className='px-3 py-3'>
+            {renderActionButtons(true)}
+          </Container>
+        </footer>
+      )}
+    </>
   );
 }
 

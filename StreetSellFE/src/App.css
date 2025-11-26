@@ -135,3 +135,32 @@ body {
     white-space: nowrap; /* Impedisce che la data vada a capo */
   }
 }
+
+/* Details */
+.details-img-large {
+  height: 400px;
+}
+.details-img-small {
+  /* La metà dell'immagine grande, meno metà dello spazio gap-2 (4px) */
+  height: calc(200px - 4px);
+}
+
+/* Su schermi piccoli (mobile, sotto i 768px): le immagini si accorciano e impilano */
+@media (max-width: 767px) {
+  .details-img-large,
+  .details-img-small {
+    /* Riduci l'altezza per schermi stretti, ma mantieni proporzione */
+    height: 280px;
+    width: 100% !important; /* Forza full width su mobile */
+  }
+}
+
+@media (max-width: 767px) {
+  /* ... (Regole per le immagini del carosello) ... */
+
+  /* NEW: AUMENTA IL MARGINE INFERIORE FINO A VEDERE TUTTO */
+  /* Aumentiamo il padding a 160px per essere sicuri di liberare tutto lo spazio. */
+  .details-responsive-container {
+    padding-bottom: 35px !important;
+  }
+}
