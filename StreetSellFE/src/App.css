@@ -72,7 +72,66 @@ body {
   }
 }
 
-/* Footer */
-.fs-7 {
-  font-size: 0.85rem !important;
+/* Generale */
+.fs-7-custom {
+  font-size: 0.8rem !important;
+}
+.fs-8-custom {
+  font-size: 0.7rem !important;
+}
+
+.image-wrapper-responsive {
+  height: 300px;
+}
+
+/* Regola generale per l'immagine sui dispositivi piccoli */
+@media (max-width: 768px) {
+  .image-wrapper-responsive {
+    height: 250px;
+  }
+}
+
+/* ------------------------------------------- */
+/* MODIFICA ESTREMA PER 2 COLONNE SU XS (< 400px) */
+/* ------------------------------------------- */
+
+@media (max-width: 400px) {
+  /* 1. Riduciamo l'altezza dell'immagine al minimo */
+  .image-wrapper-responsive {
+    height: 150px !important; /* Altezza minima per la larghezza di 160px */
+  }
+
+  /* 2. Riduciamo il padding interno delle card */
+  .product-card-responsive .card-body {
+    padding: 0.5rem !important;
+  }
+
+  /* 3. Comprimiamo Titolo e Prezzo */
+  .product-card-responsive .card-title {
+    font-size: 0.75rem !important; /* Più piccolo del fs-6 di Bootstrap */
+    line-height: 1.1;
+  }
+
+  .product-card-responsive .card-text.fw-bold {
+    /* Prezzo */
+    font-size: 0.8rem !important;
+  }
+
+  /* 4. Comprimiamo al massimo Descrizione e Condizione (limita a 1 riga) */
+  .product-card-responsive .fs-7-custom {
+    font-size: 0.65rem !important;
+
+    /* Forza il troncamento a una riga */
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0 !important;
+  }
+
+  /* 5. Comprimiamo la data di pubblicazione */
+  .product-card-responsive .fs-8-custom {
+    font-size: 0.6rem !important;
+    white-space: nowrap; /* Impedisce che la data vada a capo */
+  }
 }

@@ -9,7 +9,6 @@ function ProductCard({ prodotto }) {
   }
 
   // Logica per preparare le immagini:
-  // Se non ci sono immagini, usiamo un array contenente solo il placeholder.
   const immaginiCarousel =
     prodotto.immagini && prodotto.immagini.length > 0
       ? prodotto.immagini
@@ -17,7 +16,6 @@ function ProductCard({ prodotto }) {
           {
             urlImmagine:
               'https://via.placeholder.com/300x200?text=Annuncio+StreetSell',
-            // ID fittizio per la chiave React, se non c'è l'immagine reale
             id: 'placeholder-0',
           },
         ];
@@ -72,18 +70,17 @@ function ProductCard({ prodotto }) {
 
   return (
     <Link
-      as={Link}
       to={`/prodotto/${prodotto.id}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
       <Card
-        className='h-100 border-0'
+        className='h-100 border-0 product-card-responsive'
         style={{ backgroundColor: 'transparent' }}
       >
         <div
+          className='image-wrapper-responsive'
           style={{
             width: '100%',
-            height: '400px',
             overflow: 'hidden',
             borderRadius: '8px',
             position: 'relative',
@@ -95,7 +92,6 @@ function ProductCard({ prodotto }) {
             className='w-100 h-100'
             style={{
               objectFit: 'cover',
-              // Centratura opzionale per coerenza con il vecchio stile
               display: 'block',
             }}
           />
@@ -104,29 +100,35 @@ function ProductCard({ prodotto }) {
         {/* Corpo della Card */}
         <Card.Body className='d-flex flex-column p-2'>
           <div className='mb-2'>
-            {/* Titolo: Normale ma in grassetto, come richiesto */}
-            <Card.Title className='mb-1 fw-bold' style={{ fontSize: '1em' }}>
+            {/* Titolo: Usiamo la classe fs-6 su mobile, fs-5 su tablet e desktop */}
+            <Card.Title className='mb-1 fw-bold fs-6 fs-md-5'>
               {prodotto.titolo}
             </Card.Title>
 
-            {/* Descrizione (lascia che Bootstrap gestisca il wrap) */}
-            <Card.Text className='mb-1 small text-muted'>
+            {/* Descrizione */}
+            <Card.Text className='mb-1 text-muted fs-7-custom'>
               Descrizione: {shortDescription}
             </Card.Text>
 
             {/* Condizione */}
-            <Card.Text className='mb-1 small'>
+            <Card.Text className='mb-1 fs-7-custom'>
               {displayCondizione(prodotto.condizione)}
             </Card.Text>
           </div>
           <div className='mt-auto d-flex justify-content-between align-items-end'>
-            <Card.Text className='mb-0 fw-bold' style={{ fontSize: '0.9em' }}>
+            {/* PREZZO: nowrap per mantenere l'euro unito al numero */}
+            <Card.Text
+              className='mb-0 fw-bold fs-6 fs-md-5'
+              style={{ whiteSpace: 'nowrap' }}
+            >
               {prodotto.prezzo ? parseFloat(prodotto.prezzo).toFixed(2) : 'N/D'}{' '}
               €
             </Card.Text>
+
+            {/* ✅ DATA DI PUBBLICAZIONE: Nascondi su Extra-Small (XS), Mostra da Small (SM) in su */}
             <Card.Text
-              className='text-secondary mb-0'
-              style={{ fontSize: '0.75em' }}
+              className='text-secondary mb-0 fs-8-custom d-none d-sm-block' // <- CLASSE AGGIUNTA
+              style={{ whiteSpace: 'nowrap' }}
             >
               Pubblicato: <strong>{formattedDate}</strong>
             </Card.Text>
