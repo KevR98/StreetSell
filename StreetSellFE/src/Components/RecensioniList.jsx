@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Card, Spinner, Alert, ListGroup, Pagination } from 'react-bootstrap';
+import { Card, ListGroup, Pagination, Image } from 'react-bootstrap'; // ✅ Aggiunto Image
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import { FaStar } from 'react-icons/fa';
+
+// Assumiamo che l'immagine di default sia qui
+import avatarDefault from '../assets/streetsell-profile-pic.png';
 
 const endpoint = 'http://localhost:8888/utenti';
 
@@ -93,7 +96,7 @@ const RecensioniList = ({ utenteId }) => {
 
       <hr />
 
-      {/* Riepilogo del Rating (MODIFICATO) */}
+      {/* Riepilogo del Rating */}
       <Card
         className='border-0 mb-4 p-3'
         style={{ backgroundColor: 'transparent' }}
@@ -122,7 +125,7 @@ const RecensioniList = ({ utenteId }) => {
             </div>
           </div>
 
-          {/* Conteggio Recensioni (MODIFICATO in p con font più grande) */}
+          {/* Conteggio Recensioni */}
           <div className='text-center ps-4 border-start'>
             <p className='mb-0 text-muted'>Totale Recensioni:</p>
             <p style={{ fontSize: '2rem' }}>{reviewCount}</p>
@@ -142,38 +145,68 @@ const RecensioniList = ({ utenteId }) => {
           {recensioni.length > 0 ? (
             <ListGroup variant='flush'>
               <h3 className='mb-3'>Commenti</h3>
-              {recensioni.map((r) => (
-                <ListGroup.Item
-                  key={r.id}
-                  style={{ backgroundColor: 'transparent' }}
-                >
-                  <div className='d-flex justify-content-between align-items-start'>
-                    <h6 className='mb-1 text-warning'>
-                      {[...Array(r.valutazione)].map((_, i) => (
-                        <FaStar
-                          key={i}
-                          size={16}
-                          color='#ffc107'
-                          className='me-1'
+              {recensioni.map((r) => {
+                // ✅ Logica per l'Avatar
+                const reviewAvatarUrl =
+                  r.recensore.avatarUrl && r.recensore.avatarUrl !== 'default'
+                    ? r.recensore.avatarUrl
+                    : avatarDefault;
+
+                return (
+                  <ListGroup.Item
+                    key={r.id}
+                    style={{ backgroundColor: 'transparent' }}
+                  >
+                    {/* ✅ FOOTER CON AVATAR */}
+                    <div className='d-flex justify-content-between align-items-center mb-2'>
+                      {/* BLOCCO SINISTRO: Avatar + Username + Rating */}
+                      <div className='d-flex align-items-center'>
+                        <Image
+                          src={reviewAvatarUrl}
+                          alt={`${r.recensore.username} Avatar`}
+                          roundedCircle
+                          className='me-2'
+                          style={{
+                            width: '50px',
+                            height: '50px',
+                            objectFit: 'cover',
+                          }}
                         />
-                      ))}
-                      <span className='ms-1 text-dark'>
-                        {r.valutazione} / 5
-                      </span>
-                    </h6>
-                    <small className='text-muted'>
-                      {new Date(r.dataCreazione).toLocaleDateString()}
-                    </small>
-                  </div>
-                  <p className='mb-1'>{r.commento}</p>
-                  <footer className='blockquote-footer mt-1'>
-                    Scritta da: {r.recensore.username}
-                  </footer>
-                </ListGroup.Item>
-              ))}
+
+                        {/* USERNAME e RATING (Raggruppati) */}
+                        <div className='d-flex align-items-center'>
+                          <span className='text-dark fw-bold me-2'>
+                            {r.recensore.username}
+                          </span>
+
+                          <h6 className='mb-0 text-warning d-flex align-items-center ms-2'>
+                            {[...Array(r.valutazione)].map((_, i) => (
+                              <FaStar
+                                key={i}
+                                size={16}
+                                color='#ffc107'
+                                className='me-1'
+                              />
+                            ))}
+                            <span className='ms-1 text-dark fw-normal'>
+                              / 5
+                            </span>
+                          </h6>
+                        </div>
+                      </div>
+
+                      {/* BLOCCO DESTRO: Data di Creazione */}
+                      <small className='text-muted flex-shrink-0'>
+                        {new Date(r.dataCreazione).toLocaleDateString()}
+                      </small>
+                    </div>
+                    <p className='mb-1'>- {r.commento}</p>
+                  </ListGroup.Item>
+                );
+              })}
             </ListGroup>
           ) : (
-            <Alert variant='info'>Ancora nessuna recensione ricevuta.</Alert>
+            <p>Ancora nessuna recensione ricevuta.</p>
           )}
 
           {/* Paginazione */}
