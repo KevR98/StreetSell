@@ -12,22 +12,31 @@ import {
 import ProductCard from './ProductCard';
 import BackButton from './BackButton';
 
+const brandColor = '#fa8229';
+
 function SearchResults() {
   const [searchParams] = useSearchParams();
-  const query = searchParams.get('q');
+
+  // Variabile per la visualizzazione (mantiene la capitalizzazione originale)
+  const rawQuery = searchParams.get('q');
+
+  // ✅ Variabile inviata all'API (forzata in minuscolo per case-insensitivity)
+  const searchQuery = rawQuery ? rawQuery.toLowerCase() : '';
+
   const type = searchParams.get('type') || 'prodotti'; // Default prodotti
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Endpoint dinamico in base al tipo
+  // Endpoint dinamico in base al tipo. Usa searchQuery.
   const endpoint =
     type === 'prodotti'
-      ? `http://localhost:8888/prodotti/cerca?q=${query}`
-      : `http://localhost:8888/utenti/cerca?q=${query}`;
+      ? `http://localhost:8888/prodotti/cerca?q=${searchQuery}`
+      : `http://localhost:8888/utenti/cerca?q=${searchQuery}`;
 
   useEffect(() => {
-    if (!query) return;
+    // Usiamo searchQuery per evitare fetch inutili
+    if (!searchQuery) return;
 
     setLoading(true);
     fetch(endpoint)
@@ -45,13 +54,14 @@ function SearchResults() {
         setResults([]);
         setLoading(false);
       });
-  }, [query, type, endpoint]);
+  }, [searchQuery, type, endpoint]); // Aggiornate le dipendenze
 
   return (
     <Container className='my-5'>
       <BackButton />
       <h2 className='mb-4'>
-        Risultati ricerca per: <span className='text-primary'>"{query}"</span>
+        {/* Usiamo rawQuery per mostrare all'utente il termine originale */}
+        Risultati ricerca per: <span className='color'>"{rawQuery}"</span>
         <span className='text-muted h5 ms-2'>
           ({type === 'prodotti' ? 'Prodotti' : 'Utenti'})
         </span>
@@ -72,7 +82,10 @@ function SearchResults() {
                 <ProductCard prodotto={item} />
               ) : (
                 // --- CARD UTENTE ---
-                <Card className='h-100 text-center shadow-sm'>
+                <Card
+                  className='h-100 text-center border-0'
+                  style={{ backgroundColor: 'transparent' }}
+                >
                   <Card.Body className='d-flex flex-column align-items-center justify-content-center'>
                     <div
                       className='rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mb-3'
@@ -95,7 +108,10 @@ function SearchResults() {
                     <Button
                       as={Link}
                       to={`/utenti/${item.id}`}
-                      variant='outline-primary'
+                      style={{
+                        backgroundColor: brandColor,
+                        borderColor: brandColor,
+                      }}
                       size='sm'
                     >
                       Visita Profilo
