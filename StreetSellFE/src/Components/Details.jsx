@@ -216,17 +216,6 @@ function Details() {
             prodottoId={prodotto.id}
             className={`flex-grow-1 ${buttonClass} ${fontClass}`}
           />
-          <Button
-            style={{
-              color: brandColor,
-              backgroundColor: 'transparent',
-              borderColor: brandColor,
-            }}
-            size={buttonClass}
-            className={`flex-grow-1 ${fontClass}`}
-          >
-            Fai un'offerta
-          </Button>
         </div>
       );
     }

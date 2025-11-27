@@ -56,7 +56,6 @@ function MyNavbar() {
 
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState('prodotti');
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const token = localStorage.getItem('accessToken');
   const user = useSelector((state) => state.auth.user);
@@ -98,13 +97,12 @@ function MyNavbar() {
     if (query.trim() !== '') {
       navigate(`/cerca?q=${query}&type=${searchType}`);
       setQuery('');
-      setShowMobileSearch(false);
     }
   };
 
   const handleMobileNavClick = (to) => {
-    if (to.includes('/cerca') && to.length < 8) {
-      setShowMobileSearch(true);
+    if (to === '/cerca') {
+      navigate(to);
       return;
     }
 
@@ -130,69 +128,102 @@ function MyNavbar() {
     { to: '/me', icon: <BsPersonFill size={20} />, label: 'Profilo' },
   ];
 
-  // ✅ COMPONENTE PER LA BARRA DI RICERCA MOBILE (Overlay) AGGIORNATO
-  const MobileSearchOverlay = () => {
-    if (!showMobileSearch) return null;
+  const isHome = location.pathname === '/';
+
+  // ✅ BARRA DI RICERCA FISSA - DARK MODE
+  const MobileHomeSearchBar = () => {
+    if (!isHome) return null;
+
+    const inputHeight = '36px';
 
     return (
-      <Navbar
-        fixed='top'
-        className='bg-dark d-flex d-sm-none shadow align-items-center'
-        data-bs-theme='dark'
-        style={{ padding: '0.5rem 1rem', zIndex: 1040 }}
-      >
-        <Form
-          className='d-flex flex-grow-1 align-items-center'
-          onSubmit={handleSearchSubmit}
-        >
-          <InputGroup className='w-100'>
-            <Form.Select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value)}
-              style={{
-                maxWidth: '110px',
-                backgroundColor: '#212529',
-                color: '#f8f9fa',
-                border: '1px solid #495057',
-              }}
-            >
-              <option value='prodotti'>Prodotti</option>
-              <option value='utenti'>Utenti</option>
-            </Form.Select>
+      <>
+        <style type='text/css'>
+          {`
+              /* Classe per colorare il placeholder in dark mode */
+              .dark-placeholder::placeholder {
+                color: #adb5bd !important;
+                opacity: 1;
+              }
+            `}
+        </style>
 
-            <FormControl
-              type='search'
-              placeholder='Cerca...'
-              aria-label='Search'
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-
-            <Button
-              type='submit'
-              style={{
-                backgroundColor: brandColor,
-                borderColor: brandColor,
-              }}
-            >
-              <BsSearch />
-            </Button>
-          </InputGroup>
-        </Form>
-        <Button
-          variant='link'
-          className='text-white ms-2 p-0 text-nowrap align-self-center' // ✅ AGGIUNTO align-self-center
-          onClick={() => setShowMobileSearch(false)}
+        {/* 1. BARRA REALE (Fixed) */}
+        <Navbar
+          fixed='top'
+          className='bg-dark d-flex d-sm-none shadow align-items-center'
+          data-bs-theme='dark'
+          style={{
+            padding: '8px 15px',
+            zIndex: 1030,
+            minHeight: 'auto',
+          }}
         >
-          Chiudi
-        </Button>
-      </Navbar>
+          <Form
+            className='d-flex flex-grow-1 align-items-center'
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (query.trim() !== '') {
+                // 🔥 MODIFICA QUI: type='all' per ricerca universale
+                navigate(`/cerca?q=${query}&type=all`);
+                setQuery('');
+              }
+            }}
+            style={{ margin: 0 }}
+          >
+            <InputGroup className='w-100'>
+              {/* INPUT: Dark Mode */}
+              <FormControl
+                type='search'
+                placeholder='Cerca prodotto o utente...' // 🔥 Testo aggiornato
+                aria-label='Search'
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className='dark-placeholder border-0 shadow-none'
+                style={{
+                  fontSize: '0.90rem',
+                  height: inputHeight,
+                  backgroundColor: '#2b3035', // 🔥 Sfondo scuro
+                  color: '#fff', // 🔥 Testo bianco
+                  borderTopLeftRadius: '20px',
+                  borderBottomLeftRadius: '20px',
+                  paddingLeft: '15px',
+                }}
+              />
+
+              {/* BOTTONE */}
+              <Button
+                type='submit'
+                className='border-0'
+                style={{
+                  backgroundColor: brandColor,
+                  height: inputHeight,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 20px',
+                  borderTopRightRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                }}
+              >
+                <BsSearch size={16} color='white' />
+              </Button>
+            </InputGroup>
+          </Form>
+        </Navbar>
+
+        {/* 2. SPACER - Altezza calcolata */}
+        <div
+          className='d-block d-sm-none'
+          style={{ height: '52px', width: '100%' }}
+        />
+      </>
     );
   };
 
   return (
     <>
-      <MobileSearchOverlay />
+      <MobileHomeSearchBar />
 
       {/* 1. NAVBAR DESKTOP */}
       <Navbar
@@ -367,7 +398,6 @@ function MyNavbar() {
         data-bs-theme='dark'
         style={{ padding: 0 }}
       >
-        {/* BLOCCO STILE PER IL RESET CSS AGGRESSIVO */}
         <style type='text/css'>
           {`
             .mobile-notification-reset .nav-link,
@@ -400,7 +430,6 @@ function MyNavbar() {
                     height: '100%',
                   }}
                 >
-                  {/* Icona Wrapper: Diamo l'altezza fissa e la classe di reset */}
                   <div
                     className='d-flex align-items-center justify-content-center w-100 mobile-notification-reset'
                     style={{
@@ -410,7 +439,6 @@ function MyNavbar() {
                     <Notification isMobile={true} />
                   </div>
 
-                  {/* Scritta: Blocchiamo la centratura al 100% dello slot */}
                   <small
                     className='d-block w-100 text-center'
                     style={{
@@ -426,7 +454,7 @@ function MyNavbar() {
               );
             }
 
-            // CASO SPECIALE: PROFILO LOGGATO (Dropup)
+            // CASO SPECIALE: PROFILO LOGGATO
             if (link.label === 'Profilo' && isLoggedInAndLoaded) {
               return (
                 <Dropdown
@@ -489,7 +517,7 @@ function MyNavbar() {
               );
             }
 
-            // LINK STANDARD (Home, Cerca, Vendi)
+            // LINK STANDARD
             return (
               <Nav.Link
                 key={link.to}
