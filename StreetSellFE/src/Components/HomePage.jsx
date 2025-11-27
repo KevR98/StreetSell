@@ -8,7 +8,7 @@ function HomePage() {
       className='d-flex flex-column align-items-center justify-content-center text-center'
       style={{
         minHeight: '80vh',
-        // 🔥 RIMOSSO: paddingTop: '60px',
+        // 🔥 RIMOSSO: paddingTop è gestito da chi lo chiama o si centra da solo
         paddingBottom: '60px', // Mantenuto per non essere coperto dalla Navbar inferiore
       }}
     >

@@ -1,36 +1,65 @@
-import React, { useEffect, useState, useCallback } from 'react'; // Aggiungi React
-import { NavDropdown, Badge, Spinner, Button, Dropdown } from 'react-bootstrap'; // Aggiungi Dropdown
-import {
-  FaTruck,
-  FaShoppingCart,
-  FaBell,
-  FaTimesCircle,
-  FaCheckCircle,
-} from 'react-icons/fa';
+import React, { useEffect, useState, useCallback } from 'react';
+import { NavDropdown, Badge, Spinner, Button, Dropdown } from 'react-bootstrap';
+import { FaTruck, FaShoppingCart, FaBell, FaCheckCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // 1. Importato useNavigate
 
 const MANAGEMENT_ENDPOINT = 'http://localhost:8888/ordini/gestione';
 const STORAGE_KEY = 'hidden_notification_ids';
 const POLLING_INTERVAL = 30000;
 
-// ✅ TOGGLE CUSTOM PER MOBILE (Rimuove stili default link/padding)
+// ✅ TOGGLE CUSTOM PER MOBILE
 const MobileNotificationToggle = React.forwardRef(
-  ({ children, onClick }, ref) => (
+  ({ onClick, icon, count }, ref) => (
     <div
       ref={ref}
       onClick={(e) => {
         e.preventDefault();
         onClick(e);
       }}
-      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+      style={{
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        position: 'relative',
+        color: 'white',
+      }}
     >
-      {children}
+      <div
+        style={{
+          position: 'relative',
+          height: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {icon || <FaBell size={20} />}
+        {count > 0 && (
+          <Badge
+            pill
+            bg='danger'
+            className='position-absolute top-0 start-100 translate-middle'
+            style={{
+              fontSize: '0.65rem',
+              padding: '0.15em 0.4em',
+              lineHeight: '1',
+              zIndex: 10,
+            }}
+          >
+            {count > 9 ? '9+' : count}
+          </Badge>
+        )}
+      </div>
     </div>
   )
 );
 
-function Notification({ isMobile = false }) {
+function Notification({ isMobile = false, icon }) {
+  const navigate = useNavigate(); // 2. Definito useNavigate (FONDAMENTALE)
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hiddenIds, setHiddenIds] = useState(new Set());
@@ -43,217 +72,200 @@ function Notification({ isMobile = false }) {
     return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY;
   }, []);
 
-  const hideNotification = useCallback((id) => {
-    setHiddenIds((prevIds) => new Set(prevIds).add(id));
-  }, []);
-
-  const clearAllNotifications = useCallback(() => {
-    const currentVisibleIds = notifications.map((n) => n.id);
-    setHiddenIds((prevIds) => new Set([...prevIds, ...currentVisibleIds]));
-  }, [notifications]);
-
-  useEffect(() => {
-    if (currentUser && currentUser.id) {
-      try {
-        const key = getStorageKey(currentUser.id);
-        const storedData = localStorage.getItem(key);
-        if (storedData) {
-          setHiddenIds(new Set(JSON.parse(storedData)));
-        } else {
-          setHiddenIds(new Set());
-        }
-      } catch {
-        setHiddenIds(new Set());
-      } finally {
-        setIsStorageLoaded(true);
+  const loadHiddenIds = useCallback(
+    (userId) => {
+      const key = getStorageKey(userId);
+      const storedIds = localStorage.getItem(key);
+      if (storedIds) {
+        setHiddenIds(new Set(JSON.parse(storedIds)));
       }
-    } else {
-      setHiddenIds(new Set());
-      setIsStorageLoaded(false);
-    }
-  }, [currentUser, getStorageKey]);
+      setIsStorageLoaded(true);
+    },
+    [getStorageKey]
+  );
 
-  useEffect(() => {
-    if (!currentUser || !isStorageLoaded) return;
-    try {
-      const idsArray = Array.from(hiddenIds);
-      const key = getStorageKey(currentUser.id);
-      localStorage.setItem(key, JSON.stringify(idsArray));
-    } catch (e) {
-      console.error('Errore localStorage:', e);
-    }
-  }, [hiddenIds, currentUser, getStorageKey, isStorageLoaded]);
+  const saveHiddenIds = useCallback(
+    (ids, userId) => {
+      const key = getStorageKey(userId);
+      localStorage.setItem(key, JSON.stringify(Array.from(ids)));
+    },
+    [getStorageKey]
+  );
 
   const fetchNotifications = useCallback(async () => {
-    setIsLoading(true);
-    let allNotifications = [];
-    const headers = { Authorization: `Bearer ${token}` };
-    const currentUserId = currentUser?.id;
-
-    if (!token || !currentUser) {
-      setIsLoading(false);
-      return;
-    }
+    if (!token || !currentUser || !isStorageLoaded) return;
 
     try {
-      const resManagement = await fetch(MANAGEMENT_ENDPOINT, { headers });
-      if (!resManagement.ok) throw new Error('Errore fetch');
-      const ordiniGestione = await resManagement.json();
+      const res = await fetch(MANAGEMENT_ENDPOINT, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (Array.isArray(ordiniGestione)) {
-        ordiniGestione.forEach((order) => {
-          const isUserVendor = order.venditore?.id === currentUserId;
-          const isUserBuyer = order.compratore?.id === currentUserId;
-          const compratore = order.compratore?.username || 'Utente';
-          const venditore = order.venditore?.username || 'Venditore';
-          const prodotto = order.prodotto?.titolo || 'Prodotto';
-
-          if (isUserVendor) {
-            if (
-              order.statoOrdine === 'CONFERMATO' ||
-              order.statoOrdine === 'IN_ATTESA'
-            ) {
-              allNotifications.push({
-                id: order.id,
-                type: 'VENDITORE_ACQUISTO',
-                message: `🎉 ${compratore} ha comprato: ${prodotto}.`,
-                date: new Date(order.dataOrdine),
-                prodottoId: order.prodotto?.id,
-              });
-            } else if (order.statoOrdine === 'ANNULLATO') {
-              allNotifications.push({
-                id: order.id + '-annull',
-                type: 'VENDITORE_ANNULLATO',
-                message: `❌ ${compratore} ha annullato per ${prodotto}.`,
-                date: new Date(order.dataOrdine),
-                prodottoId: order.prodotto?.id,
-              });
-            } else if (order.statoOrdine === 'COMPLETATO') {
-              allNotifications.push({
-                id: order.id + '-vend-comp',
-                type: 'VENDITORE_COMPLETATO',
-                message: `🎉 Ordine completato per ${prodotto}!`,
-                date: new Date(order.dataOrdine),
-                prodottoId: order.prodotto?.id,
-              });
-            }
-          }
-
-          if (isUserBuyer && order.statoOrdine === 'SPEDITO') {
-            allNotifications.push({
-              id: order.id + '-comp',
-              type: 'COMPRATORE_SPEDITO',
-              message: `🚚 ${venditore} ha spedito ${prodotto}.`,
-              date: new Date(order.dataOrdine),
-              prodottoId: order.prodotto?.id,
-            });
-          }
-        });
+      if (!res.ok) {
+        throw new Error('Errore nel caricamento delle notifiche');
       }
-      allNotifications.sort((a, b) => b.date.getTime() - a.date.getTime());
-      setNotifications(allNotifications);
-    } catch {
-      setNotifications([]);
+
+      const data = await res.json();
+      const allOrders = Array.isArray(data) ? data : [];
+
+      const newNotifications = allOrders
+        .filter(
+          (order) =>
+            order.statoOrdine !== 'COMPLETATO' &&
+            order.statoOrdine !== 'ANNULLATO'
+        )
+        .map((order) => ({
+          id: order.id,
+          type: order.statoOrdine,
+          prodotto: order.prodotto.titolo,
+          orderId: order.id,
+          data: new Date(order.dataOrdine),
+        }));
+
+      newNotifications.sort((a, b) => b.data - a.data);
+
+      setNotifications(newNotifications);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
-  }, [token, currentUser]);
+  }, [token, currentUser, isStorageLoaded]);
 
   useEffect(() => {
-    if (!token || !currentUser) return;
-    fetchNotifications();
-    const intervalId = setInterval(fetchNotifications, POLLING_INTERVAL);
-    return () => clearInterval(intervalId);
-  }, [token, currentUser, fetchNotifications]);
+    if (currentUser) {
+      loadHiddenIds(currentUser.id);
+    } else {
+      setIsStorageLoaded(true);
+    }
+  }, [currentUser, loadHiddenIds]);
 
-  if (!currentUser || !token) return null;
+  useEffect(() => {
+    if (isStorageLoaded && currentUser && token) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, POLLING_INTERVAL);
+      return () => clearInterval(interval);
+    }
+  }, [token, currentUser, isStorageLoaded, fetchNotifications]);
+
+  const hideNotification = (id) => {
+    const newHiddenIds = new Set(hiddenIds);
+    newHiddenIds.add(id);
+    setHiddenIds(newHiddenIds);
+    saveHiddenIds(newHiddenIds, currentUser.id);
+  };
+
+  const clearAllNotifications = () => {
+    const allIds = new Set(notifications.map((n) => n.id));
+    setHiddenIds(allIds);
+    saveHiddenIds(allIds, currentUser.id);
+  };
+
+  const formatNotificationMessage = (notif) => {
+    let iconRender, message, variant;
+
+    switch (notif.type) {
+      case 'IN_PREPARAZIONE':
+        iconRender = <FaShoppingCart className='text-info me-2' />;
+        message = `Ordine #${notif.orderId} (Prodotto: ${notif.prodotto}) è in preparazione.`;
+        variant = 'info';
+        break;
+      case 'IN_SPEDIZIONE':
+        iconRender = <FaTruck className='text-primary me-2' />;
+        message = `Ordine #${notif.orderId} (Prodotto: ${notif.prodotto}) è in spedizione.`;
+        variant = 'primary';
+        break;
+      case 'CONSEGNATO':
+        iconRender = <FaCheckCircle className='text-success me-2' />;
+        message = `Ordine #${notif.orderId} (Prodotto: ${notif.prodotto}) è stato consegnato!`;
+        variant = 'success';
+        break;
+      default:
+        iconRender = <FaBell className='text-secondary me-2' />;
+        message = `Nuova notifica: ${notif.prodotto}.`;
+        variant = 'secondary';
+    }
+
+    const timeAgo = Math.floor((new Date() - notif.data) / (1000 * 60));
+    let timeText;
+    if (timeAgo < 1) {
+      timeText = 'Ora';
+    } else if (timeAgo < 60) {
+      timeText = `${timeAgo}m fa`;
+    } else if (timeAgo < 1440) {
+      timeText = `${Math.floor(timeAgo / 60)}h fa`;
+    } else {
+      timeText = `${Math.floor(timeAgo / 1440)}g fa`;
+    }
+
+    return { iconRender, message, timeText, variant };
+  };
 
   const visibleNotifications = notifications.filter(
-    (n) => !hiddenIds.has(n.id)
+    (notif) => !hiddenIds.has(notif.id)
   );
-  const totalCount = visibleNotifications.length;
 
-  // ✅ TITOLO (Icona + Badge)
-  // Se è mobile, rimuovo il margine a destra dell'icona (me-2) per centrarla
   const titleContent = (
-    <div className='d-flex align-items-center position-relative'>
-      <FaBell size={20} className={isMobile ? '' : 'me-2'} />
-      {totalCount > 0 && (
-        <Badge
-          bg='danger'
-          pill
-          className='position-absolute top-0 start-100 translate-middle ms-1'
-        >
-          {isLoading ? (
-            <Spinner animation='border' size='sm' className='p-0 m-0' />
-          ) : (
-            totalCount
-          )}
+    <div className='d-flex align-items-center'>
+      <FaBell size={20} className='me-2' />
+      Notifiche
+      {visibleNotifications.length > 0 && (
+        <Badge pill bg='danger' className='ms-2'>
+          {visibleNotifications.length > 9 ? '9+' : visibleNotifications.length}
         </Badge>
       )}
     </div>
   );
 
-  // ✅ CONTENUTO DEL MENU (Estratto per riusarlo)
   const renderDropdownItems = () => (
     <>
-      {isLoading && <Dropdown.ItemText>Caricamento...</Dropdown.ItemText>}
-      {!isLoading && visibleNotifications.length === 0 && (
-        <Dropdown.ItemText>Nessuna notifica.</Dropdown.ItemText>
-      )}
-
-      {visibleNotifications.slice(0, 5).map((notif) => (
-        <Dropdown.Item
-          key={notif.id}
-          as={notif.type.endsWith('_ANNULLATO') ? 'div' : Link}
-          to={
-            notif.type.endsWith('_ANNULLATO')
-              ? '#'
-              : notif.type.startsWith('VENDITORE')
-              ? '/ordini/gestione'
-              : `/prodotto/${notif.prodottoId}`
-          }
-          className='small position-relative d-flex align-items-center'
-          style={{ whiteSpace: 'normal', minWidth: '280px' }} // Fix per testo lungo
-          onClick={
-            notif.type.endsWith('_ANNULLATO')
-              ? (e) => e.preventDefault()
-              : undefined
-          }
-        >
-          <span className='flex-grow-1'>
-            {notif.type === 'VENDITORE_ACQUISTO' ? (
-              <FaShoppingCart className='text-success me-2' />
-            ) : notif.type === 'COMPRATORE_SPEDITO' ? (
-              <FaTruck className='text-primary me-2' />
-            ) : notif.type === 'VENDITORE_ANNULLATO' ? (
-              <FaTimesCircle className='text-danger me-2' />
-            ) : (
-              <FaCheckCircle className='text-info me-2' />
-            )}
-            {notif.message}
-            <span
-              className='d-block text-muted'
-              style={{ fontSize: '0.75rem' }}
+      {isLoading ? (
+        <Dropdown.ItemText className='text-center'>
+          <Spinner animation='border' size='sm' /> Caricamento...
+        </Dropdown.ItemText>
+      ) : visibleNotifications.length === 0 ? (
+        <Dropdown.ItemText className='text-center text-muted'>
+          Nessuna notifica.
+        </Dropdown.ItemText>
+      ) : (
+        visibleNotifications.slice(0, 5).map((notif) => {
+          const { iconRender, message, timeText } =
+            formatNotificationMessage(notif);
+          return (
+            <Dropdown.Item
+              key={notif.id}
+              className='d-flex justify-content-between align-items-start dropdown-item-custom'
+              as='div'
+              style={{ cursor: 'pointer' }} // Aggiunto style per feedback visivo
+              onClick={() => navigate(`/ordini/gestione`)} // Ora navigate funziona
             >
-              {notif.date.toLocaleTimeString()}
-            </span>
-          </span>
-
-          <Button
-            variant='link'
-            size='sm'
-            className='p-0 ms-auto text-muted'
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              hideNotification(notif.id);
-            }}
-          >
-            &times;
-          </Button>
-        </Dropdown.Item>
-      ))}
+              <div className='d-flex flex-column me-2'>
+                <div className='small fw-bold text-wrap'>
+                  {iconRender}
+                  {message}
+                </div>
+                <div className='text-muted' style={{ fontSize: '0.75rem' }}>
+                  {timeText}
+                </div>
+              </div>
+              <Button
+                variant='link'
+                size='sm'
+                className='ms-auto text-muted p-0'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  hideNotification(notif.id);
+                }}
+              >
+                &times;
+              </Button>
+            </Dropdown.Item>
+          );
+        })
+      )}
 
       {visibleNotifications.length > 0 && <Dropdown.Divider />}
 
@@ -266,6 +278,7 @@ function Notification({ isMobile = false }) {
           >
             Cancella
           </Button>
+          {/* Link funziona sempre perché è importato */}
           <Link to='/ordini/gestione' className='btn btn-link btn-sm'>
             Gestione
           </Link>
@@ -274,13 +287,16 @@ function Notification({ isMobile = false }) {
     </>
   );
 
-  // 📱 RENDER MOBILE: Usa Dropdown "pulito" (niente stili NavLink)
+  // 📱 RENDER MOBILE
   if (isMobile) {
     return (
       <Dropdown drop='up' align='end'>
-        <Dropdown.Toggle as={MobileNotificationToggle}>
-          {titleContent}
-        </Dropdown.Toggle>
+        <Dropdown.Toggle
+          as={MobileNotificationToggle}
+          icon={icon}
+          count={visibleNotifications.length}
+          id='dropdown-mobile-notifications'
+        />
         <Dropdown.Menu className='shadow border-0'>
           {renderDropdownItems()}
         </Dropdown.Menu>
@@ -288,7 +304,7 @@ function Notification({ isMobile = false }) {
     );
   }
 
-  // 💻 RENDER DESKTOP: Usa NavDropdown standard (con margini e caret)
+  // 💻 RENDER DESKTOP
   return (
     <NavDropdown
       title={titleContent}

@@ -23,6 +23,7 @@ import {
   BsController,
   BsSearch,
   BsHouseDoorFill,
+  BsBellFill, // 🔥 AGGIUNTO: Icona campanella per uso mobile
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
@@ -70,6 +71,10 @@ function MyNavbar() {
     user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
+  // 🔥 FIX 1: La barra di ricerca fissa deve apparire solo in Home (/) E se l'utente è loggato.
+  const shouldShowFixedSearchBar =
+    isLoggedInAndLoaded && location.pathname === '/';
+
   const dropdownTitle = (
     <div className='d-flex align-items-center justify-content-center'>
       <img
@@ -106,33 +111,63 @@ function MyNavbar() {
       return;
     }
 
-    if (
-      !isLoggedInAndLoaded &&
-      (to === '/me' || to === '/crea-prodotto' || to === '/ordini/gestione')
-    ) {
+    // Controlla se il link richiede autenticazione (es. /me, /crea-prodotto)
+    const requiresAuth = allMobileLinks.find(
+      (link) => link.to === to
+    )?.requiresAuth;
+
+    if (!isLoggedInAndLoaded && requiresAuth) {
       navigate('/login');
     } else {
       navigate(to);
     }
   };
 
-  const mobileLinks = [
-    { to: '/', icon: <BsHouseDoorFill size={20} />, label: 'Home' },
+  // ✅ Lista di link mobile
+  const allMobileLinks = [
+    {
+      to: '/',
+      icon: <BsHouseDoorFill size={20} />,
+      label: 'Home',
+      requiresAuth: false,
+    },
     {
       to: '/cerca',
       icon: <BsSearch size={20} />,
       label: 'Cerca',
+      requiresAuth: false,
     },
-    { to: '/crea-prodotto', icon: <BsFillTagFill size={20} />, label: 'Vendi' },
-    { label: 'Notifiche', isNotification: true },
-    { to: '/me', icon: <BsPersonFill size={20} />, label: 'Profilo' },
+    {
+      to: '/crea-prodotto',
+      icon: <BsFillTagFill size={20} />,
+      label: 'Vendi',
+      requiresAuth: true,
+    },
+    // 🔥 FIX 2: Aggiunto l'icona BsBellFill alla configurazione mobile
+    {
+      label: 'Notifiche',
+      isNotification: true,
+      requiresAuth: true,
+      icon: <BsBellFill size={20} />,
+    },
+    {
+      to: '/me',
+      icon: <BsPersonFill size={20} />,
+      label: 'Profilo',
+      requiresAuth: true,
+    },
   ];
 
-  const isHome = location.pathname === '/';
+  // Filtra i link in base allo stato di login
+  // Mostra solo Home e Cerca se non loggato, altrimenti tutti
+  const mobileLinks = isLoggedInAndLoaded
+    ? allMobileLinks
+    : allMobileLinks.filter((link) => !link.requiresAuth);
 
-  // ✅ BARRA DI RICERCA FISSA - DARK MODE
+  // ✅ BARRA DI RICERCA FISSA (SOLO MOBILE E SOLO IN HOME LOGGATA)
   const MobileHomeSearchBar = () => {
-    if (!isHome) return null;
+    // 🔥 FIX 1: Usa la condizione shouldShowFixedSearchBar
+    if (!shouldShowFixedSearchBar) return null;
 
     const inputHeight = '36px';
 
@@ -140,7 +175,6 @@ function MyNavbar() {
       <>
         <style type='text/css'>
           {`
-              /* Classe per colorare il placeholder in dark mode */
               .dark-placeholder::placeholder {
                 color: #adb5bd !important;
                 opacity: 1;
@@ -164,7 +198,6 @@ function MyNavbar() {
             onSubmit={(e) => {
               e.preventDefault();
               if (query.trim() !== '') {
-                // 🔥 MODIFICA QUI: type='all' per ricerca universale
                 navigate(`/cerca?q=${query}&type=all`);
                 setQuery('');
               }
@@ -172,10 +205,9 @@ function MyNavbar() {
             style={{ margin: 0 }}
           >
             <InputGroup className='w-100'>
-              {/* INPUT: Dark Mode */}
               <FormControl
                 type='search'
-                placeholder='Cerca prodotto o utente...' // 🔥 Testo aggiornato
+                placeholder='Cerca prodotto o utente...'
                 aria-label='Search'
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -183,15 +215,14 @@ function MyNavbar() {
                 style={{
                   fontSize: '0.90rem',
                   height: inputHeight,
-                  backgroundColor: '#2b3035', // 🔥 Sfondo scuro
-                  color: '#fff', // 🔥 Testo bianco
+                  backgroundColor: '#2b3035',
+                  color: '#fff',
                   borderTopLeftRadius: '20px',
                   borderBottomLeftRadius: '20px',
                   paddingLeft: '15px',
                 }}
               />
 
-              {/* BOTTONE */}
               <Button
                 type='submit'
                 className='border-0'
@@ -212,7 +243,7 @@ function MyNavbar() {
           </Form>
         </Navbar>
 
-        {/* 2. SPACER - Altezza calcolata */}
+        {/* 2. SPACER - Solo se loggato e in Home */}
         <div
           className='d-block d-sm-none'
           style={{ height: '52px', width: '100%' }}
@@ -310,9 +341,12 @@ function MyNavbar() {
                 </Nav.Link>
               </Nav.Item>
 
-              <div className='d-flex align-items-center justify-content-center h-100'>
-                <Notification />
-              </div>
+              {/* Mostra Notifiche solo se loggato */}
+              {isLoggedInAndLoaded && (
+                <div className='d-flex align-items-center justify-content-center h-100'>
+                  <Notification />
+                </div>
+              )}
 
               {isLoadingUserData && (
                 <div className='d-flex align-items-center h-100'>
@@ -377,6 +411,7 @@ function MyNavbar() {
                 </NavDropdown>
               )}
 
+              {/* Link Login/Registrazione per desktop */}
               {!token && !isLoadingUserData && (
                 <Nav.Link
                   as={Link}
@@ -391,7 +426,7 @@ function MyNavbar() {
         </Container>
       </Navbar>
 
-      {/* 2. NAVBAR MOBILE */}
+      {/* 2. NAVBAR MOBILE (Footer) */}
       <Navbar
         fixed='bottom'
         className='bg-dark d-flex d-sm-none'
@@ -418,6 +453,8 @@ function MyNavbar() {
 
             // CASO SPECIALE: NOTIFICHE
             if (link.isNotification) {
+              if (!isLoggedInAndLoaded) return null;
+
               return (
                 <div
                   key={index}
@@ -427,7 +464,6 @@ function MyNavbar() {
                     flex: 1,
                     minWidth: 'auto',
                     color: 'white',
-                    height: '100%',
                   }}
                 >
                   <div
@@ -436,7 +472,8 @@ function MyNavbar() {
                       height: '24px',
                     }}
                   >
-                    <Notification isMobile={true} />
+                    {/* 🔥 FIX 2: Passiamo l'icona alla notifica per visualizzarla */}
+                    <Notification isMobile={true} icon={link.icon} />
                   </div>
 
                   <small
@@ -502,10 +539,15 @@ function MyNavbar() {
                     <Dropdown.Item as={Link} to='/ordini/gestione'>
                       <FaBoxOpen className='me-2' /> Ordini
                     </Dropdown.Item>
-                    <Dropdown.Item as={Link} to='/crea-prodotto'>
-                      <BsFillTagFill className='me-2' /> Vendi
+                    <Dropdown.Item
+                      as={Link}
+                      to='/crea-prodotto'
+                      className='d-flex align-items-center'
+                    >
+                      <BsFillTagFill style={{ marginRight: '8px' }} />
+                      Vendi
                     </Dropdown.Item>
-                    <Dropdown.Divider />
+                    <NavDropdown.Divider />
                     <Dropdown.Item
                       onClick={handleLogout}
                       className='text-danger'
@@ -517,7 +559,7 @@ function MyNavbar() {
               );
             }
 
-            // LINK STANDARD
+            // LINK STANDARD (Home, Cerca, Vendi se loggato)
             return (
               <Nav.Link
                 key={link.to}
