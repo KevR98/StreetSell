@@ -23,7 +23,8 @@ import {
   BsController,
   BsSearch,
   BsHouseDoorFill,
-  BsBellFill, // 🔥 AGGIUNTO: Icona campanella per uso mobile
+  BsBellFill,
+  BsBoxArrowInRight, // ✅ 1. AGGIUNTO IMPORT ICONA LOGIN
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
@@ -71,7 +72,7 @@ function MyNavbar() {
     user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
 
-  // 🔥 FIX 1: La barra di ricerca fissa deve apparire solo in Home (/) E se l'utente è loggato.
+  // La barra di ricerca fissa appare solo in Home (/) E se l'utente è loggato.
   const shouldShowFixedSearchBar =
     isLoggedInAndLoaded && location.pathname === '/';
 
@@ -111,7 +112,7 @@ function MyNavbar() {
       return;
     }
 
-    // Controlla se il link richiede autenticazione (es. /me, /crea-prodotto)
+    // Controlla se il link richiede autenticazione
     const requiresAuth = allMobileLinks.find(
       (link) => link.to === to
     )?.requiresAuth;
@@ -123,7 +124,7 @@ function MyNavbar() {
     }
   };
 
-  // ✅ Lista di link mobile
+  // Elenco base dei link mobile
   const allMobileLinks = [
     {
       to: '/',
@@ -143,7 +144,6 @@ function MyNavbar() {
       label: 'Vendi',
       requiresAuth: true,
     },
-    // 🔥 FIX 2: Aggiunto l'icona BsBellFill alla configurazione mobile
     {
       label: 'Notifiche',
       isNotification: true,
@@ -158,15 +158,42 @@ function MyNavbar() {
     },
   ];
 
-  // Filtra i link in base allo stato di login
-  // Mostra solo Home e Cerca se non loggato, altrimenti tutti
-  const mobileLinks = isLoggedInAndLoaded
-    ? allMobileLinks
-    : allMobileLinks.filter((link) => !link.requiresAuth);
+  // ✅ 2. LOGICA DINAMICA PER I LINK MOBILE MODIFICATA
+  let mobileLinks = [];
 
-  // ✅ BARRA DI RICERCA FISSA (SOLO MOBILE E SOLO IN HOME LOGGATA)
+  if (isLoggedInAndLoaded) {
+    // Se loggato: mostra tutto
+    mobileLinks = allMobileLinks;
+  } else {
+    // Se NON loggato
+    const isHomeOrAuthPage = ['/', '/login', '/register'].includes(
+      location.pathname
+    );
+
+    if (isHomeOrAuthPage) {
+      // Se siamo in Home o Login/Register: Mostra Home e LOGIN (al posto di Cerca)
+      mobileLinks = [
+        {
+          to: '/',
+          icon: <BsHouseDoorFill size={20} />,
+          label: 'Home',
+          requiresAuth: false,
+        },
+        {
+          to: '/login',
+          icon: <BsBoxArrowInRight size={20} />,
+          label: 'Login',
+          requiresAuth: false,
+        },
+      ];
+    } else {
+      // Se siamo in altre pagine pubbliche (es. /cerca): Mostra Home e Cerca
+      mobileLinks = allMobileLinks.filter((link) => !link.requiresAuth);
+    }
+  }
+
+  // BARRA DI RICERCA FISSA (SOLO MOBILE E SOLO IN HOME LOGGATA)
   const MobileHomeSearchBar = () => {
-    // 🔥 FIX 1: Usa la condizione shouldShowFixedSearchBar
     if (!shouldShowFixedSearchBar) return null;
 
     const inputHeight = '36px';
@@ -472,7 +499,6 @@ function MyNavbar() {
                       height: '24px',
                     }}
                   >
-                    {/* 🔥 FIX 2: Passiamo l'icona alla notifica per visualizzarla */}
                     <Notification isMobile={true} icon={link.icon} />
                   </div>
 
@@ -559,7 +585,7 @@ function MyNavbar() {
               );
             }
 
-            // LINK STANDARD (Home, Cerca, Vendi se loggato)
+            // LINK STANDARD (Home, Cerca, Login)
             return (
               <Nav.Link
                 key={link.to}
