@@ -1,17 +1,28 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { FaStar } from 'react-icons/fa';
 
-const REVIEW_ENDPOINT = 'http://localhost:8888/recensioni';
+const reviewEndpoint = 'http://localhost:8888/recensioni';
 
+/**
+ * Componente Modal per permettere all'utente di lasciare una recensione (rating e commento)
+ * per un ordine completato.
+ */
 function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
-  // 🛑 Nota: usiamo 'valutazione' come nel tuo backend (Recensione.java)
+  // Stato per la valutazione a stelle (obbligatoria, min 1)
   const [valutazione, setValutazione] = useState(5);
+  // Stato per il commento (opzionale)
   const [commento, setCommento] = useState('');
+  // Stato per l'effetto hover sulle stelle
   const [hover, setHover] = useState(null);
+  // Stato per il caricamento durante l'invio
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Stato per la gestione degli errori API
   const [error, setError] = useState(null);
 
+  /**
+   * Gestisce l'invio del form e la chiamata API per creare la recensione.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (valutazione < 1 || !orderId) return;
@@ -22,11 +33,12 @@ function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
     const payload = {
       ordineId: orderId,
       valutazione: valutazione,
-      commento: commento.trim() || null, // Invia null se vuoto
+      // Invia null se il commento è vuoto o contiene solo spazi
+      commento: commento.trim() || null,
     };
 
     try {
-      const response = await fetch(REVIEW_ENDPOINT, {
+      const response = await fetch(reviewEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,7 +49,7 @@ function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
 
       if (response.ok) {
         alert('Recensione inviata con successo!');
-        // Chiama la callback per aggiornare l'interfaccia principale
+        // Chiama la callback del genitore per aggiornare la lista degli ordini
         onReviewSuccess();
         handleClose();
       } else {
@@ -54,6 +66,9 @@ function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
     }
   };
 
+  /**
+   * Resetta gli stati del form prima di chiudere il modal.
+   */
   const handleModalClose = () => {
     setValutazione(5);
     setCommento('');
@@ -88,6 +103,7 @@ function ReviewModal({ show, handleClose, orderId, token, onReviewSuccess }) {
                   />
                   <FaStar
                     className='star me-1'
+                    // Colore basato sull'hover o sulla valutazione corrente
                     color={
                       ratingValue <= (hover || valutazione)
                         ? '#ffc107'

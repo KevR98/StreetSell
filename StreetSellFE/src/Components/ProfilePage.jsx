@@ -11,21 +11,15 @@ import ProductCard from './ProductCard';
 
 import avatarDefault from '../assets/streetsell-profile-pic.png';
 
-// Endpoint pubblico per recuperare i dati utente
-const PUBLIC_USER_ENDPOINT = 'http://localhost:8888/utenti';
+// Endpoint per le risorse
+const publicUserEndpoint = 'http://localhost:8888/utenti';
+const publicProductsEndpoint = 'http://localhost:8888/prodotti/utente';
+const myProductsEndpoint = 'http://localhost:8888/prodotti/me';
+const ratingEndpoint = 'http://localhost:8888/utenti';
+const addressesEndpoint = 'http://localhost:8888/indirizzi';
 
-// Endpoint per i prodotti
-const PUBLIC_PRODUCTS_ENDPOINT = 'http://localhost:8888/prodotti/utente';
-const MY_PRODUCTS_ENDPOINT = 'http://localhost:8888/prodotti/me';
-
-// Endpoint per il rating
-const RATING_ENDPOINT = 'http://localhost:8888/utenti';
-
-// NUOVO ENDPOINT INDIRIZZI
-const ADDRESSES_ENDPOINT = 'http://localhost:8888/indirizzi';
-
-const BRAND_COLOR = '#fa8229';
-const BRAND_HOVER_FILL = '#fff3e0';
+const brandColor = '#fa8229';
+const brandHoverFill = '#fff3e0';
 
 function ProfilePage() {
   const currentUser = useSelector((state) => state.auth.user);
@@ -34,12 +28,12 @@ function ProfilePage() {
 
   const { userId } = useParams();
 
-  // Stati Utente
+  // Stati Utente e caricamento
   const [userToDisplay, setUserToDisplay] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Stati Contenuto
+  // Stati Contenuto (Annunci o Recensioni)
   const [activeView, setActiveView] = useState('annunci');
   const [productsToDisplay, setProductsToDisplay] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -49,21 +43,26 @@ function ProfilePage() {
   const [reviewCount, setReviewCount] = useState(0);
   const [isLoadingRating, setIsLoadingRating] = useState(false);
 
+  // Stato per gli indirizzi (solo per il profilo privato)
   const [myAddresses, setMyAddresses] = useState([]);
 
-  // STATI HOVER PER BOTTONI
+  // STATI HOVER PER BOTTONI UI
   const [hoverModifica, setHoverModifica] = useState(false);
   const [hoverAnnunci, setHoverAnnunci] = useState(false);
   const [hoverRecensioni, setHoverRecensioni] = useState(false);
 
+  // Determina se l'utente sta visualizzando il proprio profilo
   const isViewingOwnProfile =
     !userId || (currentUser && currentUser.id === userId);
 
   // 1. FETCH RATING
+  /**
+   * Recupera il rating medio e il conteggio delle recensioni per un dato utente.
+   */
   const fetchRating = useCallback(async (targetUserId) => {
     setIsLoadingRating(true);
     try {
-      const res = await fetch(`${RATING_ENDPOINT}/${targetUserId}/rating`);
+      const res = await fetch(`${ratingEndpoint}/${targetUserId}/rating`);
       if (!res.ok) throw new Error('Errore rating');
       const data = await res.json();
       setAverageRating(data.averageRating || 0);
@@ -75,18 +74,24 @@ function ProfilePage() {
     }
   }, []);
 
-  // FETCH PRODOTTI
+  // 2. FETCH PRODOTTI
+  /**
+   * Recupera gli annunci dell'utente da visualizzare.
+   */
   const fetchProducts = useCallback(
     async (targetUserId) => {
       setIsLoadingProducts(true);
       let endpoint;
       let headers = {};
 
+      // Se visualizzo il mio profilo
       if (isViewingOwnProfile) {
-        endpoint = MY_PRODUCTS_ENDPOINT;
+        endpoint = myProductsEndpoint;
         headers = { Authorization: `Bearer ${token}` };
-      } else if (targetUserId) {
-        endpoint = `${PUBLIC_PRODUCTS_ENDPOINT}/${targetUserId}`;
+      }
+      // Se visualizzo un profilo pubblico
+      else if (targetUserId) {
+        endpoint = `${publicProductsEndpoint}/${targetUserId}`;
       } else {
         setIsLoadingProducts(false);
         return;
@@ -96,6 +101,7 @@ function ProfilePage() {
         const res = await fetch(endpoint, { method: 'GET', headers: headers });
         if (!res.ok) throw new Error('Errore prodotti');
         const data = await res.json();
+        // L'API del proprio profilo ritorna un array, quella pubblica un oggetto con 'content'
         setProductsToDisplay(data.content || data);
       } catch (err) {
         console.error('Errore prodotti:', err);
@@ -106,10 +112,10 @@ function ProfilePage() {
     [isViewingOwnProfile, token]
   );
 
-  // FETCH INDIRIZZI (SOLO PER PROFILO PRIVATO)
+  // 3. FETCH INDIRIZZI (SOLO PER PROFILO PRIVATO)
   useEffect(() => {
     if (isViewingOwnProfile && token) {
-      fetch(ADDRESSES_ENDPOINT, {
+      fetch(addressesEndpoint, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => {
@@ -123,18 +129,21 @@ function ProfilePage() {
     }
   }, [isViewingOwnProfile, token]);
 
-  // LOGICA FETCH PROFILO GENERALE
+  // 4. LOGICA FETCH PROFILO GENERALE
   useEffect(() => {
+    // Caso 1: Visualizzo il mio profilo
     if (isViewingOwnProfile && currentUser) {
       setUserToDisplay(currentUser);
       setIsLoading(false);
       return;
     }
 
+    // Caso 2: Visualizzo un profilo pubblico tramite userId
     if (userId) {
       setIsLoading(true);
       setError(null);
-      fetch(`${PUBLIC_USER_ENDPOINT}/${userId}`, {
+      fetch(`${publicUserEndpoint}/${userId}`, {
+        // Aggiungo il token se disponibile (per sicurezza)
         headers: {
           Authorization: token ? `Bearer ${token}` : undefined,
         },
@@ -152,21 +161,26 @@ function ProfilePage() {
           setIsLoading(false);
         });
     } else {
+      // Caso 3: userId non definito e non sono loggato (bloccato dal controllo iniziale)
       setIsLoading(false);
     }
   }, [userId, currentUser, isViewingOwnProfile, token]);
 
-  // CARICAMENTO DATI DIPENDENTI
+  // 5. CARICAMENTO DATI DIPENDENTI (Rating e Annunci)
   useEffect(() => {
     if (userToDisplay) {
       fetchRating(userToDisplay.id);
+
       if (activeView === 'annunci') {
+        // Ricarico gli annunci solo se non sono già stati caricati per l'utente corretto
         const isDataStale =
           productsToDisplay.length === 0 ||
           productsToDisplay[0]?.venditore?.id !== userToDisplay.id;
+
         if (isDataStale) fetchProducts(userToDisplay.id);
       }
     }
+    // L'array di dipendenze deve includere le funzioni definite tramite useCallback
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userToDisplay, activeView, fetchProducts, fetchRating]);
 
@@ -175,26 +189,28 @@ function ProfilePage() {
     if (isActive) {
       // Stile Attivo (Arancione Pieno)
       return {
-        backgroundColor: BRAND_COLOR,
-        borderColor: BRAND_COLOR,
+        backgroundColor: brandColor,
+        borderColor: brandColor,
         color: 'white',
         opacity: isHovering ? 0.9 : 1,
       };
     } else {
       // Stile Inattivo (Outline Arancione)
       return {
-        borderColor: BRAND_COLOR,
-        color: BRAND_COLOR,
-        backgroundColor: isHovering ? BRAND_HOVER_FILL : 'transparent',
+        borderColor: brandColor,
+        color: brandColor,
+        backgroundColor: isHovering ? brandHoverFill : 'transparent',
       };
     }
   };
 
-  // Controlli di stato
+  // Controlli di stato preliminari
   if (!isAuthenticated && !userId) {
     return (
       <Container className='mt-5'>
-        <Alert variant='warning'>Accesso negato.</Alert>
+        <Alert variant='warning'>
+          Accesso negato. Effettua il login o specifica un ID utente.
+        </Alert>
       </Container>
     );
   }
@@ -206,14 +222,17 @@ function ProfilePage() {
   if (error || !userToDisplay) {
     return (
       <Container className='mt-5'>
-        <Alert variant='danger'>{error || 'Errore profilo.'}</Alert>
+        <Alert variant='danger'>
+          {error || 'Impossibile caricare il profilo.'}
+        </Alert>
       </Container>
     );
   }
 
   const user = userToDisplay;
-  const profileTitle = isViewingOwnProfile ? user.username : user.username;
+  const profileTitle = user.username;
 
+  // Logica per determinare l'indirizzo principale da mostrare
   const addressList = isViewingOwnProfile ? myAddresses : user.indirizzi || [];
   const mainAddress =
     addressList.find((addr) => addr.principale === true) || addressList[0];
@@ -229,7 +248,7 @@ function ProfilePage() {
     ? `${mainAddress.citta}, ${mainAddress.nazione}`
     : locationFallback;
 
-  // CORREZIONE LOGICA AVATAR:
+  // Logica Avatar
   const hasValidAvatar =
     user.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const displayAvatarUrl = hasValidAvatar ? user.avatarUrl : avatarDefault;
@@ -238,23 +257,13 @@ function ProfilePage() {
     <Container className='my-5'>
       <BackButton />
 
-      {/* ✅ MODIFICA LAYOUT PER 1440px: 
-         - Aggiunto justify-content-md-center per centrare tutto il blocco se vuoi,
-           oppure lascialo standard.
-         - Usiamo gap-4 o gap-md-5 per gestire la distanza precisa tra avatar e testo
-           senza dipendere dalla griglia larga.
-      */}
       <Row className='mb-4 justify-content-md-center'>
-        {/* ✅ COLONNA AVATAR: md="auto" 
-            La colonna si restringe esattamente alla larghezza dell'immagine (200px).
-            Niente più spazio vuoto enorme a destra dell'avatar.
-        */}
+        {/* COLONNA AVATAR */}
         <Col
           xs={12}
-          md='auto'
+          md='auto' // La colonna si restringe al contenuto (avatar)
           className='d-flex justify-content-center justify-content-md-start mb-4 mb-md-0'
         >
-          {/* ✅ RIMOSSO ms-lg-4 per evitare margine sinistro indesiderato */}
           <div className=''>
             <img
               src={displayAvatarUrl}
@@ -264,10 +273,7 @@ function ProfilePage() {
           </div>
         </Col>
 
-        {/* ✅ COLONNA DETTAGLI: md={true} (o semplicemente Col)
-            Prende tutto lo spazio rimanente subito dopo l'avatar.
-            Aggiunto ps-md-4 per dare un po' di respiro (padding left) dall'avatar.
-        */}
+        {/* COLONNA DETTAGLI */}
         <Col xs={12} md={true} className='ps-md-4'>
           <Row className='align-items-center'>
             {/* USERNAME E RATING */}
@@ -275,15 +281,17 @@ function ProfilePage() {
               <div className='mt-2 mt-md-4'>
                 <h1 className='fw-bold mb-0 fs-2 fs-md-1'>{profileTitle}</h1>
 
+                {/* Rating e conteggio recensioni */}
                 <div className='d-flex align-items-center mt-1'>
                   {isLoadingRating ? (
                     <Spinner
                       animation='border'
                       size='sm'
-                      style={{ color: BRAND_COLOR }}
+                      style={{ color: brandColor }}
                     />
                   ) : reviewCount > 0 ? (
                     <>
+                      {/* Stelle piene/vuote basate sul rating medio */}
                       {[...Array(5)].map((_, i) => (
                         <FaStar
                           key={i}
@@ -310,11 +318,11 @@ function ProfilePage() {
               </div>
             </Col>
 
-            {/* MODIFICA PROFILO BUTTON */}
+            {/* MODIFICA PROFILO BUTTON (visibile solo se proprio profilo) */}
             {isViewingOwnProfile && (
               <Col
                 xs={12}
-                md={4} // Aumentato un po' lo spazio per il bottone
+                md={4}
                 className='d-flex justify-content-start justify-content-md-end mt-3 mt-md-0'
               >
                 <Button
@@ -322,6 +330,7 @@ function ProfilePage() {
                   to='/profilo/gestione'
                   onMouseEnter={() => setHoverModifica(true)}
                   onMouseLeave={() => setHoverModifica(false)}
+                  // Applica lo stile custom al bottone
                   style={getButtonStyle(false, hoverModifica)}
                   size='sm'
                 >
@@ -341,8 +350,9 @@ function ProfilePage() {
                 <li className='d-flex align-items-center'>
                   <FaMapMarkerAlt
                     className='me-2'
-                    style={{ color: BRAND_COLOR }}
+                    style={{ color: brandColor }}
                   />
+                  {/* Città e Nazione */}
                   <span className='fs-7-custom fs-md-6'>{cityAndCountry}</span>
                 </li>
               </ul>
@@ -353,8 +363,10 @@ function ProfilePage() {
 
       <hr />
 
+      {/* SELEZIONE VISTA (Annunci / Recensioni) */}
       <Row className='mb-5'>
         <Col xs={12} className='d-flex gap-2 flex-wrap'>
+          {/* Bottone Annunci */}
           <Button
             onClick={() => setActiveView('annunci')}
             onMouseEnter={() => setHoverAnnunci(true)}
@@ -368,6 +380,7 @@ function ProfilePage() {
             )}
           </Button>
 
+          {/* Bottone Recensioni */}
           <Button
             onClick={() => setActiveView('recensioni')}
             onMouseEnter={() => setHoverRecensioni(true)}
@@ -380,10 +393,13 @@ function ProfilePage() {
         </Col>
       </Row>
 
+      {/* CONTENUTO DINAMICO */}
       <Row>
         <Col md={12}>
+          {/* Vista Recensioni */}
           {activeView === 'recensioni' && <RecensioniList utenteId={user.id} />}
 
+          {/* Vista Annunci */}
           {activeView === 'annunci' && (
             <div id='products-list'>
               <h2 className='mb-4 fs-4 fs-md-3'>
@@ -400,6 +416,7 @@ function ProfilePage() {
                     : `${user.username} non ha prodotti attivi in vendita.`}
                 </Alert>
               ) : (
+                // Griglia dei prodotti
                 <Row xs={1} md={2} lg={3} className='g-4'>
                   {productsToDisplay.map((prodotto) => (
                     <Col key={prodotto.id}>

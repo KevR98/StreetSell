@@ -6,16 +6,15 @@ import { Container, Card, Form, Button, InputGroup } from 'react-bootstrap';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import ErrorAlert from './ErrorAlert';
 
-const endpoint = 'http://localhost:8888/auth/login';
-
-// ✅ BRAND COLOR
-const BRAND_COLOR = '#fa8229';
+const loginEndpoint = 'http://localhost:8888/auth/login';
+const brandColor = '#fa8229';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null); // Rinominate error in errorMessage
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -25,20 +24,27 @@ function Login() {
     borderColor: '#ced4da',
   };
 
+  /**
+   * Alterna la visibilità del campo password.
+   */
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
+  /**
+   * Gestisce l'invio del form e l'autenticazione tramite API.
+   */
   const handleSubmit = (event) => {
-    setError(null);
     event.preventDefault();
+    setErrorMessage(null);
 
     const loginPayload = {
       email: email,
       password: password,
     };
 
-    fetch(endpoint, {
+    // Chiamata API di login
+    fetch(loginEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -49,17 +55,21 @@ function Login() {
         if (res.ok) {
           return res.json();
         } else {
+          // Gestione degli errori HTTP, solleva un errore con un messaggio specifico
           throw new Error('Credenziali non valide. Riprova.');
         }
       })
       .then((data) => {
         const { token, user } = data;
+        // Successo: Dispatch dell'azione di login e salvataggio del token in localStorage
         dispatch(loginSuccess({ user: user, token: token }));
         localStorage.setItem('accessToken', token);
+        // Reindirizzamento alla homepage
         navigate('/');
       })
       .catch((err) => {
-        setError(err.message);
+        // Fallimento: Salva l'errore per la visualizzazione e dispatch dell'azione di fallimento
+        setErrorMessage(err.message);
         dispatch(loginFailure(err.message));
         console.error('Errore nel caricamento:', err);
       });
@@ -67,17 +77,15 @@ function Login() {
 
   return (
     <Container className='my-5' style={{ maxWidth: '400px' }}>
-      <Card
-        // ✅ Rimosso shadow-sm, reso trasparente
-        className='border-0'
-        style={{ backgroundColor: 'transparent' }}
-      >
+      <Card className='border-0' style={{ backgroundColor: 'transparent' }}>
         <Card.Body>
           <h2 className='card-title text-center mb-4'>Accedi</h2>
 
-          {error && <ErrorAlert message={error} />}
+          {/* Visualizza l'Alert di errore se errorMessage non è nullo */}
+          {errorMessage && <ErrorAlert message={errorMessage} />}
 
           <Form onSubmit={handleSubmit}>
+            {/* Campo Email */}
             <Form.Group className='mb-3' controlId='emailInput'>
               <Form.Label>Indirizzo Email</Form.Label>
 
@@ -86,7 +94,6 @@ function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                // ✅ Stile Input
                 style={inputStyle}
               />
             </Form.Group>
@@ -96,14 +103,13 @@ function Login() {
               <Form.Label>Password</Form.Label>
 
               <InputGroup>
-                {/* CAMPO DI INPUT */}
+                {/* CAMPO DI INPUT: tipo dinamico per mostrare/nascondere la password */}
                 <Form.Control
                   type={showPassword ? 'text' : 'password'}
                   placeholder='Inserisci la password'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  // ✅ Stile Input
                   style={inputStyle}
                 />
 
@@ -114,7 +120,6 @@ function Login() {
                   aria-label={
                     showPassword ? 'Nascondi password' : 'Mostra password'
                   }
-                  // ✅ Stile Bottone Occhio
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </Button>
@@ -126,10 +131,10 @@ function Login() {
               <Button
                 type='submit'
                 size='lg'
-                // ✅ Stile Brand Color
+                // Stile Brand Color
                 style={{
-                  backgroundColor: BRAND_COLOR,
-                  borderColor: BRAND_COLOR,
+                  backgroundColor: brandColor,
+                  borderColor: brandColor,
                 }}
               >
                 Accedi

@@ -1,28 +1,25 @@
 import { Link } from 'react-router-dom';
 
 function MyFooter() {
-  // Ho aggiunto una variabile colore per rendere più facile l'override del colore della linea, se volessi usare il brand color
-  const ACCENT_COLOR = '#7c4dff';
-  const BRAND_COLOR = '#fa8229'; // Colore del tuo brand, se necessario
+  const accentColor = '#7c4dff';
 
   return (
-    // ✅ Nasconde il footer sui dispositivi XS e SM, lo mostra da MD in su
+    // Nasconde il footer sui dispositivi XS e SM, lo mostra da MD in su
     <footer className='bg-dark text-white pt-4 pb-2 d-none d-md-block'>
       <div className='container text-center text-md-start'>
         <div className='row'>
-          {/* DESCRIZIONE */}
+          {/* DESCRIZIONE E MISSION */}
           <div className='col-md-4 col-lg-4 col-xl-4 mx-auto mb-4'>
-            {/* ✅ fs-6 su MD/Tablet, fs-5 su LG/Desktop */}
+            {/* Classi di font responsive: fs-6 su MD/Tablet, fs-5 su LG/Desktop */}
             <h6 className='text-uppercase fw-bold fs-6 fs-lg-5'>Street Sell</h6>
             <hr
               className='mb-4 mt-0 d-inline-block mx-auto'
               style={{
                 width: '60px',
-                backgroundColor: ACCENT_COLOR,
+                backgroundColor: accentColor, // Uso accentColor
                 height: '2px',
               }}
             />
-            {/* ✅ fs-7 su MD/Tablet (assumendo classe custom), fs-6 su LG/Desktop */}
             <p className='fs-7 fs-lg-6'>
               La tua piazza di mercato online per trovare le migliori offerte
               direttamente dalla strada.
@@ -36,11 +33,12 @@ function MyFooter() {
               className='mb-4 mt-0 d-inline-block mx-auto'
               style={{
                 width: '60px',
-                backgroundColor: ACCENT_COLOR,
+                backgroundColor: accentColor, // Uso accentColor
                 height: '2px',
               }}
             />
             <div className='fs-7 fs-lg-6'>
+              {/* Uso il componente Link di React Router */}
               <p>
                 <Link to='/about' className='text-white'>
                   Chi Siamo
@@ -66,22 +64,24 @@ function MyFooter() {
               className='mb-4 mt-0 d-inline-block mx-auto'
               style={{
                 width: '60px',
-                backgroundColor: ACCENT_COLOR,
+                backgroundColor: accentColor, // Uso accentColor
                 height: '2px',
               }}
             />
             <div className='fs-7 fs-lg-6'>
               <p>
+                {/* Icone Bootstrap per indirizzo */}
                 <i className='bi bi-geo-alt-fill me-3'></i> Milano, IT
               </p>
               <p>
+                {/* Icone Bootstrap per email */}
                 <i className='bi bi-envelope-fill me-3'></i> info@streetsell.com
               </p>
             </div>
 
             {/* Icone Social */}
             <div className='mt-4'>
-              {/* Le icone si rimpiccioliscono in modalità tablet */}
+              {/* Le icone si rimpiccioliscono su MD/Tablet (fs-5) e si ingrandiscono su LG/Desktop (fs-4) */}
               <a href='#!' className='text-white me-4 fs-5 fs-lg-4'>
                 <i className='bi bi-facebook'></i>
               </a>
@@ -98,7 +98,7 @@ function MyFooter() {
 
       {/* Copyright Section */}
       <div
-        // Anche il copyright si rimpicciolisce
+        // Classi di font responsive anche per il copyright
         className='text-center p-3 fs-7 fs-lg-6'
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
       >

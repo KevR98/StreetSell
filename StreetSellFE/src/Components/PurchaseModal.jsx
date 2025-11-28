@@ -4,6 +4,7 @@ import { FaShoppingCart, FaMapMarkerAlt } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 import Indirizzo from './Indirizzo';
 
+/* Componente Modal per la conferma dell'acquisto e la selezione dell'indirizzo di spedizione */
 function PurchaseModal({
   show,
   handleClose,
@@ -15,17 +16,18 @@ function PurchaseModal({
   onFetchAddresses,
   token,
 }) {
-  // Stato per passare dalla visualizzazione lista (false) a quella del modulo (true)
+  // Stato per passare dalla visualizzazione lista indirizzi (false) al modulo di aggiunta (true)
   const [isAddingNew, setIsAddingNew] = useState(false);
   const hasAddresses = addresses && addresses.length > 0;
 
-  // Questa funzione viene chiamata da Indirizzo.jsx al successo
+  /**
+   * Gestisce il successo dell'aggiunta di un nuovo indirizzo dal componente <Indirizzo>.
+   * Chiude il modulo e forza la ricarica della lista nel componente genitore.
+   */
   // eslint-disable-next-line no-unused-vars
   const handleNewAddressAdded = (newAddress) => {
-    // Chiude il form di aggiunta
     setIsAddingNew(false);
-    // Ricarica la lista degli indirizzi (nel componente Order.jsx)
-    onFetchAddresses();
+    onFetchAddresses(); // Ricarica la lista completa degli indirizzi
   };
 
   return (
@@ -39,6 +41,7 @@ function PurchaseModal({
 
       <Modal.Body>
         {isAddingNew ? (
+          // Visualizzazione Modulo Aggiungi Indirizzo
           <>
             <h4>Aggiungi Nuovo Indirizzo</h4>
             <Indirizzo
@@ -48,9 +51,10 @@ function PurchaseModal({
             />
           </>
         ) : (
+          // Visualizzazione Selezione Indirizzo
           <>
             {hasAddresses ? (
-              // Se ci sono indirizzi: Mostra il dropdown di selezione
+              // Mostra il dropdown di selezione se ci sono indirizzi salvati
               <Form.Group className='mb-3' controlId='addressSelection'>
                 <Form.Label className='fw-bold'>
                   <FaMapMarkerAlt className='me-1 text-danger' />
@@ -74,7 +78,7 @@ function PurchaseModal({
                 </Form.Text>
               </Form.Group>
             ) : (
-              // Se NON ci sono indirizzi: Mostra l'avviso
+              // Messaggio di avviso se non ci sono indirizzi
               <Alert variant='info'>
                 Non hai indirizzi di spedizione salvati. Aggiungine uno qui
                 sotto.
@@ -100,7 +104,7 @@ function PurchaseModal({
         <Button
           variant='secondary'
           onClick={handleClose}
-          // Non si può chiudere mentre elabora o si sta aggiungendo l'indirizzo
+          // Disabilita se è in elaborazione o se il modulo di aggiunta è aperto
           disabled={isProcessing || isAddingNew}
         >
           Annulla
@@ -109,10 +113,12 @@ function PurchaseModal({
         <Button
           variant='success'
           onClick={onConfirmPurchase}
+          // Disabilita se manca l'indirizzo, è in elaborazione o il modulo di aggiunta è aperto
           disabled={!selectedAddressId || isProcessing || isAddingNew}
         >
           {isProcessing ? (
             <>
+              {/* Spinner se l'ordine è in elaborazione */}
               <LoadingSpinner size='sm' className='me-1' /> Elaborazione...
             </>
           ) : (

@@ -2,13 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { NavDropdown, Badge, Spinner, Button, Dropdown } from 'react-bootstrap';
 import { FaTruck, FaShoppingCart, FaBell, FaCheckCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom'; // 1. Importato useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 
-const MANAGEMENT_ENDPOINT = 'http://localhost:8888/ordini/gestione';
-const STORAGE_KEY = 'hidden_notification_ids';
-const POLLING_INTERVAL = 30000;
+const managementEndpoint = 'http://localhost:8888/ordini/gestione';
+const storageKey = 'hiddenNotificationIds';
+const pollingInterval = 30000;
 
-// ✅ TOGGLE CUSTOM PER MOBILE
+// Componente Custom Toggle per il menu a discesa mobile
 const MobileNotificationToggle = React.forwardRef(
   ({ onClick, icon, count }, ref) => (
     <div
@@ -37,7 +37,9 @@ const MobileNotificationToggle = React.forwardRef(
           justifyContent: 'center',
         }}
       >
+        {/* Icona della campana o icona custom */}
         {icon || <FaBell size={20} />}
+        {/* Badge per il contatore delle notifiche visibili */}
         {count > 0 && (
           <Badge
             pill
@@ -59,19 +61,28 @@ const MobileNotificationToggle = React.forwardRef(
 );
 
 function Notification({ isMobile = false, icon }) {
-  const navigate = useNavigate(); // 2. Definito useNavigate (FONDAMENTALE)
+  const navigate = useNavigate();
+  // Stato per le notifiche (derivate dagli ordini)
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Set degli ID delle notifiche che l'utente ha scelto di nascondere
   const [hiddenIds, setHiddenIds] = useState(new Set());
+  // Flag per indicare che gli ID nascosti sono stati caricati da localStorage
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
   const currentUser = useSelector((state) => state.auth.user);
   const token = localStorage.getItem('accessToken');
 
+  /**
+   * Genera la chiave di localStorage basata sull'ID utente per isolare i dati.
+   */
   const getStorageKey = useCallback((userId) => {
-    return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY;
+    return userId ? `${storageKey}-${userId}` : storageKey;
   }, []);
 
+  /**
+   * Carica gli ID delle notifiche nascoste da localStorage.
+   */
   const loadHiddenIds = useCallback(
     (userId) => {
       const key = getStorageKey(userId);
@@ -79,11 +90,15 @@ function Notification({ isMobile = false, icon }) {
       if (storedIds) {
         setHiddenIds(new Set(JSON.parse(storedIds)));
       }
+      // Una volta terminato il caricamento (anche se vuoto), imposto il flag
       setIsStorageLoaded(true);
     },
     [getStorageKey]
   );
 
+  /**
+   * Salva gli ID delle notifiche nascoste in localStorage.
+   */
   const saveHiddenIds = useCallback(
     (ids, userId) => {
       const key = getStorageKey(userId);
@@ -92,11 +107,15 @@ function Notification({ isMobile = false, icon }) {
     [getStorageKey]
   );
 
+  /**
+   * Funzione per il fetch degli ordini da cui vengono generate le notifiche.
+   */
   const fetchNotifications = useCallback(async () => {
+    // Non procedo se mancano token, utente o se lo storage non è stato ancora caricato
     if (!token || !currentUser || !isStorageLoaded) return;
 
     try {
-      const res = await fetch(MANAGEMENT_ENDPOINT, {
+      const res = await fetch(managementEndpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -110,6 +129,7 @@ function Notification({ isMobile = false, icon }) {
       const data = await res.json();
       const allOrders = Array.isArray(data) ? data : [];
 
+      // Filtro gli ordini per creare notifiche solo per gli stati attivi
       const newNotifications = allOrders
         .filter(
           (order) =>
@@ -117,13 +137,14 @@ function Notification({ isMobile = false, icon }) {
             order.statoOrdine !== 'ANNULLATO'
         )
         .map((order) => ({
-          id: order.id,
+          id: order.id, // L'ID dell'ordine funge da ID notifica
           type: order.statoOrdine,
           prodotto: order.prodotto.titolo,
           orderId: order.id,
           data: new Date(order.dataOrdine),
         }));
 
+      // Ordino per data decrescente
       newNotifications.sort((a, b) => b.data - a.data);
 
       setNotifications(newNotifications);
@@ -134,22 +155,29 @@ function Notification({ isMobile = false, icon }) {
     }
   }, [token, currentUser, isStorageLoaded]);
 
+  // EFFETTO 1: Caricamento degli ID nascosti all'avvio
   useEffect(() => {
     if (currentUser) {
       loadHiddenIds(currentUser.id);
     } else {
+      // Se non c'è utente, considero lo storage caricato per non bloccare l'effetto successivo
       setIsStorageLoaded(true);
     }
   }, [currentUser, loadHiddenIds]);
 
+  // EFFETTO 2: Polling delle notifiche
   useEffect(() => {
     if (isStorageLoaded && currentUser && token) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, POLLING_INTERVAL);
+      // Imposto il polling interval
+      const interval = setInterval(fetchNotifications, pollingInterval);
       return () => clearInterval(interval);
     }
   }, [token, currentUser, isStorageLoaded, fetchNotifications]);
 
+  /**
+   * Aggiunge l'ID della notifica al set degli ID nascosti.
+   */
   const hideNotification = (id) => {
     const newHiddenIds = new Set(hiddenIds);
     newHiddenIds.add(id);
@@ -157,15 +185,22 @@ function Notification({ isMobile = false, icon }) {
     saveHiddenIds(newHiddenIds, currentUser.id);
   };
 
+  /**
+   * Nasconde tutte le notifiche attualmente visibili.
+   */
   const clearAllNotifications = () => {
     const allIds = new Set(notifications.map((n) => n.id));
     setHiddenIds(allIds);
     saveHiddenIds(allIds, currentUser.id);
   };
 
-  const formatNotificationMessage = (notif) => {
+  /**
+   * Restituisce i dettagli di rendering per una singola notifica (icona, messaggio, tempo).
+   */
+  const getNotificationDetails = (notif) => {
     let iconRender, message, variant;
 
+    // Logica per l'icona e il messaggio basata sullo stato dell'ordine
     switch (notif.type) {
       case 'IN_PREPARAZIONE':
         iconRender = <FaShoppingCart className='text-info me-2' />;
@@ -188,6 +223,7 @@ function Notification({ isMobile = false, icon }) {
         variant = 'secondary';
     }
 
+    // Calcolo del tempo trascorso ('Xm fa', 'Yh fa', ecc.)
     const timeAgo = Math.floor((new Date() - notif.data) / (1000 * 60));
     let timeText;
     if (timeAgo < 1) {
@@ -203,10 +239,12 @@ function Notification({ isMobile = false, icon }) {
     return { iconRender, message, timeText, variant };
   };
 
+  // Notifiche da visualizzare (filtra quelle nascoste)
   const visibleNotifications = notifications.filter(
     (notif) => !hiddenIds.has(notif.id)
   );
 
+  // Contenuto del titolo per la NavDropdown Desktop
   const titleContent = (
     <div className='d-flex align-items-center'>
       <FaBell size={20} className='me-2' />
@@ -219,6 +257,9 @@ function Notification({ isMobile = false, icon }) {
     </div>
   );
 
+  /**
+   * Renderizza gli elementi interni del Dropdown (item, spinner, ecc.).
+   */
   const renderDropdownItems = () => (
     <>
       {isLoading ? (
@@ -230,16 +271,18 @@ function Notification({ isMobile = false, icon }) {
           Nessuna notifica.
         </Dropdown.ItemText>
       ) : (
+        // Mappa le prime 5 notifiche visibili
         visibleNotifications.slice(0, 5).map((notif) => {
           const { iconRender, message, timeText } =
-            formatNotificationMessage(notif);
+            getNotificationDetails(notif);
           return (
             <Dropdown.Item
               key={notif.id}
               className='d-flex justify-content-between align-items-start dropdown-item-custom'
               as='div'
-              style={{ cursor: 'pointer' }} // Aggiunto style per feedback visivo
-              onClick={() => navigate(`/ordini/gestione`)} // Ora navigate funziona
+              style={{ cursor: 'pointer' }}
+              // Naviga alla pagina di gestione ordini
+              onClick={() => navigate(`/ordini/gestione`)}
             >
               <div className='d-flex flex-column me-2'>
                 <div className='small fw-bold text-wrap'>
@@ -250,11 +293,13 @@ function Notification({ isMobile = false, icon }) {
                   {timeText}
                 </div>
               </div>
+              {/* Bottone per nascondere la singola notifica */}
               <Button
                 variant='link'
                 size='sm'
                 className='ms-auto text-muted p-0'
                 onClick={(e) => {
+                  // Blocca la propagazione per non attivare il click sull'item
                   e.stopPropagation();
                   e.preventDefault();
                   hideNotification(notif.id);
@@ -267,6 +312,7 @@ function Notification({ isMobile = false, icon }) {
         })
       )}
 
+      {/* Separatore e link di gestione */}
       {visibleNotifications.length > 0 && <Dropdown.Divider />}
 
       {visibleNotifications.length > 0 && (
@@ -278,7 +324,7 @@ function Notification({ isMobile = false, icon }) {
           >
             Cancella
           </Button>
-          {/* Link funziona sempre perché è importato */}
+          {/* Link alla pagina di gestione ordini */}
           <Link to='/ordini/gestione' className='btn btn-link btn-sm'>
             Gestione
           </Link>
@@ -287,7 +333,7 @@ function Notification({ isMobile = false, icon }) {
     </>
   );
 
-  // 📱 RENDER MOBILE
+  // RENDER MOBILE (Dropup)
   if (isMobile) {
     return (
       <Dropdown drop='up' align='end'>
@@ -304,7 +350,7 @@ function Notification({ isMobile = false, icon }) {
     );
   }
 
-  // 💻 RENDER DESKTOP
+  // RENDER DESKTOP (NavDropdown)
   return (
     <NavDropdown
       title={titleContent}

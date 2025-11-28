@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { Form, Button, Row, Col, Alert } from 'react-bootstrap';
 
+/**
+ * Componente per l'aggiunta di un nuovo indirizzo di spedizione da parte dell'utente.
+ *
+ * @param {object} props - Le proprietà del componente.
+ * @param {function} onAddressAdded - Funzione da chiamare al successo dell'API per aggiornare la lista nel genitore.
+ * @param {function} onCancel - Funzione da chiamare per annullare l'operazione (e chiudere il form/modal).
+ * @param {string} token - Il token di autenticazione JWT.
+ */
 function Indirizzo({ onAddressAdded, onCancel, token }) {
+  // Stato per i dati del form
   const [formData, setFormData] = useState({
     via: '',
     citta: '',
@@ -9,24 +18,33 @@ function Indirizzo({ onAddressAdded, onCancel, token }) {
     provincia: '',
     nazione: '',
   });
+  // Stato per la gestione del caricamento e dell'errore
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  /**
+   * Gestisce l'aggiornamento dello stato del form ad ogni cambiamento negli input.
+   */
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  /**
+   * Gestisce l'invio del form per aggiungere il nuovo indirizzo.
+   */
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    // Controllo che il token sia presente prima di procedere
     if (!token) {
       setError("Autenticazione mancante. Impossibile salvare l'indirizzo.");
       setIsLoading(false);
       return;
     }
 
+    // Chiamata API per l'inserimento del nuovo indirizzo
     fetch('http://localhost:8888/indirizzi', {
       method: 'POST',
       headers: {
@@ -37,9 +55,9 @@ function Indirizzo({ onAddressAdded, onCancel, token }) {
     })
       .then((res) => {
         if (!res.ok) {
-          // Gestione degli errori di validazione del backend
+          // Gestione degli errori del backend (es. validazione)
           return res.json().then((errData) => {
-            // Estrazione di un messaggio di errore leggibile
+            // Tenta di estrarre un messaggio di errore leggibile
             const errorMessage = errData.errors
               ? errData.errors.map((err) => err.defaultMessage).join(', ')
               : errData.message;
@@ -51,19 +69,22 @@ function Indirizzo({ onAddressAdded, onCancel, token }) {
         return res.json();
       })
       .then((newAddress) => {
-        // Chiama la funzione del genitore per notificare l'aggiunta e aggiornare la lista
+        // Successo: Chiama la funzione di callback del genitore e chiude il form
         onAddressAdded(newAddress);
       })
       .catch((err) => {
+        // Cattura e visualizza l'errore
         setError(err.message);
       })
       .finally(() => {
+        // Termina lo stato di caricamento
         setIsLoading(false);
       });
   };
 
   return (
     <Form onSubmit={handleSubmit}>
+      {/* Visualizzazione dell'errore se presente */}
       {error && <Alert variant='danger'>{error}</Alert>}
 
       {/* Campi del Modulo */}

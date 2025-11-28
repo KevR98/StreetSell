@@ -22,10 +22,9 @@ function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // Recupero la query e il tipo dall'URL
   const rawQuery = searchParams.get('q');
   const searchQuery = rawQuery ? rawQuery.toLowerCase() : '';
-
-  // Se non specificato o 'all', consideriamo ricerca universale
   const type = searchParams.get('type') || 'all';
 
   // Stati per i risultati
@@ -33,22 +32,27 @@ function SearchResults() {
   const [usersResults, setUsersResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Stati locali per la barra di ricerca interna
+  // Stati locali per la barra di ricerca interna (per permettere la modifica)
   const [currentQuery, setCurrentQuery] = useState(rawQuery || '');
-
-  // 🔥 MODIFICA 1: Manteniamo 'all' se presente, per continuare la ricerca universale su mobile
   const [currentSearchType, setCurrentSearchType] = useState(type);
 
+  /**
+   * Gestisce l'invio del form di ricerca interno, aggiornando l'URL.
+   */
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (currentQuery.trim() !== '') {
+      // Naviga alla nuova URL, innescando useEffect
       navigate(`/cerca?q=${currentQuery}&type=${currentSearchType}`);
     }
   };
 
+  /**
+   * Effetto: Esegue il fetch dei dati ogni volta che cambiano la query o il tipo nell'URL.
+   */
   useEffect(() => {
+    // Sincronizza lo stato locale con i parametri URL in caso di navigazione esterna
     setCurrentQuery(rawQuery || '');
-    // Sincronizza il tipo se cambia dall'URL
     setCurrentSearchType(type);
 
     if (!searchQuery) {
@@ -59,6 +63,7 @@ function SearchResults() {
 
     setLoading(true);
 
+    // Definizione delle promesse di fetch
     const fetchProducts = fetch(
       `http://localhost:8888/prodotti/cerca?q=${searchQuery}`
     ).then((res) => (res.ok ? res.json() : []));
@@ -67,6 +72,7 @@ function SearchResults() {
     ).then((res) => (res.ok ? res.json() : []));
 
     if (type === 'prodotti') {
+      // Ricerca solo Prodotti
       fetchProducts
         .then((data) => {
           setProductsResults(data);
@@ -74,6 +80,7 @@ function SearchResults() {
         })
         .finally(() => setLoading(false));
     } else if (type === 'utenti') {
+      // Ricerca solo Utenti
       fetchUsers
         .then((data) => {
           setUsersResults(data);
@@ -81,7 +88,7 @@ function SearchResults() {
         })
         .finally(() => setLoading(false));
     } else {
-      // CASO 'all'
+      // CASO 'all' (Ricerca Universale)
       Promise.all([fetchProducts, fetchUsers])
         .then(([prodData, userData]) => {
           setProductsResults(prodData);
@@ -90,8 +97,10 @@ function SearchResults() {
         .catch((err) => console.error(err))
         .finally(() => setLoading(false));
     }
-  }, [searchQuery, type, rawQuery, searchParams]);
+    // searchParams è incluso nelle dipendenze per coerenza, sebbene rawQuery e type siano sufficienti
+  }, [searchQuery, type, rawQuery, searchParams, navigate]);
 
+  // Variabile per determinare se non ci sono risultati
   const noResultsFound =
     !loading &&
     searchQuery &&
@@ -109,7 +118,7 @@ function SearchResults() {
       <div className='mb-4 mt-2'>
         <Form onSubmit={handleSearchSubmit}>
           <InputGroup>
-            {/* 🔥 MODIFICA 2: d-none d-sm-block nasconde il select su mobile */}
+            {/* Selettore tipo di ricerca (visibile solo su desktop) */}
             <Form.Select
               className='d-none d-sm-block'
               value={currentSearchType}
@@ -121,7 +130,7 @@ function SearchResults() {
             >
               <option value='prodotti'>Prodotti</option>
               <option value='utenti'>Utenti</option>
-              {/* Opzione tecnica per supportare lo stato 'all' senza errori visivi su desktop */}
+              {/* Opzione nascosta per gestire lo stato 'all' senza visualizzarlo */}
               <option value='all' style={{ display: 'none' }}>
                 Tutti
               </option>
@@ -146,6 +155,7 @@ function SearchResults() {
         </Form>
       </div>
 
+      {/* Intestazione Risultati */}
       {searchQuery && (
         <h2 className='mb-4 fs-4'>
           Risultati per:{' '}
@@ -153,12 +163,14 @@ function SearchResults() {
         </h2>
       )}
 
+      {/* Spinner di Caricamento */}
       {loading && (
         <div className='text-center mt-5'>
           <Spinner animation='border' variant='primary' />
         </div>
       )}
 
+      {/* Nessun Risultato */}
       {noResultsFound && (
         <Alert variant='warning'>
           Nessun risultato trovato per "{rawQuery}".
@@ -170,6 +182,7 @@ function SearchResults() {
         productsResults.length > 0 &&
         (type === 'prodotti' || type === 'all') && (
           <div className='mb-5'>
+            {/* Titolo Sotto-Sezione se la ricerca è universale */}
             {type === 'all' && (
               <h4 className='mb-3 border-bottom pb-2'>Prodotti</h4>
             )}
@@ -188,6 +201,7 @@ function SearchResults() {
         usersResults.length > 0 &&
         (type === 'utenti' || type === 'all') && (
           <div>
+            {/* Titolo Sotto-Sezione se la ricerca è universale */}
             {type === 'all' && (
               <h4 className='mb-3 border-bottom pb-2'>Utenti</h4>
             )}
@@ -196,6 +210,7 @@ function SearchResults() {
                 <Col key={item.id}>
                   <Card className='h-100 shadow-sm border-0 text-center p-2'>
                     <div className='mx-auto mt-2'>
+                      {/* Avatar placeholder con iniziale */}
                       <div
                         className='rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary fw-bold'
                         style={{

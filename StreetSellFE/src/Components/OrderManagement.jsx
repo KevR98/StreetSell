@@ -26,8 +26,8 @@ import ErrorAlert from './ErrorAlert';
 import BackButton from './BackButton';
 import ReviewModal from './ReviewModal';
 
-const ENDPOINT_FETCH_TASK = 'http://localhost:8888/ordini/gestione';
-const ENDPOINT_STATO_UPDATE_BASE = 'http://localhost:8888/ordini';
+const endpointFetchTask = 'http://localhost:8888/ordini/gestione';
+const endpointStatoUpdateBase = 'http://localhost:8888/ordini';
 
 function OrderManagementPage() {
   const [orders, setOrders] = useState([]);
@@ -42,10 +42,14 @@ function OrderManagementPage() {
   const [purchasesFilter, setPurchasesFilter] = useState('ALL');
 
   // STATI PER LA RECENSIONE
+  // Usato per tracciare le recensioni create localmente prima del refresh completo
   const [reviewedOrderIds, setReviewedOrderIds] = useState(new Set());
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
+  /**
+   * Fetcha tutti gli ordini associati all'utente corrente (sia come compratore che come venditore).
+   */
   const fetchOrders = () => {
     if (!token || !currentUser) {
       setError('Autenticazione richiesta.');
@@ -56,7 +60,7 @@ function OrderManagementPage() {
     setIsLoading(true);
     setError(null);
 
-    fetch(ENDPOINT_FETCH_TASK, {
+    fetch(endpointFetchTask, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -73,23 +77,34 @@ function OrderManagementPage() {
       .finally(() => setIsLoading(false));
   };
 
+  /**
+   * Apre il modal di recensione per un ordine specifico.
+   */
   const handleOpenReviewModal = (orderId) => {
     setSelectedOrderId(orderId);
     setShowReviewModal(true);
   };
 
+  /**
+   * Gestisce il successo della recensione: chiude il modal, aggiorna lo stato locale
+   * e forza il refresh dei dati.
+   */
   const handleReviewSuccess = () => {
     setShowReviewModal(false);
     if (selectedOrderId) {
+      // Aggiunge l'ID all'insieme locale per evitare di mostrare il bottone "Recensisci" subito
       setReviewedOrderIds((prevSet) => {
         const newSet = new Set(prevSet);
         newSet.add(selectedOrderId);
         return newSet;
       });
     }
-    fetchOrders();
+    fetchOrders(); // Ricarica per ottenere i dati aggiornati dal backend
   };
 
+  /**
+   * Aggiorna lo stato di un ordine (passa da CONFERMATO a SPEDITO, o da SPEDITO a COMPLETATO).
+   */
   const handleUpdateStatus = (orderId, currentStatus) => {
     let newStatus;
     let actionMessage;
@@ -110,7 +125,7 @@ function OrderManagementPage() {
 
     if (!window.confirm(actionMessage)) return;
 
-    fetch(`${ENDPOINT_STATO_UPDATE_BASE}/${orderId}/stato`, {
+    fetch(`${endpointStatoUpdateBase}/${orderId}/stato`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -121,16 +136,19 @@ function OrderManagementPage() {
       .then((res) => {
         if (!res.ok) throw new Error(`Errore HTTP ${res.status}`);
         alert(successMessage);
-        fetchOrders();
+        fetchOrders(); // Ricarica per aggiornare lo stato
       })
       .catch((err) => {
         alert(`Errore durante l'aggiornamento: ${err.message}`);
       });
   };
 
+  /**
+   * Annulla un ordine (lo stato diventa ANNULLATO).
+   */
   const handleCancelOrder = (orderId) => {
     if (window.confirm('Sei sicuro di voler ANNULLARE questo ordine?')) {
-      fetch(`${ENDPOINT_STATO_UPDATE_BASE}/${orderId}/stato`, {
+      fetch(`${endpointStatoUpdateBase}/${orderId}/stato`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +159,7 @@ function OrderManagementPage() {
         .then((res) => {
           if (!res.ok) throw new Error('Errore annullamento');
           alert('Ordine annullato con successo.');
-          fetchOrders();
+          fetchOrders(); // Ricarica per aggiornare lo stato
         })
         .catch((err) => {
           alert(`Errore: ${err.message}`);
@@ -149,12 +167,15 @@ function OrderManagementPage() {
     }
   };
 
+  // EFFETTO: Carica gli ordini al montaggio e quando l'utente/token cambiano
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, currentUser]);
 
   // --- LOGICA DI FILTRAGGIO ---
+
+  // Filtra la lista per le vendite
   const filteredSales = orders.filter((order) => {
     if (order.venditore?.id !== currentUserId) return false;
     const s = order.statoOrdine;
@@ -171,6 +192,7 @@ function OrderManagementPage() {
     }
   });
 
+  // Filtra la lista per gli acquisti
   const filteredPurchases = orders.filter((order) => {
     if (order.compratore?.id !== currentUserId) return false;
     const s = order.statoOrdine;
@@ -182,6 +204,7 @@ function OrderManagementPage() {
       case 'CANCELLED':
         return s === 'ANNULLATO';
       case 'TO_REVIEW': {
+        // Logica specifica: completato MA senza recensione (né backend né locale)
         if (s !== 'COMPLETATO') return false;
         const haRecensioneBackend = !!order.recensione;
         const haRecensioneLocale = reviewedOrderIds.has(order.id);
@@ -193,6 +216,7 @@ function OrderManagementPage() {
     }
   });
 
+  // Etichetta del filtro Vendite per la UI
   const getSalesLabel = () => {
     switch (salesFilter) {
       case 'ACTIVE':
@@ -206,6 +230,7 @@ function OrderManagementPage() {
     }
   };
 
+  // Etichetta del filtro Acquisti per la UI
   const getPurchasesLabel = () => {
     switch (purchasesFilter) {
       case 'ACTIVE':
@@ -216,17 +241,22 @@ function OrderManagementPage() {
         return 'Annullati';
       case 'TO_REVIEW':
         return 'Da Recensire';
+      case 'ALL':
       default:
         return 'Tutti gli Acquisti';
     }
   };
 
   // --- RENDER RIGHE ---
+  /**
+   * Renderizza le righe della tabella per un dato elenco di ordini.
+   */
   const renderOrderRows = (orderList, isSalesTable) => {
     return orderList.map((order) => {
       const isUserVendor = order.venditore?.id === currentUserId;
       const isUserBuyer = order.compratore?.id === currentUserId;
 
+      // Determinazione delle task/azioni possibili
       const isTaskSpedire = isUserVendor && order.statoOrdine === 'CONFERMATO';
       const isTaskConfermare = isUserBuyer && order.statoOrdine === 'SPEDITO';
 
@@ -241,6 +271,7 @@ function OrderManagementPage() {
       const isCancelled = order.statoOrdine === 'ANNULLATO';
       const isCompleted = order.statoOrdine === 'COMPLETATO';
 
+      // Colore e testo della task per la badge
       let relationshipColor = 'secondary';
       let taskText = 'STORICO';
 
@@ -264,13 +295,14 @@ function OrderManagementPage() {
         taskText = 'IN ATTESA';
       }
 
+      // Nome dell'utente controparte
       const counterpartyName = isSalesTable
         ? order.compratore?.username || 'N/D'
         : order.venditore?.username || 'N/D';
 
       return (
         <tr key={order.id}>
-          {/* ID: Nascosto su mobile */}
+          {/* ID Ordine */}
           <td className='d-none d-md-table-cell align-middle'>
             {order.id.substring(0, 8)}...
           </td>
@@ -280,6 +312,7 @@ function OrderManagementPage() {
             <Badge bg={relationshipColor} className='fs-7-custom'>
               {order.statoOrdine}
             </Badge>
+            {/* Task visibile su mobile */}
             <div className='d-md-none mt-1 text-muted fs-8-custom fw-bold'>
               {taskText}
             </div>
@@ -301,6 +334,7 @@ function OrderManagementPage() {
             >
               {order.prodotto?.titolo || 'Prodotto Eliminato'}
             </Link>
+            {/* Controparte visibile su mobile */}
             <div className='d-md-none small text-muted mt-1'>
               {isSalesTable ? 'Compratore: ' : 'Venditore: '} {counterpartyName}
             </div>
@@ -314,6 +348,7 @@ function OrderManagementPage() {
           {/* AZIONI: Impilate su mobile */}
           <td className='align-middle'>
             <div className='d-flex flex-column flex-md-row gap-1'>
+              {/* Bottone SPEDISCI */}
               {isTaskSpedire && (
                 <Button
                   variant='success'
@@ -328,6 +363,7 @@ function OrderManagementPage() {
                 </Button>
               )}
 
+              {/* Bottone CONFERMA ARRIVO */}
               {isTaskConfermare && (
                 <Button
                   variant='primary'
@@ -342,6 +378,7 @@ function OrderManagementPage() {
                 </Button>
               )}
 
+              {/* Bottone RECENSISCI */}
               {isTaskRecensione && (
                 <Button
                   variant='info'
@@ -354,6 +391,7 @@ function OrderManagementPage() {
                 </Button>
               )}
 
+              {/* Bottone ANNULLA */}
               {canCancel && (
                 <Button
                   variant='danger'
@@ -367,6 +405,7 @@ function OrderManagementPage() {
               )}
             </div>
 
+            {/* Placeholder se non ci sono azioni */}
             {!isTaskSpedire &&
               !isTaskConfermare &&
               !isTaskRecensione &&
@@ -376,6 +415,8 @@ function OrderManagementPage() {
       );
     });
   };
+
+  // --- RENDER PRINCIPALE ---
 
   if (isLoading)
     return (
@@ -396,9 +437,8 @@ function OrderManagementPage() {
       <Row>
         {/* --- SEZIONE VENDITE --- */}
         <Col md={12} className='mb-5'>
-          {/* ✅ USO LA GRID SYSTEM (Row/Col) per layout preciso */}
           <Row className='align-items-center mb-3 g-2'>
-            {/* Titolo: Occupata tutto su mobile, metà su desktop */}
+            {/* Titolo Vendite */}
             <Col xs={12} md={6}>
               <h3 className='m-0 fs-4 fs-md-2'>Le Tue Vendite</h3>
               <p className='text-muted m-0 small'>
@@ -406,7 +446,7 @@ function OrderManagementPage() {
               </p>
             </Col>
 
-            {/* Bottone: Occupata tutto su mobile, metà su desktop (spinto a destra con text-md-end) */}
+            {/* Filtro Vendite */}
             <Col xs={12} md={6} className='text-md-end'>
               <div className='d-grid d-md-inline-block'>
                 <DropdownButton
@@ -478,13 +518,14 @@ function OrderManagementPage() {
 
         {/* --- SEZIONE ACQUISTI --- */}
         <Col md={12} className='mt-4'>
-          {/* ✅ HEADER ACQUISTI (Stesso Pattern Grid) */}
           <Row className='align-items-center mb-3 g-2'>
+            {/* Titolo Acquisti */}
             <Col xs={12} md={6}>
               <h3 className='m-0 fs-4 fs-md-2'>I Tuoi Acquisti</h3>
               <p className='text-muted m-0 small'>Traccia i tuoi ordini.</p>
             </Col>
 
+            {/* Filtro Acquisti */}
             <Col xs={12} md={6} className='text-md-end'>
               <div className='d-grid d-md-inline-block'>
                 <DropdownButton
@@ -560,6 +601,7 @@ function OrderManagementPage() {
         </Col>
       </Row>
 
+      {/* Modal di Recensione */}
       <ReviewModal
         show={showReviewModal}
         handleClose={() => setShowReviewModal(false)}

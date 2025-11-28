@@ -6,30 +6,39 @@ import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import { Button } from 'react-bootstrap';
 
+// Endpoint per le risorse
 const endpointIndirizzi = 'http://localhost:8888/indirizzi';
 const endpointOrdini = 'http://localhost:8888/ordini';
-const ORDER_MANAGEMENT_ROUTE = '/ordini/gestione';
+const orderManagementRoute = '/ordini/gestione'; // Rinominate ORDER_MANAGEMENT_ROUTE
 
 const brandColor = '#fa8229';
 
-// ✅ MODIFICATO: Accetta className, size e style
+/**
+ * Componente per il bottone di acquisto che gestisce l'intera logica di pre-checkout e creazione ordine.
+ * Accetta props di stile per il bottone.
+ */
 function Order({ prodottoId, size, className, style }) {
+  // Stati per il Modal di acquisto e i dati utente
   const [showModal, setShowModal] = useState(false);
   const [userAddresses, setUserAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState('');
 
+  // Stati per il caricamento e l'elaborazione
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [errorAddresses, setErrorAddresses] = useState(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
+  // Dati utente e navigazione
   const currentUser = useSelector((state) => state.auth.user);
   const token = localStorage.getItem('accessToken');
   const navigate = useNavigate();
 
-  // FUNZIONE PER CARICARE GLI INDIRIZZI
+  /**
+   * Fetcha gli indirizzi di spedizione associati all'utente loggato.
+   */
   const fetchUserAddresses = () => {
     if (!token) {
-      setErrorAddresses('Token non disponibile.');
+      setErrorAddresses('Token non disponibile. Effettua il login.');
       return;
     }
 
@@ -51,6 +60,7 @@ function Order({ prodottoId, size, className, style }) {
       })
       .then((data) => {
         setUserAddresses(data);
+        // Se ci sono indirizzi, seleziona il primo come default
         if (data.length > 0) {
           setSelectedAddressId(data[0].id);
         }
@@ -63,15 +73,20 @@ function Order({ prodottoId, size, className, style }) {
       });
   };
 
-  // FETCH DEGLI INDIRIZZI AL MONTAGGIO DEL COMPONENTE
+  /**
+   * Effetto: Carica gli indirizzi dell'utente quando il componente si monta o l'utente cambia.
+   */
   useEffect(() => {
+    // Carico gli indirizzi solo se l'utente è loggato e non ho ancora dati
     if (currentUser && !userAddresses.length) {
       fetchUserAddresses();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, token]);
 
-  // FUNZIONE PER LANCIARTE L'ACQUISTO
+  /**
+   * Gestisce la creazione dell'ordine (simulazione di acquisto).
+   */
   const handlePurchase = () => {
     if (!selectedAddressId) {
       alert('Seleziona un indirizzo di spedizione per procedere.');
@@ -97,6 +112,7 @@ function Order({ prodottoId, size, className, style }) {
         if (res.ok) {
           return res.json();
         } else {
+          // Gestione errore avanzata (tentativo di leggere il messaggio di errore dal body)
           return res.json().then((errData) => {
             throw new Error(
               errData.message || 'Acquisto fallito: Errore di validazione.'
@@ -107,7 +123,8 @@ function Order({ prodottoId, size, className, style }) {
       .then((newOrder) => {
         alert(`Ordine creato con successo! Stato: ${newOrder.statoOrdine}`);
         setShowModal(false);
-        navigate(ORDER_MANAGEMENT_ROUTE);
+        // Reindirizza l'utente alla pagina di gestione ordini
+        navigate(orderManagementRoute);
       })
       .catch((err) => {
         alert(`Errore nell'acquisto: ${err.message}`);
@@ -119,8 +136,8 @@ function Order({ prodottoId, size, className, style }) {
 
   // --- RENDERING CONDIZIONALE ---
 
+  // Se l'utente non è loggato, mostra un link al login
   if (!currentUser) {
-    // Se non loggato, mostra un link al login
     return (
       <Button
         variant='success'
@@ -134,6 +151,7 @@ function Order({ prodottoId, size, className, style }) {
     );
   }
 
+  // Se c'è un errore nel caricamento degli indirizzi
   if (errorAddresses) {
     return <ErrorAlert message={errorAddresses} />;
   }
@@ -142,20 +160,22 @@ function Order({ prodottoId, size, className, style }) {
   return (
     <>
       <Button
+        // Unisci lo stile personalizzato con lo stile del brand
         style={{
           ...style,
           backgroundColor: brandColor,
           borderColor: brandColor,
         }}
-        // ✅ FONDAMENTALE: Passiamo size, className e style ricevuti
         size={size}
         className={className}
         onClick={() => setShowModal(true)}
         disabled={loadingAddresses || isProcessingOrder}
       >
         {loadingAddresses ? (
+          // Spinner se sta caricando gli indirizzi
           <LoadingSpinner size='sm' />
         ) : isProcessingOrder ? (
+          // Spinner se sta elaborando l'ordine
           <>
             <LoadingSpinner size='sm' /> Elaborazione...
           </>
@@ -164,6 +184,7 @@ function Order({ prodottoId, size, className, style }) {
         )}
       </Button>
 
+      {/* Modal di conferma acquisto */}
       <PurchaseModal
         show={showModal}
         handleClose={() => setShowModal(false)}
@@ -172,7 +193,7 @@ function Order({ prodottoId, size, className, style }) {
         onSelectAddress={setSelectedAddressId}
         onConfirmPurchase={handlePurchase}
         isProcessing={isProcessingOrder}
-        onFetchAddresses={fetchUserAddresses}
+        onFetchAddresses={fetchUserAddresses} // Permette di ricaricare gli indirizzi dal modal
         token={token}
       />
     </>

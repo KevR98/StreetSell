@@ -24,14 +24,14 @@ import {
   BsSearch,
   BsHouseDoorFill,
   BsBellFill,
-  BsBoxArrowInRight, // ✅ 1. AGGIUNTO IMPORT ICONA LOGIN
+  BsBoxArrowInRight,
 } from 'react-icons/bs';
 import Notification from './Notification';
 import { FaBoxOpen } from 'react-icons/fa';
 
 const brandColor = '#fa8229';
 
-// COMPONENTE CUSTOM TOGGLE
+// COMPONENTE CUSTOM TOGGLE per i link mobili (Dropup)
 const MobileNavToggle = React.forwardRef(({ children, onClick }, ref) => (
   <div
     ref={ref}
@@ -57,17 +57,19 @@ function MyNavbar() {
   const navigate = useNavigate();
 
   const [query, setQuery] = useState('');
-  const [searchType, setSearchType] = useState('prodotti');
+  const [searchType, setSearchType] = useState('prodotti'); // Usato solo nella navbar desktop
 
   const token = localStorage.getItem('accessToken');
   const user = useSelector((state) => state.auth.user);
   const username = user?.username;
   const ruolo = user?.ruolo;
 
+  // Stati derivati per la logica di visualizzazione
   const isLoggedInAndLoaded = token && username;
   const isAdmin = ruolo === 'ADMIN';
   const isLoadingUserData = token && !username;
 
+  // Gestione Avatar
   const hasValidAvatar =
     user?.avatarUrl && user.avatarUrl !== 'default' && user.avatarUrl !== '';
   const avatarToDisplay = hasValidAvatar ? user.avatarUrl : avatarDefault;
@@ -76,6 +78,7 @@ function MyNavbar() {
   const shouldShowFixedSearchBar =
     isLoggedInAndLoaded && location.pathname === '/';
 
+  // Contenuto dell'icona per il Dropdown Desktop
   const dropdownTitle = (
     <div className='d-flex align-items-center justify-content-center'>
       <img
@@ -92,39 +95,52 @@ function MyNavbar() {
     </div>
   );
 
+  /**
+   * Gestisce il logout: rimuove il token e reindirizza al login.
+   */
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     dispatch(logout());
     navigate('/login');
   };
 
+  /**
+   * Gestisce l'invio della barra di ricerca desktop.
+   */
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (query.trim() !== '') {
+      // Reindirizza alla pagina di ricerca con query e tipo specifici
       navigate(`/cerca?q=${query}&type=${searchType}`);
       setQuery('');
     }
   };
 
+  /**
+   * Gestisce la navigazione dei link mobili, controllando l'autenticazione.
+   */
   const handleMobileNavClick = (to) => {
+    // Se è la pagina di ricerca, naviga direttamente (non richiede auth)
     if (to === '/cerca') {
       navigate(to);
       return;
     }
 
-    // Controlla se il link richiede autenticazione
+    // Trova il link per controllare se richiede autenticazione
     const requiresAuth = allMobileLinks.find(
       (link) => link.to === to
     )?.requiresAuth;
 
     if (!isLoggedInAndLoaded && requiresAuth) {
+      // Se richiesta autenticazione ma non loggato, reindirizza al login
       navigate('/login');
     } else {
+      // Altrimenti, naviga normalmente
       navigate(to);
     }
   };
 
-  // Elenco base dei link mobile
+  // Elenco base completo di tutti i link disponibili nella navbar mobile
   const allMobileLinks = [
     {
       to: '/',
@@ -158,11 +174,11 @@ function MyNavbar() {
     },
   ];
 
-  // ✅ 2. LOGICA DINAMICA PER I LINK MOBILE MODIFICATA
+  // Logica per definire i link mostrati nella navbar mobile (Footer)
   let mobileLinks = [];
 
   if (isLoggedInAndLoaded) {
-    // Se loggato: mostra tutto
+    // Se loggato: mostra tutti i link standard
     mobileLinks = allMobileLinks;
   } else {
     // Se NON loggato
@@ -171,7 +187,7 @@ function MyNavbar() {
     );
 
     if (isHomeOrAuthPage) {
-      // Se siamo in Home o Login/Register: Mostra Home e LOGIN (al posto di Cerca)
+      // In Home, Login o Register: Mostra Home e Login/Register
       mobileLinks = [
         {
           to: '/',
@@ -187,12 +203,12 @@ function MyNavbar() {
         },
       ];
     } else {
-      // Se siamo in altre pagine pubbliche (es. /cerca): Mostra Home e Cerca
+      // In altre pagine pubbliche: Mostra solo i link che non richiedono autenticazione (Home e Cerca)
       mobileLinks = allMobileLinks.filter((link) => !link.requiresAuth);
     }
   }
 
-  // BARRA DI RICERCA FISSA (SOLO MOBILE E SOLO IN HOME LOGGATA)
+  // Componente per la barra di ricerca fissa mobile (visibile solo in Home se loggato)
   const MobileHomeSearchBar = () => {
     if (!shouldShowFixedSearchBar) return null;
 
@@ -200,16 +216,7 @@ function MyNavbar() {
 
     return (
       <>
-        <style type='text/css'>
-          {`
-              .dark-placeholder::placeholder {
-                color: #adb5bd !important;
-                opacity: 1;
-              }
-            `}
-        </style>
-
-        {/* 1. BARRA REALE (Fixed) */}
+        {/* 1. Navbar Fixed con la barra di ricerca */}
         <Navbar
           fixed='top'
           className='bg-dark d-flex d-sm-none shadow align-items-center'
@@ -225,6 +232,7 @@ function MyNavbar() {
             onSubmit={(e) => {
               e.preventDefault();
               if (query.trim() !== '') {
+                // Ricerca generica (tipo 'all') per la barra fissa mobile
                 navigate(`/cerca?q=${query}&type=all`);
                 setQuery('');
               }
@@ -238,6 +246,7 @@ function MyNavbar() {
                 aria-label='Search'
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                // Stili custom per la barra di ricerca mobile
                 className='dark-placeholder border-0 shadow-none'
                 style={{
                   fontSize: '0.90rem',
@@ -270,7 +279,7 @@ function MyNavbar() {
           </Form>
         </Navbar>
 
-        {/* 2. SPACER - Solo se loggato e in Home */}
+        {/* 2. SPACER: aggiunge uno spazio per compensare l'altezza della navbar fissa */}
         <div
           className='d-block d-sm-none'
           style={{ height: '52px', width: '100%' }}
@@ -283,13 +292,14 @@ function MyNavbar() {
     <>
       <MobileHomeSearchBar />
 
-      {/* 1. NAVBAR DESKTOP */}
+      {/* 1. NAVBAR DESKTOP (Visibile da SM in su) */}
       <Navbar
         className='bg-dark mb-0 d-none d-sm-flex'
         data-bs-theme='dark'
         sticky='top'
       >
         <Container>
+          {/* Logo */}
           <Link
             to='/'
             className='d-flex align-items-center text-decoration-none me-2 me-sm-3'
@@ -303,12 +313,14 @@ function MyNavbar() {
             />
           </Link>
 
+          {/* Barra di ricerca desktop */}
           <div className='d-flex flex-grow-1 align-items-center'>
             <Form
               className='d-flex flex-grow-1 mx-2 search-bar-responsive'
               onSubmit={handleSearchSubmit}
             >
               <InputGroup>
+                {/* Select per tipo di ricerca (Prodotti/Utenti) */}
                 <Form.Select
                   value={searchType}
                   onChange={(e) => setSearchType(e.target.value)}
@@ -350,6 +362,7 @@ function MyNavbar() {
               className='d-flex align-items-center gap-3'
               style={{ height: '40px' }}
             >
+              {/* Icona Home (desktop) */}
               <Nav.Item className='d-none d-sm-flex align-items-center h-100 mx-3'>
                 <Nav.Link
                   as={Link}
@@ -368,13 +381,14 @@ function MyNavbar() {
                 </Nav.Link>
               </Nav.Item>
 
-              {/* Mostra Notifiche solo se loggato */}
+              {/* Notifiche Desktop (solo se loggato) */}
               {isLoggedInAndLoaded && (
                 <div className='d-flex align-items-center justify-content-center h-100'>
                   <Notification />
                 </div>
               )}
 
+              {/* Spinner di caricamento dati utente */}
               {isLoadingUserData && (
                 <div className='d-flex align-items-center h-100'>
                   <Spinner
@@ -385,6 +399,7 @@ function MyNavbar() {
                 </div>
               )}
 
+              {/* Dropdown Profilo (solo se loggato) */}
               {isLoggedInAndLoaded && (
                 <NavDropdown
                   title={dropdownTitle}
@@ -453,13 +468,14 @@ function MyNavbar() {
         </Container>
       </Navbar>
 
-      {/* 2. NAVBAR MOBILE (Footer) */}
+      {/* 2. NAVBAR MOBILE (Footer Fisso - Visibile solo su mobile) */}
       <Navbar
         fixed='bottom'
         className='bg-dark d-flex d-sm-none'
         data-bs-theme='dark'
         style={{ padding: 0 }}
       >
+        {/* Stili custom per pulire padding/margini delle notifiche su mobile */}
         <style type='text/css'>
           {`
             .mobile-notification-reset .nav-link,
@@ -478,9 +494,9 @@ function MyNavbar() {
           {mobileLinks.map((link, index) => {
             const isActive = location.pathname === link.to;
 
-            // CASO SPECIALE: NOTIFICHE
+            // CASO 1: NOTIFICHE
             if (link.isNotification) {
-              if (!isLoggedInAndLoaded) return null;
+              if (!isLoggedInAndLoaded) return null; // Non mostrare se non loggato
 
               return (
                 <div
@@ -499,6 +515,7 @@ function MyNavbar() {
                       height: '24px',
                     }}
                   >
+                    {/* Componente Notifiche per mobile */}
                     <Notification isMobile={true} icon={link.icon} />
                   </div>
 
@@ -517,7 +534,7 @@ function MyNavbar() {
               );
             }
 
-            // CASO SPECIALE: PROFILO LOGGATO
+            // CASO 2: PROFILO LOGGATO (Dropdown per i sottomenu)
             if (link.label === 'Profilo' && isLoggedInAndLoaded) {
               return (
                 <Dropdown
@@ -527,6 +544,7 @@ function MyNavbar() {
                   style={{ flex: 1 }}
                   className='d-flex justify-content-center'
                 >
+                  {/* Toggle con Avatar */}
                   <Dropdown.Toggle as={MobileNavToggle}>
                     <img
                       src={avatarToDisplay}
@@ -553,6 +571,7 @@ function MyNavbar() {
                     </small>
                   </Dropdown.Toggle>
 
+                  {/* Menu a discesa del profilo */}
                   <Dropdown.Menu className='mb-3 shadow border-0'>
                     {isAdmin && (
                       <Dropdown.Item as={Link} to='/admin/dashboard'>
@@ -585,7 +604,7 @@ function MyNavbar() {
               );
             }
 
-            // LINK STANDARD (Home, Cerca, Login)
+            // CASO 3: LINK STANDARD (Home, Cerca, Login/Register)
             return (
               <Nav.Link
                 key={link.to}

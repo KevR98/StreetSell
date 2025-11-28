@@ -66,13 +66,6 @@ function Home() {
   return (
     <Container className='my-5'>
       <h1 className='mb-4 text-center'>Novità</h1>
-
-      {/* ✅ MODIFICA QUI:
-        xs={2} -> 2 colonne su Mobile (Extra Small e Small)
-        md={3} -> 3 colonne su Tablet (Medium)
-        lg={4} -> 4 colonne su Desktop (Large)
-        xl={5} -> 5 colonne su Schermi molto grandi (Extra Large)
-      */}
       <Row xs={2} md={3} lg={4} xl={5} className='g-3'>
         {prodotti.map((singoloProdotto) => (
           <Col key={singoloProdotto.id}>

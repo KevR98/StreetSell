@@ -1,31 +1,45 @@
-import React from 'react';
+import { useState } from 'react';
 import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import { FaTrash } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
-import defaultAvatar from '../assets/streetsell-profile-pic.png';
 
+/**
+ * Componente per la modifica dei dettagli del profilo utente, inclusi username, posizione e avatar.
+ * Le operazioni API (aggiornamento, upload, delete) sono gestite tramite funzioni passate come prop dal genitore.
+ */
 function EditProfilePage({
-  profileData,
-  setProfileData,
-  isEditingUsername,
-  setIsEditingUsername,
-  isLoading,
-  renderFeedback,
-  handleUpdateProfile,
-  handleUploadAvatar,
-  handleDeleteAvatar,
-  selectedFile,
-  setSelectedFile,
-  BRAND_COLOR,
+  profileData, // Stato dei dati di profilo (username, città, nazione, avatarUrl)
+  setProfileData, // Setter per aggiornare lo stato di profileData nel genitore (o nel componente corrente, a seconda dell'architettura)
+  isLoading, // Stato di caricamento generale del genitore
+  renderFeedback, // Funzione del genitore per visualizzare gli Alert di feedback (successo/errore)
+  handleUpdateProfile, // Funzione API del genitore per inviare il PUT dei dati di profilo (username, città, nazione)
+  handleUploadAvatar, // Funzione API del genitore per inviare il PATCH del file avatar
+  handleDeleteAvatar, // Funzione API del genitore per inviare il DELETE dell'avatar
+  selectedFile, // Stato locale del genitore per il file immagine selezionato
+  setSelectedFile, // Setter per aggiornare lo stato selectedFile
+  brandColor, // Colore principale del brand
 }) {
-  // Logica visualizzazione: File Selezionato > URL Backend > Default
+  // Stato locale per controllare se il campo username è in modalità modifica
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+
+  // URL di fallback per l'avatar
+  const defaultAvatarUrl = 'https://via.placeholder.com/60x60?text=NP';
+
+  /**
+   * Determina l'URL da visualizzare per l'avatar, seguendo la priorità:
+   * 1. File selezionato (Blob URL)
+   * 2. URL esistente dal backend
+   * 3. URL di default
+   */
   const displayAvatarUrl = selectedFile
     ? URL.createObjectURL(selectedFile)
     : profileData.avatarUrl && profileData.avatarUrl !== 'default'
     ? profileData.avatarUrl
-    : defaultAvatar;
+    : defaultAvatarUrl;
 
-  // Condizione per mostrare il cestino
+  /**
+   * Controlla se l'utente ha un avatar personalizzato, per mostrare il bottone di eliminazione.
+   */
   const hasCustomAvatar =
     profileData.avatarUrl && profileData.avatarUrl !== 'default';
 
@@ -35,26 +49,23 @@ function EditProfilePage({
   };
 
   return (
-    // Card Trasparente
     <Card className='border-0' style={{ background: 'transparent' }}>
-      {/* ✅ PADDING RESPONSIVE */}
       <Card.Body className='p-2 p-md-4'>
-        {/* ✅ TITOLO RESPONSIVE */}
         <h4 className='mb-4 fs-4 fs-md-3'>Dettagli Profilo</h4>
         <hr />
+        {/* Visualizza l'alert di successo o errore */}
         {renderFeedback()}
 
         {/* SEZIONE AVATAR */}
         <h5 className='mb-3 fs-5 fs-md-4'>Foto Profilo</h5>
 
-        {/* ✅ LAYOUT RESPONSIVE: Impila su mobile (flex-column), riga su desktop (flex-md-row) */}
         <div className='d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4 gap-3'>
           <div className='d-flex align-items-center'>
+            {/* Immagine Avatar visualizzata */}
             <img
               src={displayAvatarUrl}
               alt='Avatar'
               className='rounded-circle me-3 me-md-4 border border-1 border-secondary-subtle'
-              // ✅ AVATAR RESPONSIVE (più piccolo su mobile)
               style={{ width: '60px', height: '60px', objectFit: 'cover' }}
             />
             <div>
@@ -67,6 +78,7 @@ function EditProfilePage({
 
           <div className='d-flex gap-2 align-items-center w-100 w-md-auto mt-2 mt-md-0'>
             <Form.Group className='d-none'>
+              {/* Input file nascosto: modifica lo stato selectedFile all'evento change */}
               <Form.Control
                 type='file'
                 accept='image/*'
@@ -79,14 +91,15 @@ function EditProfilePage({
 
             {/* Logica Bottoni */}
             {selectedFile ? (
-              // 1. Se ho selezionato un file
+              // Mostra i bottoni per caricare o annullare se è stato selezionato un file
               <>
                 <Button
                   style={{
-                    backgroundColor: BRAND_COLOR,
-                    borderColor: BRAND_COLOR,
+                    backgroundColor: brandColor,
+                    borderColor: brandColor,
                   }}
                   size='sm'
+                  // Chiama la funzione di upload del genitore
                   onClick={handleUploadAvatar}
                   disabled={isLoading}
                   className='flex-grow-1 flex-md-grow-0 fs-7-custom fs-md-6'
@@ -96,6 +109,7 @@ function EditProfilePage({
                 <Button
                   variant='outline-danger'
                   size='sm'
+                  // Resetta selectedFile a null
                   onClick={() => setSelectedFile(null)}
                   disabled={isLoading}
                   className='flex-grow-1 flex-md-grow-0 fs-7-custom fs-md-6'
@@ -104,7 +118,7 @@ function EditProfilePage({
                 </Button>
               </>
             ) : (
-              // 2. Se NON ho selezionato file
+              // Mostra i bottoni per scegliere una foto o rimuovere l'esistente
               <>
                 <Button
                   variant='outline-secondary'
@@ -115,8 +129,8 @@ function EditProfilePage({
                   size='sm'
                   style={{
                     backgroundColor: 'white',
-                    borderColor: BRAND_COLOR,
-                    color: BRAND_COLOR,
+                    borderColor: brandColor,
+                    color: brandColor,
                   }}
                   className='flex-grow-1 flex-md-grow-0 fs-7-custom fs-md-6'
                 >
@@ -128,6 +142,7 @@ function EditProfilePage({
                     variant='outline-danger'
                     size='sm'
                     title='Rimuovi foto profilo'
+                    // Chiama la funzione di eliminazione del genitore
                     onClick={handleDeleteAvatar}
                     disabled={isLoading}
                     className='fs-7-custom fs-md-6'
@@ -142,9 +157,11 @@ function EditProfilePage({
 
         <hr className='my-4' />
 
+        {/* FORM DI AGGIORNAMENTO DATI DI PROFILO */}
         <Form onSubmit={handleUpdateProfile}>
           <div className='d-flex justify-content-between align-items-center mb-2'>
             <h5 className='m-0 fs-6 fs-md-5'>Username</h5>
+            {/* Bottone per attivare la modifica dell'username */}
             {!isEditingUsername && (
               <Button
                 variant='outline-secondary'
@@ -152,8 +169,8 @@ function EditProfilePage({
                 onClick={() => setIsEditingUsername(true)}
                 style={{
                   backgroundColor: 'white',
-                  borderColor: BRAND_COLOR,
-                  color: BRAND_COLOR,
+                  borderColor: brandColor,
+                  color: brandColor,
                 }}
                 className='fs-7-custom fs-md-6'
               >
@@ -164,6 +181,7 @@ function EditProfilePage({
 
           {isEditingUsername ? (
             <div className='d-flex gap-2 align-items-center mb-4'>
+              {/* Campo di input per la modifica dell'username */}
               <Form.Control
                 type='text'
                 value={profileData.username}
@@ -174,6 +192,7 @@ function EditProfilePage({
                 style={inputStyle}
                 className='fs-7-custom fs-md-6'
               />
+              {/* Bottone per annullare la modifica dell'username */}
               <Button
                 variant='link'
                 size='sm'
@@ -184,6 +203,7 @@ function EditProfilePage({
               </Button>
             </div>
           ) : (
+            // Visualizzazione statica dell'username quando non in modalità modifica
             <Alert
               style={{ backgroundColor: 'white', borderColor: '#ddd' }}
               className='py-2 mb-4 fw-bold border fs-7-custom fs-md-6'
@@ -199,6 +219,7 @@ function EditProfilePage({
             <Col md={6}>
               <Form.Group className='mb-3'>
                 <Form.Label className='fs-7-custom fs-md-6'>Città</Form.Label>
+                {/* Campo per la Città: aggiorna profileData su ogni input */}
                 <Form.Control
                   type='text'
                   value={profileData.citta}
@@ -214,6 +235,7 @@ function EditProfilePage({
             <Col md={6}>
               <Form.Group className='mb-3'>
                 <Form.Label className='fs-7-custom fs-md-6'>Nazione</Form.Label>
+                {/* Campo per la Nazione: aggiorna profileData su ogni input */}
                 <Form.Control
                   type='text'
                   value={profileData.nazione}
@@ -232,12 +254,13 @@ function EditProfilePage({
           </Row>
 
           <div className='text-end mt-4'>
+            {/* Bottone di Submit: Chiama la funzione handleUpdateProfile del genitore al submit del form */}
             <Button
-              style={{ backgroundColor: BRAND_COLOR, borderColor: BRAND_COLOR }}
+              style={{ backgroundColor: brandColor, borderColor: brandColor }}
               type='submit'
               disabled={isLoading || selectedFile}
-              size='sm' // Base size small
-              className='btn-md-lg fs-7-custom fs-md-6' // Classe per ingrandire su desktop se necessario
+              size='sm'
+              className='btn-md-lg fs-7-custom fs-md-6'
             >
               {isLoading ? <LoadingSpinner size='sm' /> : 'Salva Modifiche'}
             </Button>

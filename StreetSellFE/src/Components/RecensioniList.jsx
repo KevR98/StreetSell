@@ -1,28 +1,34 @@
 import { useEffect, useState } from 'react';
-import { Card, ListGroup, Pagination, Image } from 'react-bootstrap'; // ✅ Aggiunto Image
+import { Card, ListGroup, Pagination, Image, Alert } from 'react-bootstrap';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorAlert from './ErrorAlert';
 import { FaStar } from 'react-icons/fa';
 
-// Assumiamo che l'immagine di default sia qui
+// Immagine di default per l'avatar
 import avatarDefault from '../assets/streetsell-profile-pic.png';
 
 const endpoint = 'http://localhost:8888/utenti';
 
+/**
+ * Componente per visualizzare la lista paginata delle recensioni ricevute da un utente.
+ */
 const RecensioniList = ({ utenteId }) => {
   // Stato per i dati di riepilogo del rating
   const [ratingData, setRatingData] = useState({
     averageRating: 0.0,
     reviewCount: 0,
   });
-  // Stato per la lista di recensioni paginata
+  // Stato per la lista di recensioni paginata (contiene content, totalPages, number)
   const [recensioniPage, setRecensioniPage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(0); // Pagina corrente (inizia da 0)
+  const [currentPage, setCurrentPage] = useState(0); // Pagina corrente (API usa base 0)
 
   const size = 5; // Elementi per pagina
 
+  /**
+   * Effettua il fetch sia del riepilogo del rating che della lista paginata delle recensioni.
+   */
   useEffect(() => {
     if (!utenteId) return;
 
@@ -31,7 +37,7 @@ const RecensioniList = ({ utenteId }) => {
       setError(null);
 
       try {
-        // 1. Fetch del Rating e Conteggio
+        // 1. Fetch del Rating e Conteggio (Rating API)
         const ratingRes = await fetch(`${endpoint}/${utenteId}/rating`);
         const ratingJson = await ratingRes.json();
         setRatingData(ratingJson);
@@ -60,12 +66,22 @@ const RecensioniList = ({ utenteId }) => {
     fetchData();
   }, [utenteId, currentPage]); // Rilancia la fetch quando cambia l'utente o la pagina
 
+  /**
+   * Gestisce il cambio di pagina nella paginazione.
+   */
   const handlePageChange = (pageNumber) => {
-    if (pageNumber >= 0 && pageNumber < recensioniPage.totalPages) {
+    if (
+      recensioniPage &&
+      pageNumber >= 0 &&
+      pageNumber < recensioniPage.totalPages
+    ) {
       setCurrentPage(pageNumber);
     }
   };
 
+  /**
+   * Renderizza gli elementi numerici della paginazione.
+   */
   const renderPaginationItems = () => {
     if (!recensioniPage || recensioniPage.totalPages <= 1) return null;
 
@@ -84,11 +100,11 @@ const RecensioniList = ({ utenteId }) => {
     return items;
   };
 
-  // --- RENDERING ---
+  // --- VARIABILI DI RENDERING ---
 
   const { averageRating, reviewCount } = ratingData;
   const recensioni = recensioniPage?.content || [];
-  const roundedRating = Math.round(averageRating); // Rating arrotondato per le stelle
+  const roundedRating = Math.round(averageRating); // Rating arrotondato per le stelle medie
 
   return (
     <div className='recensioni-list'>
@@ -111,7 +127,7 @@ const RecensioniList = ({ utenteId }) => {
               <span className='display-4 me-3'>
                 {reviewCount > 0 ? averageRating.toFixed(1) : 'N/A'}
               </span>
-              {/* Visualizzazione delle stelle medie */}
+              {/* Visualizzazione delle stelle medie (arrotondate) */}
               <div className='d-flex'>
                 {[...Array(5)].map((_, i) => (
                   <FaStar
@@ -137,7 +153,7 @@ const RecensioniList = ({ utenteId }) => {
 
       {/* Contenuto Principale */}
       {loading && <LoadingSpinner />}
-      {error && <ErrorAlert />}
+      {error && <ErrorAlert message={error} />}
 
       {!loading && !error && (
         <>
@@ -146,7 +162,7 @@ const RecensioniList = ({ utenteId }) => {
             <ListGroup variant='flush'>
               <h3 className='mb-3'>Commenti</h3>
               {recensioni.map((r) => {
-                // ✅ Logica per l'Avatar
+                // Logica per l'Avatar del recensore
                 const reviewAvatarUrl =
                   r.recensore.avatarUrl && r.recensore.avatarUrl !== 'default'
                     ? r.recensore.avatarUrl
@@ -157,10 +173,10 @@ const RecensioniList = ({ utenteId }) => {
                     key={r.id}
                     style={{ backgroundColor: 'transparent' }}
                   >
-                    {/* ✅ FOOTER CON AVATAR */}
                     <div className='d-flex justify-content-between align-items-center mb-2'>
                       {/* BLOCCO SINISTRO: Avatar + Username + Rating */}
                       <div className='d-flex align-items-center'>
+                        {/* Avatar */}
                         <Image
                           src={reviewAvatarUrl}
                           alt={`${r.recensore.username} Avatar`}
@@ -180,11 +196,14 @@ const RecensioniList = ({ utenteId }) => {
                           </span>
 
                           <h6 className='mb-0 text-warning d-flex align-items-center ms-2'>
-                            {[...Array(r.valutazione)].map((_, i) => (
+                            {/* Visualizzazione delle stelle per la singola recensione */}
+                            {[...Array(5)].map((_, i) => (
                               <FaStar
                                 key={i}
                                 size={16}
-                                color='#ffc107'
+                                color={
+                                  i < r.valutazione ? '#ffc107' : '#e4e5e9'
+                                }
                                 className='me-1'
                               />
                             ))}
@@ -200,37 +219,44 @@ const RecensioniList = ({ utenteId }) => {
                         {new Date(r.dataCreazione).toLocaleDateString()}
                       </small>
                     </div>
+                    {/* Commento della recensione */}
                     <p className='mb-1'>- {r.commento}</p>
                   </ListGroup.Item>
                 );
               })}
             </ListGroup>
           ) : (
-            <p>Ancora nessuna recensione ricevuta.</p>
+            <Alert variant='info' className='fs-7-custom fs-md-6'>
+              Nessuna recensione ricevuta per questo utente.
+            </Alert>
           )}
 
           {/* Paginazione */}
-          <div className='d-flex justify-content-center mt-3'>
-            <Pagination>
-              <Pagination.First
-                onClick={() => handlePageChange(0)}
-                disabled={currentPage === 0}
-              />
-              <Pagination.Prev
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 0}
-              />
-              {renderPaginationItems()}
-              <Pagination.Next
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === recensioniPage.totalPages - 1}
-              />
-              <Pagination.Last
-                onClick={() => handlePageChange(recensioniPage.totalPages - 1)}
-                disabled={currentPage === recensioniPage.totalPages - 1}
-              />
-            </Pagination>
-          </div>
+          {recensioniPage && recensioniPage.totalPages > 1 && (
+            <div className='d-flex justify-content-center mt-3'>
+              <Pagination>
+                <Pagination.First
+                  onClick={() => handlePageChange(0)}
+                  disabled={currentPage === 0}
+                />
+                <Pagination.Prev
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 0}
+                />
+                {renderPaginationItems()}
+                <Pagination.Next
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === recensioniPage.totalPages - 1}
+                />
+                <Pagination.Last
+                  onClick={() =>
+                    handlePageChange(recensioniPage.totalPages - 1)
+                  }
+                  disabled={currentPage === recensioniPage.totalPages - 1}
+                />
+              </Pagination>
+            </div>
+          )}
         </>
       )}
     </div>

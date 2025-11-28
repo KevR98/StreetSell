@@ -1,34 +1,38 @@
 import { Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
-// Il componente riceve un oggetto 'prodotto' come "prop" (proprietà)
+/**
+ * Componente per visualizzare un'anteprima compatta di un prodotto in vendita.
+ * La card è un link cliccabile che reindirizza ai dettagli del prodotto.
+ */
 function ProductCard({ prodotto }) {
-  // Controllo di sicurezza: se 'prodotto' è nullo o non definito, non mostrare nulla.
+  // Controllo di sicurezza: se 'prodotto' è nullo, non renderizzare nulla.
   if (!prodotto) {
     return null;
   }
 
-  // Logica per preparare le immagini:
-  const immaginiCarousel =
-    prodotto.immagini && prodotto.immagini.length > 0
-      ? prodotto.immagini
-      : [
-          {
-            urlImmagine:
-              'https://via.placeholder.com/300x200?text=Annuncio+StreetSell',
-            id: 'placeholder-0',
-          },
-        ];
+  // URL di fallback per l'immagine se non è disponibile
+  const placeholderImageUrl =
+    'https://via.placeholder.com/300x200?text=Annuncio+StreetSell';
 
+  // Logica per determinare l'URL della prima immagine:
+  // Prende la prima immagine dall'array se esiste, altrimenti usa il placeholder.
   const primaImmagineUrl =
-    immaginiCarousel[0].urlImmagine || immaginiCarousel[0].url;
+    (prodotto.immagini &&
+      prodotto.immagini.length > 0 &&
+      (prodotto.immagini[0].urlImmagine || prodotto.immagini[0].url)) ||
+    placeholderImageUrl;
 
+  // Accorcia la descrizione a 80 caratteri, aggiungendo i puntini di sospensione.
   const shortDescription =
     prodotto.descrizione && prodotto.descrizione.length > 80
       ? prodotto.descrizione.substring(0, 80) + '...'
       : prodotto.descrizione;
 
-  const displayCondizione = (condizione) => {
+  /**
+   * Converte lo stato della condizione in un formato leggibile dall'utente.
+   */
+  const getDisplayCondizione = (condizione) => {
     switch (condizione) {
       case 'NUOVO':
         return 'Nuovo';
@@ -45,8 +49,12 @@ function ProductCard({ prodotto }) {
     }
   };
 
+  // Costante per definire la finestra temporale per la visualizzazione "minuti fa"
   const TWENTY_MINUTES = 20 * 60 * 1000;
 
+  /**
+   * Restituisce la data di pubblicazione formattata (data o "X minuti fa").
+   */
   const getDisplayDate = (createdAt) => {
     if (!createdAt) {
       return 'Data non disponibile';
@@ -55,20 +63,23 @@ function ProductCard({ prodotto }) {
     const createdDate = new Date(createdAt);
     const now = Date.now();
     const diff = now - createdDate.getTime();
+
+    // Se la differenza è inferiore a 20 minuti
     if (diff <= TWENTY_MINUTES) {
-      // Logica 'Minuti fa'
       const minutes = Math.floor(diff / (60 * 1000));
       if (minutes === 0) return ' ora';
       return ` ${minutes} minuti fa`;
     }
-    const datePart = createdDate.toLocaleDateString('it-IT');
 
+    // Altrimenti, mostra la data completa
+    const datePart = createdDate.toLocaleDateString('it-IT');
     return `${datePart}`;
   };
 
   const formattedDate = getDisplayDate(prodotto.createdAt);
 
   return (
+    // Link che avvolge l'intera Card
     <Link
       to={`/prodotto/${prodotto.id}`}
       style={{ textDecoration: 'none', color: 'inherit' }}
@@ -77,6 +88,7 @@ function ProductCard({ prodotto }) {
         className='h-100 border-0 product-card-responsive'
         style={{ backgroundColor: 'transparent' }}
       >
+        {/* Contenitore Immagine */}
         <div
           className='image-wrapper-responsive'
           style={{
@@ -100,23 +112,25 @@ function ProductCard({ prodotto }) {
         {/* Corpo della Card */}
         <Card.Body className='d-flex flex-column p-2'>
           <div className='mb-2'>
-            {/* Titolo: Usiamo la classe fs-6 su mobile, fs-5 su tablet e desktop */}
+            {/* Titolo */}
             <Card.Title className='mb-1 fw-bold fs-6 fs-md-5'>
               {prodotto.titolo}
             </Card.Title>
 
-            {/* Descrizione */}
+            {/* Descrizione accorciata */}
             <Card.Text className='mb-1 text-muted fs-7-custom'>
               Descrizione: {shortDescription}
             </Card.Text>
 
             {/* Condizione */}
             <Card.Text className='mb-1 fs-7-custom'>
-              {displayCondizione(prodotto.condizione)}
+              {getDisplayCondizione(prodotto.condizione)}
             </Card.Text>
           </div>
+
+          {/* Sezione Prezzo e Data (allineata in basso) */}
           <div className='mt-auto d-flex justify-content-between align-items-end'>
-            {/* PREZZO: nowrap per mantenere l'euro unito al numero */}
+            {/* PREZZO */}
             <Card.Text
               className='mb-0 fw-bold fs-6 fs-md-5'
               style={{ whiteSpace: 'nowrap' }}
@@ -125,9 +139,9 @@ function ProductCard({ prodotto }) {
               €
             </Card.Text>
 
-            {/* ✅ DATA DI PUBBLICAZIONE: Nascondi su Extra-Small (XS), Mostra da Small (SM) in su */}
+            {/* DATA DI PUBBLICAZIONE (Nascosta su mobile XS) */}
             <Card.Text
-              className='text-secondary mb-0 fs-8-custom d-none d-sm-block' // <- CLASSE AGGIUNTA
+              className='text-secondary mb-0 fs-8-custom d-none d-sm-block'
               style={{ whiteSpace: 'nowrap' }}
             >
               Pubblicato: <strong>{formattedDate}</strong>

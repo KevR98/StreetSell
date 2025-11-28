@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Form, Button, Row, Col, InputGroup } from 'react-bootstrap';
 import {
   FaKey,
@@ -8,22 +8,34 @@ import {
 } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 
+/* Componente per la gestione delle impostazioni dell'account (anagrafica, password, eliminazione) */
 function SettingsPage({
-  accountData,
-  setAccountData,
-  passwordData,
-  setPasswordData,
+  currentUser,
   isLoading,
   renderFeedback,
   handleUpdateAccountInfo,
   handleChangePassword,
   handleDeleteAccount,
-  BRAND_COLOR,
+  brandColor, // Rinominate BRAND_COLOR in brandColor
 }) {
+  // Stati locali per i form (gestiti qui per isolare la logica di input)
+  const [accountData, setAccountData] = useState({
+    nome: currentUser?.nome || '',
+    cognome: currentUser?.cognome || '',
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
+
+  // Stati locali per la visibilità della password
   const [showOldPass, setShowOldPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
+  // Stili fissi
   const inputStyle = {
     backgroundColor: 'white',
     borderColor: '#ced4da',
@@ -38,9 +50,37 @@ function SettingsPage({
   // Stile base per il bottone outline del Brand
   const brandOutlineStyle = {
     backgroundColor: 'transparent',
-    borderColor: BRAND_COLOR,
-    color: BRAND_COLOR,
+    borderColor: brandColor,
+    color: brandColor,
     transition: 'background-color 0.2s',
+  };
+
+  /**
+   * Wrapper per l'aggiornamento dell'anagrafica, passa i dati locali al gestore del genitore.
+   */
+  const handleUpdateInfoWrapper = (e) => {
+    // Passa l'evento e l'oggetto dati al gestore API del genitore
+    handleUpdateAccountInfo(e, accountData);
+  };
+
+  /**
+   * Wrapper per la gestione del cambio password, aggiunge la validazione di corrispondenza.
+   */
+  const handleChangePasswordWrapper = (e) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+      // Se non corrispondono, il messaggio di errore è già visibile tramite Form.Text.
+      return;
+    }
+    // Passa l'evento e l'oggetto dati al gestore API del genitore
+    handleChangePassword(e, passwordData);
+
+    // Pulisce i campi password dopo l'invio (indipendentemente dal successo)
+    setPasswordData({
+      oldPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
+    });
   };
 
   return (
@@ -51,11 +91,11 @@ function SettingsPage({
 
         {renderFeedback()}
 
-        {/* Sezione Anagrafica */}
+        {/* Sezione Anagrafica (Nome e Cognome) */}
         <h6 className='text-muted text-uppercase small ls-1 mb-3 fs-7-custom fs-md-6'>
           Anagrafica
         </h6>
-        <Form onSubmit={handleUpdateAccountInfo} className='mb-5'>
+        <Form onSubmit={handleUpdateInfoWrapper} className='mb-5'>
           <Row>
             <Col md={6}>
               <Form.Group className='mb-3'>
@@ -87,11 +127,10 @@ function SettingsPage({
             </Col>
           </Row>
           <Button
-            size='sm' // Lasciamo small come base, è elegante per le impostazioni
+            size='sm'
             type='submit'
             disabled={isLoading}
             style={brandOutlineStyle}
-            // Aggiungiamo classe per font size
             className='fs-7-custom fs-md-6'
           >
             Aggiorna
@@ -100,11 +139,12 @@ function SettingsPage({
 
         <hr />
 
-        {/* Sezione Sicurezza */}
+        {/* Sezione Sicurezza (Cambio Password) */}
         <h6 className='text-muted text-uppercase small ls-1 mb-3 mt-4 fs-7-custom fs-md-6'>
           Sicurezza
         </h6>
-        <Form onSubmit={handleChangePassword} className='mb-5'>
+        <Form onSubmit={handleChangePasswordWrapper} className='mb-5'>
+          {/* Vecchia Password */}
           <Form.Group className='mb-3'>
             <Form.Label className='fs-7-custom fs-md-6'>
               Vecchia Password
@@ -134,6 +174,7 @@ function SettingsPage({
             </InputGroup>
           </Form.Group>
 
+          {/* Nuova Password */}
           <Form.Group className='mb-3'>
             <Form.Label className='fs-7-custom fs-md-6'>
               Nuova Password
@@ -163,6 +204,7 @@ function SettingsPage({
             </InputGroup>
           </Form.Group>
 
+          {/* Conferma Nuova Password */}
           <Form.Group className='mb-4'>
             <Form.Label className='fs-7-custom fs-md-6'>
               Conferma Nuova Password
@@ -190,6 +232,7 @@ function SettingsPage({
                 {showConfirmPass ? <FaEyeSlash /> : <FaEye />}
               </Button>
             </InputGroup>
+            {/* Validazione frontend: mostra avviso se le password non corrispondono */}
             {passwordData.newPassword !== passwordData.confirmNewPassword &&
               passwordData.confirmNewPassword.length > 0 && (
                 <Form.Text className='text-danger fs-8-custom'>
@@ -198,12 +241,14 @@ function SettingsPage({
               )}
           </Form.Group>
 
+          {/* Bottone Cambia Password */}
           <Button
             size='sm'
             type='submit'
             disabled={
               isLoading ||
-              passwordData.newPassword !== passwordData.confirmNewPassword
+              passwordData.newPassword !== passwordData.confirmNewPassword ||
+              passwordData.newPassword.length === 0 // Disabilita se la nuova password è vuota
             }
             style={brandOutlineStyle}
             className='fs-7-custom fs-md-6'
@@ -220,7 +265,7 @@ function SettingsPage({
 
         <hr />
 
-        {/* Zona Pericolo */}
+        {/* Zona Pericolo (Eliminazione Account) */}
         <div className='bg-danger-subtle p-3 rounded border border-danger'>
           <h6 className='text-danger fw-bold fs-7-custom fs-md-6'>
             <FaExclamationTriangle className='me-1' /> Zona Pericolo
