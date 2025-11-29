@@ -247,8 +247,12 @@ function Notification({ isMobile = false, icon }) {
   // Contenuto del titolo per la NavDropdown Desktop
   const titleContent = (
     <div className='d-flex align-items-center'>
-      <FaBell size={20} className='me-2' />
-      Notifiche
+      {/* Rimuovi la classe me-2 (margin-end: 2) se nascondi la parola 'Notifiche', altrimenti lascia un po' di spazio per il badge */}
+      <FaBell size={20} className={!isMobile ? 'me-0' : 'me-2'} />
+
+      {/* CONDIZIONE: Mostra "Notifiche" SOLO se isMobile è vero */}
+      {isMobile && 'Notifiche'}
+
       {visibleNotifications.length > 0 && (
         <Badge pill bg='danger' className='ms-2'>
           {visibleNotifications.length > 9 ? '9+' : visibleNotifications.length}

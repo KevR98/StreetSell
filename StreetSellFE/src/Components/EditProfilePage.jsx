@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import { FaTrash } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
+import avatarDefault from '../assets/streetsell-profile-pic.png'; // AVATAR IMPORTATO
 
 /**
  * Componente per la modifica dei dettagli del profilo utente, inclusi username, posizione e avatar.
@@ -22,20 +23,19 @@ function EditProfilePage({
   // Stato locale per controllare se il campo username è in modalità modifica
   const [isEditingUsername, setIsEditingUsername] = useState(false);
 
-  // URL di fallback per l'avatar
-  const defaultAvatarUrl = 'https://via.placeholder.com/60x60?text=NP';
+  // LOGICA AVATAR
 
   /**
    * Determina l'URL da visualizzare per l'avatar, seguendo la priorità:
    * 1. File selezionato (Blob URL)
    * 2. URL esistente dal backend
-   * 3. URL di default
+   * 3. URL di default (avatarDefault importato)
    */
   const displayAvatarUrl = selectedFile
     ? URL.createObjectURL(selectedFile)
     : profileData.avatarUrl && profileData.avatarUrl !== 'default'
     ? profileData.avatarUrl
-    : defaultAvatarUrl;
+    : avatarDefault; // USA IL TUO IMPORTATO
 
   /**
    * Controlla se l'utente ha un avatar personalizzato, per mostrare il bottone di eliminazione.
@@ -61,7 +61,7 @@ function EditProfilePage({
 
         <div className='d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4 gap-3'>
           <div className='d-flex align-items-center'>
-            {/* Immagine Avatar visualizzata */}
+            {/* Immagine Avatar visualizzata - Utilizza la logica definita per displayAvatarUrl */}
             <img
               src={displayAvatarUrl}
               alt='Avatar'
@@ -203,13 +203,15 @@ function EditProfilePage({
               </Button>
             </div>
           ) : (
-            // Visualizzazione statica dell'username quando non in modalità modifica
-            <Alert
-              style={{ backgroundColor: 'white', borderColor: '#ddd' }}
+            // CORREZIONE USERNAME: Visualizzazione statica con Form.Control disabilitato
+            <Form.Control
+              type='text'
+              readOnly
+              disabled
+              value={profileData.username}
+              style={inputStyle}
               className='py-2 mb-4 fw-bold border fs-7-custom fs-md-6'
-            >
-              {profileData.username}
-            </Alert>
+            />
           )}
 
           <hr className='my-4' />

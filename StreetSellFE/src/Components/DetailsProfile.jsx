@@ -11,13 +11,13 @@ import SettingsPage from './SettingsPage';
 import SettingsAddress from './SettingsAddress';
 
 // Colore del brand per gli elementi UI
-const brandColor = '#fa8229'; // Rinominate BRAND_COLOR in brandColor
+const brandColor = '#fa8229';
 
 // Endpoint API
-const endpointMe = 'http://localhost:8888/utenti/me'; // Rinominate ENDPOINT_ME in endpointMe
-const endpointPassword = 'http://localhost:8888/utenti/me/password'; // Rinominate ENDPOINT_PASSWORD in endpointPassword
-const endpointIndirizzi = 'http://localhost:8888/indirizzi'; // Rinominate ENDPOINT_INDIRIZZI in endpointIndirizzi
-const endpointAvatar = 'http://localhost:8888/utenti/me/avatar'; // Rinominate ENDPOINT_AVATAR in endpointAvatar
+const endpointMe = 'http://localhost:8888/utenti/me';
+const endpointPassword = 'http://localhost:8888/utenti/me/password';
+const endpointIndirizzi = 'http://localhost:8888/indirizzi';
+const endpointAvatar = 'http://localhost:8888/utenti/me/avatar';
 
 function DetailsProfile() {
   const dispatch = useDispatch();
@@ -72,12 +72,22 @@ function DetailsProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // Effetto per l'auto-dissolvenza del feedback dopo 1 secondo
+  useEffect(() => {
+    if (feedback && feedback.message) {
+      const timer = setTimeout(() => {
+        setFeedback({ type: '', message: '' });
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
   /**
    * Fetcha gli indirizzi di spedizione dell'utente.
    */
   const fetchUserAddresses = () => {
     setLoadingAddresses(true);
-    // Uso endpointIndirizzi
     fetch(endpointIndirizzi, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => res.json())
       .then((data) => setAddresses(data))
@@ -91,7 +101,6 @@ function DetailsProfile() {
   const submitTextUpdate = (payload, successMsg) => {
     setIsLoading(true);
     setFeedback({ type: '', message: '' });
-    // Uso endpointMe
     fetch(endpointMe, {
       method: 'PUT',
       headers: {
@@ -103,14 +112,12 @@ function DetailsProfile() {
       .then(async (res) => {
         if (!res.ok) {
           const err = await res.json();
-          // Sollevo un errore con il messaggio specifico dal backend
           throw new Error(err.message || 'Errore aggiornamento');
         }
         return res.json();
       })
       .then((updatedUser) => {
         setFeedback({ type: 'success', message: successMsg });
-        // Aggiorno lo stato globale con i nuovi dati dell'utente
         dispatch({ type: 'SET_USER', payload: updatedUser });
       })
       .catch((err) => setFeedback({ type: 'danger', message: err.message }))
@@ -127,10 +134,9 @@ function DetailsProfile() {
     const formData = new FormData();
     formData.append('avatar', selectedFile);
     try {
-      // Uso endpointAvatar
       const res = await fetch(endpointAvatar, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }, // NO Content-Type per FormData
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       if (!res.ok) {
@@ -139,10 +145,9 @@ function DetailsProfile() {
       }
       const updatedUser = await res.json();
       setFeedback({ type: 'success', message: 'Foto profilo aggiornata!' });
-      // Aggiorno lo stato locale e Redux
       setProfileData((prev) => ({ ...prev, avatarUrl: updatedUser.avatarUrl }));
       dispatch({ type: 'SET_USER', payload: updatedUser });
-      setSelectedFile(null); // Resetto il file selezionato
+      setSelectedFile(null);
     } catch (err) {
       console.error('Errore upload:', err);
       setFeedback({ type: 'danger', message: 'Errore caricamento foto.' });
@@ -159,7 +164,6 @@ function DetailsProfile() {
     setIsLoading(true);
     setFeedback({ type: '', message: '' });
     try {
-      // Uso endpointAvatar
       const res = await fetch(endpointAvatar, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -170,7 +174,6 @@ function DetailsProfile() {
         message: 'Foto rimossa. Ripristinato default.',
         type: 'success',
       });
-      // Aggiorno lo stato locale e Redux con il nuovo URL (probabilmente un placeholder)
       setProfileData((prev) => ({ ...prev, avatarUrl: updatedUser.avatarUrl }));
       dispatch({ type: 'SET_USER', payload: updatedUser });
     } catch (err) {
@@ -186,30 +189,21 @@ function DetailsProfile() {
 
   /**
    * Componente per renderizzare l'Alert di feedback.
+   * NON è dismissible per forzare la chiusura solo tramite timer.
    */
   const renderFeedback = () => {
     if (!feedback || !feedback.message) return null;
-    return (
-      <Alert
-        variant={feedback.type}
-        onClose={() => setFeedback({ type: '', message: '' })}
-        dismissible
-      >
-        {feedback.message}
-      </Alert>
-    );
+    return <Alert variant={feedback.type}>{feedback.message}</Alert>;
   };
 
   /**
    * Gestisce il cambio password.
-   * @param {object} passwordData - L'oggetto contenente oldPassword e newPassword.
    */
   const handleChangePassword = (e, passwordData) => {
     e.preventDefault();
 
     setIsLoading(true);
     setFeedback({ type: '', message: '' });
-    // Uso endpointPassword
     fetch(endpointPassword, {
       method: 'PUT',
       headers: {
@@ -234,7 +228,6 @@ function DetailsProfile() {
 
   /**
    * Funzione per aggiornare le info account (nome, cognome).
-   * @param {object} accountData - L'oggetto con nome e cognome.
    */
   const handleUpdateAccountInfo = (e, accountData) => {
     e.preventDefault();
@@ -254,7 +247,6 @@ function DetailsProfile() {
    */
   const handleDeleteAccount = () => {
     if (window.confirm('SEI SICURO? Azione irreversibile.')) {
-      // Uso endpointMe
       fetch(endpointMe, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -262,7 +254,6 @@ function DetailsProfile() {
         .then((res) => {
           if (!res.ok) throw new Error('Errore cancellazione');
           alert('Account eliminato.');
-          // Pulizia e reindirizzamento al login
           localStorage.clear();
           window.location.href = '/login';
         })
@@ -275,11 +266,10 @@ function DetailsProfile() {
    */
   const handleDeleteAddress = (id) => {
     if (!window.confirm('Eliminare indirizzo?')) return;
-    // Uso endpointIndirizzi
     fetch(`${endpointIndirizzi}/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
-    }).then(() => fetchUserAddresses()); // Ricarico la lista degli indirizzi dopo la cancellazione
+    }).then(() => fetchUserAddresses());
   };
 
   // Se l'utente non è ancora caricato o loggato
@@ -311,7 +301,7 @@ function DetailsProfile() {
                   }`}
                   style={
                     activeTab === 'profile'
-                      ? { backgroundColor: brandColor } // Usato brandColor
+                      ? { backgroundColor: brandColor }
                       : { backgroundColor: 'white', border: '1px solid #eee' }
                   }
                 >
@@ -329,7 +319,7 @@ function DetailsProfile() {
                   }`}
                   style={
                     activeTab === 'account'
-                      ? { backgroundColor: brandColor } // Usato brandColor
+                      ? { backgroundColor: brandColor }
                       : { backgroundColor: 'white', border: '1px solid #eee' }
                   }
                 >
@@ -347,7 +337,7 @@ function DetailsProfile() {
                   }`}
                   style={
                     activeTab === 'shipping'
-                      ? { backgroundColor: brandColor } // Usato brandColor
+                      ? { backgroundColor: brandColor }
                       : { backgroundColor: 'white', border: '1px solid #eee' }
                   }
                 >
@@ -374,7 +364,7 @@ function DetailsProfile() {
               // Stati e utilities
               isLoading={isLoading}
               renderFeedback={renderFeedback}
-              brandColor={brandColor} // Usato brandColor
+              brandColor={brandColor}
             />
           )}
           {activeTab === 'account' && (
@@ -388,7 +378,7 @@ function DetailsProfile() {
               // Stati e utilities
               isLoading={isLoading}
               renderFeedback={renderFeedback}
-              brandColor={brandColor} // Usato brandColor
+              brandColor={brandColor}
             />
           )}
           {activeTab === 'shipping' && (
@@ -402,7 +392,7 @@ function DetailsProfile() {
               handleDeleteAddress={handleDeleteAddress}
               fetchUserAddresses={fetchUserAddresses}
               token={token}
-              brandColor={brandColor} // Usato brandColor
+              brandColor={brandColor}
             />
           )}
         </Col>
